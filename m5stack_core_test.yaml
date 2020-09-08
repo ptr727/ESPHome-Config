@@ -1,0 +1,14 @@
+substitutions:
+  device_name: m5stack_core_test
+  device_comment: "M5Stack Test Device"
+
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  platform: ESP32
+  board: m5stack-core-esp32
+
+<<: !include templates/common.yaml
+
+web_server:
+  port: 80

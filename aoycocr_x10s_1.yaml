@@ -1,0 +1,176 @@
+substitutions:
+  device_name: aoycocr_x10s_1
+  device_comment: "Aoycocr X10S Energy Monitoring Smart Plug"
+
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  platform: ESP8266
+  board: esp01_1m
+  esp8266_restore_from_flash: true
+
+<<: !include templates/common.yaml
+
+binary_sensor:
+- platform: gpio
+  device_class: power
+  pin:
+    number: GPIO13
+    inverted: True
+  name: ${device_name}_button
+  on_press:
+    - switch.toggle: relay
+
+- platform: status
+  name: ${device_name}_status
+
+sensor:
+  - platform: wifi_signal
+    name: ${device_name}_wifi_signal
+    update_interval: 60s
+
+  - platform: uptime
+    name: ${device_name}_uptime
+    filters:
+      - lambda: return x / 60.0;
+    unit_of_measurement: minutes
+
+  - platform: hlw8012
+    sel_pin:
+      number: GPIO12
+      inverted: true
+    cf_pin: GPIO5
+    cf1_pin: GPIO14
+    current_resistor: 0.001
+    voltage_divider: 2401
+    power:
+      name: ${device_name}_power
+      unit_of_measurement: W
+      id: wattage
+      filters:
+        - calibrate_linear:
+            - 0.0 -> 0.0
+            - 67.6 -> 11.0
+    current:
+      name: ${device_name}_current
+      unit_of_measurement: A
+      filters:
+        - calibrate_linear:
+            - 0.0 -> 0.0
+            - 0.12 -> 0.08
+    voltage:
+      name: ${device_name}_voltage
+      unit_of_measurement: V
+      filters:
+        - calibrate_linear:
+            - 0.0 -> 0.0
+            - 322.4 -> 118.3
+    change_mode_every: 1
+    update_interval: 10s
+
+  - platform: total_daily_energy
+    name: ${device_name}_total_daily_energy
+    power_id: wattage
+    filters:
+        - multiply: 0.001
+    unit_of_measurement: kWh
+
+text_sensor:
+  - platform: version
+    name: ${device_name}_esphome_version
+
+switch:
+- platform: gpio
+  name: ${device_name}_relay
+  pin: GPIO4
+  id: relay
+  restore_mode: RESTORE_DEFAULT_OFF
+  on_turn_on:
+    - light.turn_on:
+        id: blue_led
+        brightness: 100%
+  on_turn_off:
+    - light.turn_off: blue_led
+
+output:
+- platform: esp8266_pwm
+  id: red_output
+  pin: GPIO0
+  inverted: true
+- platform: esp8266_pwm
+  id: blue_output
+  pin: GPIO2
+  inverted: true
+
+light:
+- platform: monochromatic
+  name: ${device_name}_red_led
+  output: red_output
+  id: red_led
+  restore_mode: ALWAYS_OFF
+  effects:
+    - strobe:
+    - flicker:
+        alpha: 50%
+        intensity: 50%
+    - lambda:
+        name: throb
+        update_interval: 1s
+        lambda: |-
+          static int state = 0;
+          auto call = id(red_led).turn_on();
+          // Transtion of 1000ms = 1s
+          call.set_transition_length(1000);
+          if (state == 0) {
+            call.set_brightness(1.0);
+          } else {
+            call.set_brightness(0.01);
+          }
+          call.perform();
+          state += 1;
+          if (state == 2)
+            state = 0;
+- platform: monochromatic
+  name: ${device_name}_blue_led
+  output: blue_output
+  id: blue_led
+  restore_mode: ALWAYS_OFF
+  effects:
+    - strobe:
+    - flicker:
+        alpha: 50%
+        intensity: 50%
+    - lambda:
+        name: throb
+        update_interval: 1s
+        lambda: |-
+          static int state = 0;
+          auto call = id(blue_led).turn_on();
+          // Transtion of 1000ms = 1s
+          call.set_transition_length(1000);
+          if (state == 0) {
+            call.set_brightness(1.0);
+          } else {
+            call.set_brightness(0.01);
+          }
+          call.perform();
+          state += 1;
+          if (state == 2)
+            state = 0;
+
+interval:
+  - interval: 500ms
+    then:
+      - if:
+          condition:
+            not:
+              wifi.connected:
+          then:
+            - light.turn_on:
+                id: red_led
+                brightness: 100%
+                transition_length: 0s
+            - delay: 250ms
+            - light.turn_off:
+                id: red_led
+                transition_length: 250ms

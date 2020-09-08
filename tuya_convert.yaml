@@ -1,0 +1,14 @@
+substitutions:
+  device_name: tuya_convert
+  device_comment: "Temporary device used during Tuya to Tasmota to ESPHome conversion"
+
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  platform: ESP8266
+  board: esp01_1m
+
+<<: !include templates/common.yaml
+
+web_server:
+  port: 80

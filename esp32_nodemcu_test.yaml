@@ -1,0 +1,78 @@
+substitutions:
+  device_name: esp32_nodemcu_test
+  device_comment: "ESP-WROOM-32 NodeMCU Test Device"
+
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  platform: ESP32
+  board: nodemcu-32s
+
+<<: !include templates/common.yaml
+
+web_server:
+  port: 80
+
+dallas:
+  - pin: GPIO25
+    update_interval: 5s
+
+text_sensor:
+  - platform: version
+    name: "ESPHome Version"
+    
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal Strength"
+  - platform: uptime
+    name: "Device Uptime"
+  - platform: dallas
+    address: 0xB50114551B78AA28
+    name: "Office Temperature"
+    id: office_temp
+  - platform: pulse_counter
+    pin: GPIO18
+    unit_of_measurement: 'gal/min'
+    name: 'Water Pulse Counter'
+    filters:
+      - multiply: 10
+
+switch:
+  - platform: gpio
+    name: "Blue LED on GPIO2"
+    pin: GPIO2
+  - platform: gpio
+    name: "Red LED on GPIO19"
+    id: red_led
+    pin: GPIO19
+    
+#binary_sensor:
+#  - platform: gpio
+#    name: "Binary Sensor on Pin GPIO18"
+#    pin: GPIO18
+
+climate:
+  - platform: bang_bang
+    name: "Hot Water Recirculation"
+    sensor: office_temp
+    default_target_temperature_low: 30 °C
+    default_target_temperature_high: 35 °C
+    heat_action:
+      - switch.turn_on: red_led
+    idle_action:
+      - switch.turn_off: red_led
+
+
+# https://tinkerman.cat/post/sonoff-th10-th16-sensors-displays-actuators
+# https://www.forward.com.au/pfod/ESP8266/GPIOpins/ESP8266_01_pin_magic.html
+# https://github.com/frenck/home-assistant-config/blob/master/config/esphome/esp05.yaml
+# https://github.com/jonathanadams/esphome-configs
+# https://esphome-configs.io/
+# https://community.home-assistant.io/t/programming-teckin-sp20-esphome-without-using-tuya-convert/155576/8
+# https://community.home-assistant.io/t/teckin-sp32-on-esphome/104363/15
+# https://blog.quindorian.org/2019/02/home-assistant-10-wifi-energy-meter-with-esphome.html/
+# https://frenck.dev/calibrating-an-esphome-flashed-power-plug/
+# https://www.digiblur.com/2020/01/tuya-convert-23-update-flash-tuya.html
+# https://esphome-configs.io/guides/tuya-convert/
+# https://github.com/ct-Open-Source/tuya-convert/wiki/Compatible-devices-(HTTPS-firmware)
+# https://www.digiblur.com/2020/07/how-to-use-sonoff-zigbee-bridge-with.html
