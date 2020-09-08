@@ -17,6 +17,7 @@
     comment: ${device_comment}
     platform: ESP8266
     board: esp01_1m
+    # https://esphome.io/components/esphome.html#esp8266-restore-from-flash
     esp8266_restore_from_flash: true
 
   # https://esphome.io/components/binary_sensor/index.html
@@ -60,18 +61,53 @@
         inverted: true
       cf_pin: GPIO5
       cf1_pin: GPIO14
-      current_resistor: 0.00221
+      current_resistor: 0.001
       voltage_divider: 940
       current:
         name: ${device_name}_current
         unit_of_measurement: A
+        filters:
+          # https://esphome.io/components/sensor/index.html#calibrate-linear
+          - calibrate_linear:
+            - 0.0000 -> 0.0110 # Relay off no load
+            - 0.0097 -> 0.0260 # Relay on no load
+            - 0.9270 -> 0.7570
+            - 2.0133 -> 1.6330
+            - 2.9307 -> 2.3750
+            - 5.4848 -> 4.4210
+            - 8.4308 -> 6.8330
+            - 9.9171 -> 7.9830
+          # Normalize for plug load
+          - lambda: if (x < 0.2600) return 0; else return (x - 0.0260);
       voltage:
         name: ${device_name}_voltage
         unit_of_measurement: V
+        filters:
+          - calibrate_linear:
+            - 109.5769 -> 110.7000
+            - 111.1019 -> 112.2000
+            - 112.7357 -> 113.9000
+            - 114.4785 -> 115.3000
+            - 114.7508 -> 115.9000
+            - 115.1320 -> 116.0000
+            - 118.2908 -> 117.0000
+            - 119.2711 -> 117.0000
       power:
         name: ${device_name}_power
         id: wattage
         unit_of_measurement: W
+        filters:
+          - calibrate_linear:
+            - 0.0000 -> 0.5900 # Relay off no load
+            - 0.0000 -> 1.5600 # Relay on no load
+            - 198.5129 -> 87.8300
+            - 434.2469 -> 189.5000
+            - 628.6241 -> 273.9000
+            - 1067.0067 -> 460.1000
+            - 1619.8098 -> 699.2000
+            - 2043.0282 -> 885.0000
+          # Normalize for plug load
+          - lambda: if (x < 1.5600) return 0; else return (x - 1.5600);
 
     # https://esphome.io/components/sensor/total_daily_energy.html
     - platform: total_daily_energy
@@ -96,6 +132,7 @@
       name: ${device_name}_relay
       id: relay
       pin: GPIO15
+      # Restore previous value on power-on
       restore_mode: RESTORE_DEFAULT_OFF
       on_turn_on:
         - light.turn_on:
@@ -132,7 +169,9 @@
       name: ${device_name}_blue_led
       id: blue_led
       output: blue_output
-      restore_mode: ALWAYS_OFF
+      # Restore previous value on power-on
+      # TODO: Find way to track relay state on startup
+      restore_mode: RESTORE_DEFAULT_OFF
       
   # https://esphome.io/guides/automations.html#interval
   interval:
