@@ -1,11 +1,15 @@
 ---
-  # https://templates.blakadder.com/aoycocr_X5P.html
-  # https://esphome-configs.io/devices/aoycocr-x10s/
+  # https://community.home-assistant.io/t/efun-sh331w-smart-plug-esphome-configuration-file/161112
+  # https://templates.blakadder.com/efun_SH331W.html
+  # https://www.belling.com.cn/media/file_object/bel_product/BL0937/datasheet/BL0937_V1.02_en.pdf
 
   # Button: GPIO13, Inverted
   # Relay: GPIO15
   # Red LED: GPIO0, Inverted
   # Blue LED: GPIO2, Inverted
+  # BL0937 SEL: GPIO12, Inverted
+  # BL0937 CF: GPIO5
+  # BL0937 CF1: GPIO14
 
   # https://esphome.io/components/esphome.html
   esphome:
@@ -46,6 +50,36 @@
       unit_of_measurement: minutes
       filters:
         - lambda: return x / 60.0;
+
+    # https://esphome.io/components/sensor/hlw8012.html
+    - platform: hlw8012
+      change_mode_every: 3
+      update_interval: 3s
+      sel_pin:
+        number: GPIO12
+        inverted: true
+      cf_pin: GPIO5
+      cf1_pin: GPIO14
+      current_resistor: 0.00221
+      voltage_divider: 940
+      current:
+        name: ${device_name}_current
+        unit_of_measurement: A
+      voltage:
+        name: ${device_name}_voltage
+        unit_of_measurement: V
+      power:
+        name: ${device_name}_power
+        id: wattage
+        unit_of_measurement: W
+
+    # https://esphome.io/components/sensor/total_daily_energy.html
+    - platform: total_daily_energy
+      name: ${device_name}_total_daily_energy
+      power_id: wattage
+      filters:
+        - multiply: 0.001
+      unit_of_measurement: kWh
 
   # https://esphome.io/components/text_sensor/index.html
   text_sensor:
@@ -99,7 +133,7 @@
       id: blue_led
       output: blue_output
       restore_mode: ALWAYS_OFF
-
+      
   # https://esphome.io/guides/automations.html#interval
   interval:
     - interval: 500ms
