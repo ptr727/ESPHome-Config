@@ -1,5 +1,5 @@
 substitutions:
-  device_name: efun_sh331_1
+  device_name: efun_sh331_4
   device_comment: "EFUN SH331 Energy Monitoring Smart Plug"
 
 <<: !include templates/common.yaml
