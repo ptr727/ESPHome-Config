@@ -1,0 +1,17 @@
+---
+
+  # https://esphome.io/components/light/index.html
+  light:
+    
+    # https://esphome.io/components/light/monochromatic.html
+    - platform: monochromatic
+      name: ${device_name}_red_led
+      id: red_led
+      output: red_output
+      restore_mode: ALWAYS_OFF
+
+    - platform: monochromatic
+      name: ${device_name}_blue_led
+      id: blue_led
+      output: blue_output
+      restore_mode: ALWAYS_OFF
