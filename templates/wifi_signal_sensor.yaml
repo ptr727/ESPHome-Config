@@ -1,0 +1,9 @@
+---
+
+  # https://esphome.io/components/sensor/index.html
+  sensor:
+
+    # https://esphome.io/components/sensor/wifi_signal.html
+    - platform: wifi_signal
+      name: ${device_name}_wifi_signal
+      update_interval: 60s

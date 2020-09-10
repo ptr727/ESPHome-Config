@@ -1,0 +1,13 @@
+---
+    
+  # https://esphome.io/components/wifi.html
+  wifi:
+    # https://esphome.io/components/esphome.html#changing-esphome-node-name
+    # use_address: tuya_convert
+    ssid: !secret wifi_ssid
+    password: !secret wifi_password
+    domain: !secret wifi_domain
+    ap:
+      # substitutions.device_name must be set
+      ssid: ${device_name}_ap
+      password: !secret wifi_password
