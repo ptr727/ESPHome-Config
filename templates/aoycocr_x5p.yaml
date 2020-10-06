@@ -7,7 +7,8 @@
   # Relay: GPIO15
   # Red LED: GPIO0, Inverted
   # Blue LED: GPIO2, Inverted
-
+  
+  
   # https://esphome.io/components/esphome.html
   esphome:
     name: ${device_name}
@@ -19,6 +20,7 @@
     # https://esphome.io/components/esphome.html#on-boot
     on_boot:
       then:
+        # Restore Blue LED state on boot to match relay state
         - if:
             condition:
               switch.is_on:
@@ -28,12 +30,99 @@
                   id: blue_led
                   brightness: 100%
 
-  <<: !include relay_button_binary_sensor.yaml
-  <<: !include status_binary_sensor.yaml
-  <<: !include version_text_sensor.yaml
-  <<: !include switch_relay.yaml
-  <<: !include red_blue_output.yaml
-  <<: !include red_blue_light.yaml
-  <<: !include red_flash_wifi_interval.yaml
-  <<: !include wifi_signal_sensor.yaml
-  <<: !include uptime_sensor.yaml
+
+  # https://esphome.io/guides/configuration-types.html#packages
+  packages:
+    status_sensor: !include status_sensor.yaml
+    version_sensor: !include version_sensor.yaml
+    wifi_sensor: !include wifi_sensor.yaml
+    uptime_sensor:  !include uptime_sensor.yaml
+    restart_switch: !include restart_switch.yaml
+
+
+  # https://esphome.io/components/binary_sensor/index.html
+  binary_sensor:
+
+    # https://esphome.io/components/binary_sensor/gpio.html
+    - platform: gpio
+      name: ${device_name}_button
+      device_class: power
+      pin:
+        number: GPIO13
+        inverted: true
+      # Toggle relay state on button press
+      on_press:
+        - switch.toggle: relay
+
+
+  # https://esphome.io/components/switch/index.html
+  switch:
+
+    # https://esphome.io/components/switch/gpio.html
+    - platform: gpio
+      name: ${device_name}_relay
+      id: relay
+      pin: GPIO15
+      # Restore previous relay state on power-on
+      restore_mode: RESTORE_DEFAULT_OFF
+      # Blue LED follows relay state
+      on_turn_on:
+        - light.turn_on:
+            id: blue_led
+            brightness: 100%
+      on_turn_off:
+        - light.turn_off: blue_led
+
+
+  # https://esphome.io/components/output/index.html
+  output:
+
+    # https://esphome.io/components/output/esp8266_pwm.html
+    - platform: esp8266_pwm
+      id: red_output
+      pin: GPIO0
+      inverted: true
+    
+    - platform: esp8266_pwm
+      id: blue_output
+      pin: GPIO2
+      inverted: true
+
+
+  # https://esphome.io/components/light/index.html
+  light:
+    
+    # https://esphome.io/components/light/monochromatic.html
+    - platform: monochromatic
+      name: ${device_name}_red_led
+      id: red_led
+      output: red_output
+      restore_mode: ALWAYS_OFF
+
+    - platform: monochromatic
+      name: ${device_name}_blue_led
+      id: blue_led
+      output: blue_output
+      restore_mode: ALWAYS_OFF
+
+
+  # https://esphome.io/guides/automations.html#interval
+  interval:
+
+    # Flash RED LED when WiFi is not connected
+    - interval: 500ms
+      then:
+        # https://esphome.io/guides/automations.html#if-action
+        - if:
+            condition:
+              not:
+                wifi.connected:
+            then:
+              - light.turn_on:
+                  id: red_led
+                  brightness: 100%
+                  transition_length: 0s
+              - delay: 250ms
+              - light.turn_off:
+                  id: red_led
+                  transition_length: 250ms

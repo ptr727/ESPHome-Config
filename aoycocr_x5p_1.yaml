@@ -2,5 +2,7 @@ substitutions:
   device_name: aoycocr_x5p_1
   device_comment: "Aoycocr X5P Smart Plug"
 
-<<: !include templates/common.yaml
-<<: !include templates/aoycocr_x5p.yaml
+packages:
+  common: !include templates/common.yaml
+  aoycocr_x5p: !include templates/aoycocr_x5p.yaml
+  # web_server: !include templates/web_server.yaml

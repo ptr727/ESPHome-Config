@@ -12,35 +12,12 @@
   # BL0937 CF: GPIO5
   # BL0937 CF1: GPIO14
 
-  # https://esphome.io/components/esphome.html
-  esphome:
-    name: ${device_name}
-    comment: ${device_comment}
-    platform: ESP8266
-    board: esp01_1m
-    # https://esphome.io/components/esphome.html#esp8266-restore-from-flash
-    esp8266_restore_from_flash: true
-    # https://esphome.io/components/esphome.html#on-boot
-    on_boot:
-      then:
-        - if:
-            condition:
-              switch.is_on:
-                id: relay
-            then:
-              - light.turn_on:
-                  id: blue_led
-                  brightness: 100%
+  
+  # https://esphome.io/guides/configuration-types.html#packages
+  packages:
+    # Use the Aoycocr X5P as a generic Tuya template for the LED's, button, and relay
+    aoycocr_x5p: !include aoycocr_x5p.yaml
 
-  <<: !include relay_button_binary_sensor.yaml
-  <<: !include status_binary_sensor.yaml
-  <<: !include version_text_sensor.yaml
-  <<: !include switch_relay.yaml
-  <<: !include red_blue_output.yaml
-  <<: !include red_blue_light.yaml
-  <<: !include red_flash_wifi_interval.yaml
-  <<: !include wifi_signal_sensor.yaml
-  <<: !include uptime_sensor.yaml
 
   # https://esphome.io/components/sensor/index.html
   sensor:
