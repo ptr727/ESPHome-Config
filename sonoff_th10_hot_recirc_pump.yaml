@@ -33,7 +33,7 @@ esphome:
   comment: ${device_comment}
   platform: ESP8266
   board: esp8285
-  # Sonoff docs say we need to pin to version 2.4.2, why?
+  # Sonoff docs say we need to use arduino version 2.4.2, why?
   # arduino_version: 2.4.2
   esp8266_restore_from_flash: false
   on_boot:
@@ -44,6 +44,7 @@ esphome:
     then:
       - logger.log: "OnShutdown : Turning Relay Off."
       - switch.turn_off: relay
+
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
@@ -150,10 +151,10 @@ climate:
     default_target_temperature_low: 30 # ~85F
     default_target_temperature_high: 40 # ~105F
     heat_action:
-      - logger.log: "BangBang : Heat Action, turning Relay On."
+      - logger.log: "BangBang : Heat Action, Turning Relay On."
       - switch.turn_on: relay
     idle_action:
-      - logger.log: "BangBang : Idle Action, turning Relay Off."
+      - logger.log: "BangBang : Idle Action, Turning Relay Off."
       - switch.turn_off: relay
     visual:
       min_temperature: 20
@@ -170,25 +171,40 @@ interval:
       # Periodically circulate hot water even when recirc is not calling for heat, making sure recirc is not cold.
       # Make sure the timer does not interfere with the recirc thermostat control:
       #   - On a periodic timer event.
-      #   - If thermostat is not currently calling for heat, turn the pump on.
+      #   - If thermostat is not currently calling for heat, and not warmer than high, turn the pump on.
       #   - Wait for pump to circulate hot water.
       #   - At end of wait, if thermostat is not calling for heat, turn the pump back, else leave pump on.
       - if:
           condition:
             - lambda: |-
-                return id(bangbang).action != CLIMATE_ACTION_HEATING;
+                // Get bang_bang object
+                auto bang = id(bangbang);
+                // Log current state
+                ESP_LOGD("RecircTimer", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                // If already heating do nothing
+                if (bang->action == CLIMATE_ACTION_HEATING)
+                  return false;
+                // If current temperature is already above the highpoint do nothing
+                if (bang->current_temperature >= bang->target_temperature_high)
+                  return false;
+                // Ok, turn on the relay
+                return true;
           then:
-            - logger.log: "Timer : Not Heating, Turning Relay On."
+            - logger.log: "RecircTimer : Turning Relay On."
             - switch.turn_on: relay
-            - delay: 3min # Periodic recirc runtime
+            - delay: 2min # Periodic recirc runtime
             - if:
                 condition:
                   - lambda: |-
-                      return id(bangbang).action != CLIMATE_ACTION_HEATING;
+                      // Get bang_bang object
+                      auto bang = id(bangbang);
+                      // Log current state
+                      ESP_LOGD("RecircTimer", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                      // If calling for heat leave relay on
+                      if (bang->action == CLIMATE_ACTION_HEATING)
+                        return false;
+                      // Ok, turn relay off
+                      return true;
                 then:
-                  - logger.log: "Timer : After Delay, Not Heating, Turning Relay Off."
+                  - logger.log: "RecircTimer : Turning Relay Off."
                   - switch.turn_off: relay
-                else:
-                  - logger.log: "Timer : After Delay, Now Heating, Not doing anything."
-          else:
-            - logger.log: "Timer : Already Heating, Not doing anything."
