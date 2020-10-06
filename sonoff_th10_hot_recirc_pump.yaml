@@ -147,8 +147,8 @@ climate:
     name: ${device_name}_bangbang
     id: bangbang
     sensor: recirc_temp
-    default_target_temperature_low: 30
-    default_target_temperature_high: 40
+    default_target_temperature_low: 30 # ~85F
+    default_target_temperature_high: 40 # ~105F
     heat_action:
       - logger.log: "BangBang : Heat Action, turning Relay On."
       - switch.turn_on: relay
@@ -164,13 +164,15 @@ climate:
 # https://esphome.io/guides/automations.html#interval
 interval:
 
-  - interval: 30min
+  - interval: 30min # Periodic recirc interval
     then:
-      # Periodically circulate hot water even when not calling for heat, i.e. counter local high ambient temperatures
-      # Make sure the timer does not interfere with the thermostat control
-      # If not currently calling for heat, turn the pump on
-      # Wait for pump to circulate hot water
-      # If still not calling for heat, turn the pump back off, else leave it on
+      # When garage ambient temperature is higher than recirc low temp threshold, recirc never turns on.
+      # Periodically circulate hot water even when recirc is not calling for heat, making sure recirc is not cold.
+      # Make sure the timer does not interfere with the recirc thermostat control:
+      #   - On a periodic timer event.
+      #   - If thermostat is not currently calling for heat, turn the pump on.
+      #   - Wait for pump to circulate hot water.
+      #   - At end of wait, if thermostat is not calling for heat, turn the pump back, else leave pump on.
       - if:
           condition:
             - lambda: |-
@@ -178,7 +180,7 @@ interval:
           then:
             - logger.log: "Timer : Not Heating, Turning Relay On."
             - switch.turn_on: relay
-            - delay: 3min
+            - delay: 3min # Periodic recirc runtime
             - if:
                 condition:
                   - lambda: |-
@@ -187,6 +189,6 @@ interval:
                   - logger.log: "Timer : After Delay, Not Heating, Turning Relay Off."
                   - switch.turn_off: relay
                 else:
-                  - logger.log: "Timer : After Delay, Heating, Not doing anything."
+                  - logger.log: "Timer : After Delay, Now Heating, Not doing anything."
           else:
-            - logger.log: "Timer : Heating, Not doing anything."
+            - logger.log: "Timer : Already Heating, Not doing anything."
