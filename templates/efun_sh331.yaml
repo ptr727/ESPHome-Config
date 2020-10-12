@@ -1,4 +1,5 @@
 ---
+
   # https://community.home-assistant.io/t/efun-sh331w-smart-plug-esphome-configuration-file/161112
   # https://templates.blakadder.com/efun_SH331W.html
   # https://www.belling.com.cn/media/file_object/bel_product/BL0937/datasheet/BL0937_V1.02_en.pdf
@@ -11,23 +12,16 @@
   # BL0937 CF: GPIO5
   # BL0937 CF1: GPIO14
 
-  <<: !include tuya_relay_plug.yaml
+  
+  # https://esphome.io/guides/configuration-types.html#packages
+  packages:
+    # Use the Aoycocr X5P as a generic Tuya template for the LED's, button, and relay
+    aoycocr_x5p: !include aoycocr_x5p.yaml
+
 
   # https://esphome.io/components/sensor/index.html
   sensor:
 
-    # https://esphome.io/components/sensor/wifi_signal.html
-    - platform: wifi_signal
-      name: ${device_name}_wifi_signal
-      update_interval: 60s
-
-    # https://esphome.io/components/sensor/uptime.html  
-    - platform: uptime
-      name: ${device_name}_uptime
-      unit_of_measurement: minutes
-      filters:
-        - lambda: return x / 60.0;
-         
     # https://esphome.io/components/sensor/hlw8012.html
     - platform: hlw8012
       change_mode_every: 3
@@ -92,4 +86,3 @@
       filters:
         - multiply: 0.001
       unit_of_measurement: kWh
-

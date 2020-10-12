@@ -1,0 +1,214 @@
+# https://esphome.io/devices/sonoff.html#sonoff-th10-th16
+# https://templates.blakadder.com/sonoff_TH.html
+# https://tasmota.github.io/docs/devices/Sonoff-TH/
+
+# Button: GPIO0, Inverted
+# Relay, Red LED: GPIO12
+# Blue LED: GPIO13, Inverted
+# UART Tx : GPIO1
+# UART Rx : GPIO3
+# Sensor 1 : GPIO4
+# Sensor 2 : GPIO14
+# EXP-LOG : GPIO2
+
+
+# https://www.superhouse.tv/21-six-sonoff-secrets/
+# https://tinkerman.cat/post/sonoff-th10-th16-sensors-displays-actuators/
+
+# Tip : GPIO14 (BME280 SDA) (Red)
+# Ring 1 : GPIO4 (BME280 SCL) (White)
+# Ring 2 : GND (Green)
+# Sleeve : 3.3V (Black)
+
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: sonoff_th10_hot_recirc_pump
+  device_comment: "Hot Water Recirculation Pump Controller"
+
+
+# https://esphome.io/components/esphome.html  
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  platform: ESP8266
+  board: esp8285
+  # Sonoff docs say we need to use arduino version 2.4.2, why?
+  # arduino_version: 2.4.2
+  esp8266_restore_from_flash: false
+  on_boot:
+    then:
+      - logger.log: "OnBoot : Turning Relay Off."
+      - switch.turn_off: relay
+  on_shutdown:
+    then:
+      - logger.log: "OnShutdown : Turning Relay Off."
+      - switch.turn_off: relay
+
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  common: !include templates/common.yaml
+  status_sensor: !include templates/status_sensor.yaml
+  version_sensor: !include templates/version_sensor.yaml
+  wifi_sensor: !include templates/wifi_sensor.yaml
+  uptime_sensor:  !include templates/uptime_sensor.yaml
+  restart_switch: !include templates/restart_switch.yaml
+  # web_server: !include templates/web_server.yaml
+
+  
+# https://esphome.io/components/debug.html
+debug:
+
+
+# https://esphome.io/components/binary_sensor/index.html
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio.html
+  - platform: gpio
+    name: ${device_name}_button
+    device_class: power
+    pin:
+      number: GPIO0
+      inverted: true
+    on_press:
+      # This will interfere with the thermostat behavior
+      - logger.log: "Button : Toggle Relay."
+      - switch.toggle: relay
+  
+      
+# https://esphome.io/components/switch/index.html
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay
+    id: relay
+    pin: GPIO12
+
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin:
+    number: GPIO13
+
+
+# https://esphome.io/components/sensor/dallas.html    
+dallas:
+  - pin: GPIO14
+    # Sample every 5s, use moving average filter in individual sensors
+    update_interval: 5s
+    
+
+# https://esphome.io/components/sensor/index.html    
+sensor:
+
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallas
+    address: 0x05011455296AAA28
+    name: ${device_name}_recirc_temp
+    id: recirc_temp
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    # 5s sample interval, average value over 3 samples, send update every 3 x 5s = 15s
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+  - platform: dallas
+    address: 0x54011455087FAA28
+    name: ${device_name}_hot_temp
+    id: hot_temp
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+  - platform: dallas
+    address: 0x5E01145529F7AA28
+    name: ${device_name}_cold_temp
+    id: cold_temp
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+  - platform: dallas
+    address: 0xEC011454E099AA28
+    name: ${device_name}_ambient_temp
+    id: ambient_temp
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+
+# https://esphome.io/components/climate/index.html
+climate:
+
+  # https://esphome.io/components/climate/bang_bang.html
+  - platform: bang_bang
+    name: ${device_name}_bangbang
+    id: bangbang
+    sensor: recirc_temp
+    default_target_temperature_low: 30 # ~85F
+    default_target_temperature_high: 40 # ~105F
+    heat_action:
+      - logger.log: "BangBang : Heat Action, Turning Relay On."
+      - switch.turn_on: relay
+    idle_action:
+      - logger.log: "BangBang : Idle Action, Turning Relay Off."
+      - switch.turn_off: relay
+    visual:
+      min_temperature: 20
+      max_temperature: 50
+      temperature_step: 0.5
+
+
+# https://esphome.io/guides/automations.html#interval
+interval:
+
+  - interval: 30min # Periodic recirc interval
+    then:
+      # When garage ambient temperature is higher than recirc low temp threshold, recirc never turns on.
+      # Periodically circulate hot water even when recirc is not calling for heat, making sure recirc is not cold.
+      # Make sure the timer does not interfere with the recirc thermostat control:
+      #   - On a periodic timer event.
+      #   - If thermostat is not currently calling for heat, and not warmer than high, turn the pump on.
+      #   - Wait for pump to circulate hot water.
+      #   - At end of wait, if thermostat is not calling for heat, turn the pump back, else leave pump on.
+      - if:
+          condition:
+            - lambda: |-
+                // Get bang_bang object
+                auto bang = id(bangbang);
+                // Log current state
+                ESP_LOGD("RecircTimer", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                // If already heating do nothing
+                if (bang->action == CLIMATE_ACTION_HEATING)
+                  return false;
+                // If current temperature is already above the highpoint do nothing
+                if (bang->current_temperature >= bang->target_temperature_high)
+                  return false;
+                // Ok, turn on the relay
+                return true;
+          then:
+            - logger.log: "RecircTimer : Turning Relay On."
+            - switch.turn_on: relay
+            - delay: 2min # Periodic recirc runtime
+            - if:
+                condition:
+                  - lambda: |-
+                      // Get bang_bang object
+                      auto bang = id(bangbang);
+                      // Log current state
+                      ESP_LOGD("RecircTimer", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                      // If calling for heat leave relay on
+                      if (bang->action == CLIMATE_ACTION_HEATING)
+                        return false;
+                      // Ok, turn relay off
+                      return true;
+                then:
+                  - logger.log: "RecircTimer : Turning Relay Off."
+                  - switch.turn_off: relay
