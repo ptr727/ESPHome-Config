@@ -56,6 +56,10 @@ packages:
   restart_switch: !include templates/restart_switch.yaml
   # web_server: !include templates/web_server.yaml
 
+  
+# https://esphome.io/components/debug.html
+debug:
+
 
 # https://esphome.io/components/binary_sensor/index.html
 binary_sensor:
