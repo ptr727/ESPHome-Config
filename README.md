@@ -27,4 +27,4 @@ Generic bootstrap profile used when [converting](https://blog.insanegenius.com/2
 
 ### Sonoff TH10 Hot Water Recirculation Pump Controller
 
-TH10 controller [replaces](https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/) the aquastat used to control my home hot water recirculation pump.
+TH10 controller [replaces](https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/) the aquastat used to control my home hot water recirculation pump.
