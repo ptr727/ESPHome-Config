@@ -184,7 +184,13 @@ interval:
                 // Get bang_bang object
                 auto bang = id(bangbang);
                 // Log current state
-                ESP_LOGD("RecircTimer", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                ESP_LOGD("RecircTimer:interval:condition", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                // If action is Off do nothing
+                if (bang->action == CLIMATE_ACTION_OFF)
+                  return false;
+                // Test for NaN temp reading, i.e. not ready
+                if (isnan(bang->current_temperature) || isnan(bang->target_temperature_high))
+                  return false;
                 // If already heating do nothing
                 if (bang->action == CLIMATE_ACTION_HEATING)
                   return false;
@@ -194,21 +200,23 @@ interval:
                 // Ok, turn on the relay
                 return true;
           then:
-            - logger.log: "RecircTimer : Turning Relay On."
+            - logger.log: "RecircTimer:then:enter : Turning Relay On."
             - switch.turn_on: relay
+            - logger.log: "RecircTimer:then:enter : Delay Start."
             - delay: 2min # Periodic recirc runtime
+            - logger.log: "RecircTimer:then:enter : Delay End."
             - if:
                 condition:
                   - lambda: |-
                       // Get bang_bang object
                       auto bang = id(bangbang);
                       // Log current state
-                      ESP_LOGD("RecircTimer", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
-                      // If calling for heat leave relay on
+                      ESP_LOGD("RecircTimer:then:exit", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
+                      // If currently calling for heat leave relay on
                       if (bang->action == CLIMATE_ACTION_HEATING)
                         return false;
                       // Ok, turn relay off
                       return true;
                 then:
-                  - logger.log: "RecircTimer : Turning Relay Off."
+                  - logger.log: "RecircTimer:then:exit : Turning Relay Off."
                   - switch.turn_off: relay
