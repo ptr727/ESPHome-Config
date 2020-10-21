@@ -36,14 +36,6 @@ esphome:
   # Sonoff docs say we need to use arduino version 2.4.2, why?
   # arduino_version: 2.4.2
   esp8266_restore_from_flash: false
-  on_boot:
-    then:
-      - logger.log: "OnBoot : Turning Relay Off."
-      - switch.turn_off: relay
-  on_shutdown:
-    then:
-      - logger.log: "OnShutdown : Turning Relay Off."
-      - switch.turn_off: relay
 
 
 # https://esphome.io/guides/configuration-types.html#packages
