@@ -1,12 +1,14 @@
 ---
 
-  # https://templates.blakadder.com/aoycocr_X5P.html
-  # https://esphome-configs.io/devices/aoycocr-x10s/
+  # https://tasmota.github.io/docs/devices/Sonoff-S31/
+  # https://templates.blakadder.com/sonoff_S31.html
+  # https://esphome-configs.io/devices/sonoff-s31/
 
-  # Button: GPIO13, Inverted
-  # Relay: GPIO15
-  # Red LED: GPIO0, Inverted
-  # Blue LED: GPIO2, Inverted
+  # Button: GPIO0, Inverted
+  # CSE7766 Tx: GPIO1
+  # CSE7766 Rx: GPIO3
+  # Relay: GPIO12 (Connected to Red LED)
+  # Blue LED: GPIO13
   
   
   # https://esphome.io/components/esphome.html
@@ -17,6 +19,18 @@
     board: esp01_1m
     # https://esphome.io/components/esphome.html#esp8266-restore-from-flash
     esp8266_restore_from_flash: false
+
+
+  # https://esphome.io/components/logger.html
+  logger:
+    # Disable UART logging, it is used for the CSE7766
+    baud_rate: 0
+
+
+  # https://esphome.io/components/uart.html
+  uart:
+    rx_pin: RX
+    baud_rate: 4800      
 
 
   # https://esphome.io/guides/configuration-types.html#packages
@@ -35,9 +49,11 @@
     - platform: gpio
       name: ${device_name}_button
       device_class: power
+      # https://esphome.io/guides/configuration-types.html#config-pin-schema
       pin:
-        number: GPIO13
+        number: GPIO0
         inverted: true
+        mode: INPUT_PULLUP
       # Toggle relay state on button press
       on_press:
         - switch.toggle: relay
@@ -50,28 +66,32 @@
     - platform: gpio
       name: ${device_name}_relay
       id: relay
-      pin: GPIO15
+      pin: GPIO12
       # Off on power-on
       restore_mode: ALWAYS_OFF
-      # Red LED follows relay state
-      on_turn_on:
-        - switch.turn_on:
-            id: red_led
-      on_turn_off:
-        - switch.turn_off: red_led
 
-    - platform: gpio
-      name: ${device_name}_red_led
-      id: red_led
-      pin: 
-        number: GPIO0
-        inverted: true
-      # Off on power-on
-      restore_mode: ALWAYS_OFF
-  
+
   # https://esphome.io/components/status_led.html
   status_led:
     pin:
-      # Blue LED
-      number: GPIO2
+      number: GPIO13
+
   
+  # https://esphome.io/components/sensor/index.html
+  sensor:
+
+    # https://esphome.io/components/sensor/cse7766.html
+    - platform: cse7766
+      update_interval: 15s
+      current:
+        name: ${device_name}_current
+      voltage:
+        name: ${device_name}_voltage
+      power:
+        id: wattage
+        name: ${device_name}_power
+
+    # https://esphome.io/components/sensor/total_daily_energy.html
+    - platform: total_daily_energy
+      name: ${device_name}_total_daily_energy
+      power_id: wattage
