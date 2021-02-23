@@ -33,8 +33,7 @@ esphome:
   comment: ${device_comment}
   platform: ESP8266
   board: esp8285
-  # Sonoff docs say we need to use arduino version 2.4.2, why?
-  # arduino_version: 2.4.2
+  # Do not restore state from flash
   esp8266_restore_from_flash: false
 
 
@@ -64,7 +63,7 @@ binary_sensor:
       number: GPIO0
       inverted: true
     on_press:
-      # This will interfere with the thermostat behavior
+      # Manual activation may interfere with the bangbang controller
       - logger.log: "Button : Toggle Relay."
       - switch.toggle: relay
   
@@ -77,6 +76,10 @@ switch:
     name: ${device_name}_relay
     id: relay
     pin: GPIO12
+    # Always start in off state
+    restore_mode: ALWAYS_OFF
+    # Manual activation may interfere with the bangbang controller
+    #internal: true
 
 
 # https://esphome.io/components/status_led.html
@@ -88,8 +91,7 @@ status_led:
 # https://esphome.io/components/sensor/dallas.html    
 dallas:
   - pin: GPIO14
-    # Sample every 5s, use moving average filter in individual sensors
-    update_interval: 5s
+    update_interval: 20s
     
 
 # https://esphome.io/components/sensor/index.html    
@@ -101,7 +103,6 @@ sensor:
     name: ${device_name}_recirc_temp
     id: recirc_temp
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
-    # 5s sample interval, average value over 3 samples, send update every 3 x 5s = 15s
     filters:
       - sliding_window_moving_average:
           window_size: 3
@@ -161,54 +162,34 @@ climate:
 # https://esphome.io/guides/automations.html#interval
 interval:
 
-  - interval: 30min # Periodic recirc interval
+  # Pump sometimes stays on indefinitely, don't know why, try to work around issue
+  - interval: 5min
     then:
-      # When garage ambient temperature is higher than recirc low temp threshold, recirc never turns on.
-      # Periodically circulate hot water even when recirc is not calling for heat, making sure recirc is not cold.
-      # Make sure the timer does not interfere with the recirc thermostat control:
-      #   - On a periodic timer event.
-      #   - If thermostat is not currently calling for heat, and not warmer than high, turn the pump on.
-      #   - Wait for pump to circulate hot water.
-      #   - At end of wait, if thermostat is not calling for heat, turn the pump back, else leave pump on.
-      - if:
-          condition:
-            - lambda: |-
-                // Get bang_bang object
-                auto bang = id(bangbang);
-                // Log current state
-                ESP_LOGD("RecircTimer:interval:condition", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
-                // If action is Off do nothing
-                if (bang->action == CLIMATE_ACTION_OFF)
-                  return false;
-                // Test for NaN temp reading, i.e. not ready
-                if (isnan(bang->current_temperature) || isnan(bang->target_temperature_high))
-                  return false;
-                // If already heating do nothing
-                if (bang->action == CLIMATE_ACTION_HEATING)
-                  return false;
-                // If current temperature is already above the highpoint do nothing
-                if (bang->current_temperature >= bang->target_temperature_high)
-                  return false;
-                // Ok, turn on the relay
-                return true;
-          then:
-            - logger.log: "RecircTimer:then:enter : Turning Relay On."
-            - switch.turn_on: relay
-            - logger.log: "RecircTimer:then:enter : Delay Start."
-            - delay: 2min # Periodic recirc runtime
-            - logger.log: "RecircTimer:then:enter : Delay End."
-            - if:
-                condition:
-                  - lambda: |-
-                      // Get bang_bang object
-                      auto bang = id(bangbang);
-                      // Log current state
-                      ESP_LOGD("RecircTimer:then:exit", "Action: %s, Temp: %.2f, Target High: %.2f", climate_action_to_string(bang->action), bang->current_temperature, bang->target_temperature_high);
-                      // If currently calling for heat leave relay on
-                      if (bang->action == CLIMATE_ACTION_HEATING)
-                        return false;
-                      // Ok, turn relay off
-                      return true;
-                then:
-                  - logger.log: "RecircTimer:then:exit : Turning Relay Off."
-                  - switch.turn_off: relay
+      - lambda: |-
+          // Get bang_bang object
+          auto bangbangObject = id(bangbang);
+          ESP_LOGD("VerifyTimer", "BangBang: Mode: %s, Action: %s, Current Temp: %.2f, Target Low: %.2f, Target High: %.2f", climate_mode_to_string(bangbangObject->mode), climate_action_to_string(bangbangObject->action), bangbangObject->current_temperature, bangbangObject->target_temperature_low, bangbangObject->target_temperature_high);
+          // Get relay object
+          auto relayObject = id(relay);
+          ESP_LOGD("VerifyTimer", "Relay: State: %d", relayObject->state);
+          // Make sure desired state matches current state
+          //desiredState ? relayObject->turn_on() : relayObject->turn_off();
+          //App.safe_reboot();
+
+  # Periodic recirc interval
+  - interval: 30min
+    then:
+      # When ambient temperature is higher than recirc low temp threshold, recirc never turns on.
+      # Periodically circulate hot water even when recirc is not calling for heat, making sure water in lines are never cold.
+      - logger.log: "RecircTimer : Setting Pump to Heat."
+      - climate.control: 
+          id: bangbang
+          mode: HEAT
+      - logger.log: "RecircTimer : Delay Start."
+      # Periodic recirc runtime
+      - delay: 2min 
+      - logger.log: "RecircTimer : Delay End."
+      - logger.log: "RecircTimer : Setting Pump to Auto."
+      - climate.control: 
+          id: bangbang
+          mode: AUTO
