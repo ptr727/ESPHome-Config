@@ -192,4 +192,4 @@ interval:
       - logger.log: "RecircTimer : Setting Pump to Auto."
       - climate.control: 
           id: bangbang
-          mode: AUTO
+          mode: HEAT_COOL
