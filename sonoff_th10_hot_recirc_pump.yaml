@@ -35,7 +35,11 @@ esphome:
   board: esp8285
   # Do not restore state from flash
   esp8266_restore_from_flash: false
-
+  on_boot:
+    then:
+      - climate.control: 
+          id: bangbang
+          mode: HEAT_COOL
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
