@@ -1,0 +1,135 @@
+# https://esphome.io/devices/sonoff.html#sonoff-th10-th16
+# https://templates.blakadder.com/sonoff_TH.html
+# https://tasmota.github.io/docs/devices/Sonoff-TH/
+
+# Button: GPIO0, Inverted
+# Relay, Red LED: GPIO12
+# Blue LED: GPIO13, Inverted
+# UART Tx : GPIO1
+# UART Rx : GPIO3
+# Sensor 1 : GPIO4
+# Sensor 2 : GPIO14
+# EXP-LOG : GPIO2
+
+
+# https://www.superhouse.tv/21-six-sonoff-secrets/
+# https://tinkerman.cat/post/sonoff-th10-th16-sensors-displays-actuators/
+
+# Tip : GPIO14 (BME280 SDA) (Red)
+# Ring 1 : GPIO4 (BME280 SCL) (White)
+# Ring 2 : GND (Green)
+# Sleeve : 3.3V (Black)
+
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: sonoff_th10_garage_fan_1
+  device_comment: "Garage Fan Thermostat"
+
+
+# https://esphome.io/components/esphome.html  
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  platform: ESP8266
+  board: esp8285
+  # Do not restore state from flash
+  esp8266_restore_from_flash: false
+  on_boot:
+    then:
+      - climate.control: 
+          id: thermo
+          mode: HEAT_COOL
+
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  common: !include templates/common.yaml
+  status_sensor: !include templates/status_sensor.yaml
+  version_sensor: !include templates/version_sensor.yaml
+  wifi_sensor: !include templates/wifi_sensor.yaml
+  uptime_sensor:  !include templates/uptime_sensor.yaml
+  restart_switch: !include templates/restart_switch.yaml
+  # web_server: !include templates/web_server.yaml
+
+  
+# https://esphome.io/components/debug.html
+debug:
+
+
+# https://esphome.io/components/binary_sensor/index.html
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio.html
+  - platform: gpio
+    name: ${device_name}_button
+    device_class: power
+    pin:
+      number: GPIO0
+      inverted: true
+    on_press:
+      - logger.log: "Button : Toggle Relay."
+      - switch.toggle: relay
+  
+      
+# https://esphome.io/components/switch/index.html
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay
+    id: relay
+    pin: GPIO12
+    # Always start in off state
+    restore_mode: ALWAYS_OFF
+    # Manual activation may interfere with the thermostat
+    #internal: true
+
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin:
+    number: GPIO13
+
+
+# https://esphome.io/components/sensor/dallas.html    
+dallas:
+  - pin: GPIO14
+    update_interval: 20s
+    
+
+# https://esphome.io/components/sensor/index.html    
+sensor:
+
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallas
+    address: 0x4E3C01D075B62428
+    name: ${device_name}_temp
+    id: temp
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+
+# https://esphome.io/components/climate/index.html
+climate:
+
+  # https://esphome.io/components/climate/thermostat.html
+  - platform: thermostat
+    name: ${device_name}_thermostat
+    id: thermo
+    sensor: temp
+    default_target_temperature_high: 30 # ~85F
+    cool_action:
+      - logger.log: "Thermostat : Cool Action, Turning Relay On."
+      - switch.turn_on: relay
+    idle_action:
+      - logger.log: "Thermostat : Idle Action, Turning Relay Off."
+      - switch.turn_off: relay
+    visual:
+      min_temperature: 20
+      max_temperature: 40
+      temperature_step: 0.5
