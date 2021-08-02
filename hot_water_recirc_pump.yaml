@@ -23,8 +23,13 @@
 
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: sonoff_th10_hot_recirc_pump
-  device_comment: "Hot Water Recirculation Pump Controller"
+  device_name: hot_water_recirc_pump
+  device_comment: "Sonoff TH10 Hot Water Recirculation Pump Controller"
+  recirc_interval: 30min
+  recirc_duration: 2min
+  measure_interval: 30s
+  target_temperature_low: "30.0" # ~85F
+  target_temperature_high: "40.0" # ~105F
 
 
 # https://esphome.io/components/esphome.html  
@@ -33,13 +38,14 @@ esphome:
   comment: ${device_comment}
   platform: ESP8266
   board: esp8285
-  # Do not restore state from flash
-  esp8266_restore_from_flash: false
+  # https://github.com/esphome/issues/issues/2270
   on_boot:
+    priority: 500
     then:
-      - climate.control: 
+      - climate.control:
           id: bangbang
-          mode: HEAT_COOL
+          mode: HEAT
+
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
@@ -82,8 +88,6 @@ switch:
     pin: GPIO12
     # Always start in off state
     restore_mode: ALWAYS_OFF
-    # Manual activation may interfere with the bangbang controller
-    #internal: true
 
 
 # https://esphome.io/components/status_led.html
@@ -92,10 +96,10 @@ status_led:
     number: GPIO13
 
 
-# https://esphome.io/components/sensor/dallas.html    
+# https://esphome.io/components/sensor/dallas.html
 dallas:
   - pin: GPIO14
-    update_interval: 20s
+    update_interval: ${measure_interval}
     
 
 # https://esphome.io/components/sensor/index.html    
@@ -149,8 +153,10 @@ climate:
     name: ${device_name}_bangbang
     id: bangbang
     sensor: recirc_temp
-    default_target_temperature_low: 30 # ~85F
-    default_target_temperature_high: 40 # ~105F
+    # https://github.com/esphome/issues/issues/2270
+    # default_mode: HEAT
+    default_target_temperature_low: ${target_temperature_low}
+    default_target_temperature_high: ${target_temperature_high}
     heat_action:
       - logger.log: "BangBang : Heat Action, Turning Relay On."
       - switch.turn_on: relay
@@ -158,42 +164,36 @@ climate:
       - logger.log: "BangBang : Idle Action, Turning Relay Off."
       - switch.turn_off: relay
     visual:
-      min_temperature: 20
-      max_temperature: 50
+      min_temperature: 20.0
+      max_temperature: 50.0
       temperature_step: 0.5
 
 
 # https://esphome.io/guides/automations.html#interval
 interval:
 
-  # Pump sometimes stays on indefinitely, don't know why, try to work around issue
-  - interval: 5min
-    then:
-      - lambda: |-
-          // Get bang_bang object
-          auto bangbangObject = id(bangbang);
-          ESP_LOGD("VerifyTimer", "BangBang: Mode: %s, Action: %s, Current Temp: %.2f, Target Low: %.2f, Target High: %.2f", climate_mode_to_string(bangbangObject->mode), climate_action_to_string(bangbangObject->action), bangbangObject->current_temperature, bangbangObject->target_temperature_low, bangbangObject->target_temperature_high);
-          // Get relay object
-          auto relayObject = id(relay);
-          ESP_LOGD("VerifyTimer", "Relay: State: %d", relayObject->state);
-          // Make sure desired state matches current state
-          //desiredState ? relayObject->turn_on() : relayObject->turn_off();
-          //App.safe_reboot();
-
   # Periodic recirc interval
-  - interval: 30min
+  # When ambient temperature is higher than recirc low temp threshold, recirc never turns on.
+  # Periodically circulate hot water even when recirc is not calling for heat, making sure water in lines are never cold.
+  - interval: ${recirc_interval}
     then:
-      # When ambient temperature is higher than recirc low temp threshold, recirc never turns on.
-      # Periodically circulate hot water even when recirc is not calling for heat, making sure water in lines are never cold.
-      - logger.log: "RecircTimer : Setting Pump to Heat."
+      # Disable thermostat before modifying underlying relay state
+      - logger.log: "RecircTimer : Setting Thermostat to Off."
+      - climate.control: 
+          id: bangbang
+          mode: "OFF"
+      # Turn relay on
+      - logger.log: "Recirctimer : Turning Relay On."
+      - switch.turn_on: relay
+      - logger.log: "RecircTimer : Delay Start."
+      # Sleep
+      - delay: ${recirc_duration}
+      - logger.log: "RecircTimer : Delay End."
+      # Turn relay off
+      - logger.log: "RecircTimer : Turning Relay Off."
+      - switch.turn_off: relay
+      # Turn thermostat back on for normal operation
+      - logger.log: "RecircTimer : Setting Thermostat to Heat."
       - climate.control: 
           id: bangbang
           mode: HEAT
-      - logger.log: "RecircTimer : Delay Start."
-      # Periodic recirc runtime
-      - delay: 2min 
-      - logger.log: "RecircTimer : Delay End."
-      - logger.log: "RecircTimer : Setting Pump to Auto."
-      - climate.control: 
-          id: bangbang
-          mode: HEAT_COOL
