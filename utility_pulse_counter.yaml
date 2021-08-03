@@ -45,7 +45,7 @@ status_led:
 sensor:
   # https://esphome.io/components/sensor/pulse_meter.html
   # https://esphome.io/components/sensor/pulse_counter.html
-  - platform: pulse_counter
+  - platform: pulse_meter
     pin:
       number: GPIO32
       mode: INPUT_PULLUP
@@ -54,7 +54,13 @@ sensor:
     icon: 'mdi:water'
     filters:
       - multiply: 10
-  - platform: pulse_counter
+    total:
+      name: 'Water Meter Total'
+      icon: 'mdi:water'
+      unit_of_measurement: 'gal'
+      filters:
+      - multiply: 10
+  - platform: pulse_meter
     pin:
       number: GPIO33
       mode: INPUT_PULLUP
@@ -62,4 +68,10 @@ sensor:
     name: 'Gas Meter'
     icon: 'mdi:fire'
     filters:
+      - multiply: 10
+    total:
+      name: 'Gas Meter Total'
+      icon: 'mdi:fire'
+      unit_of_measurement: 'ft³'
+      filters:
       - multiply: 10
