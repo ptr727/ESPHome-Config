@@ -1,0 +1,8 @@
+---
+
+  <<: !include wifi.yaml
+  <<: !include captive_portal.yaml
+  #<<: !include logger.yaml
+  <<: !include api.yaml
+  <<: !include ota.yaml
+  <<: !include time.yaml

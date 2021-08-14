@@ -35,7 +35,6 @@
       voltage_divider: 940
       current:
         name: ${device_name}_current
-        unit_of_measurement: A
         filters:
           # https://esphome.io/components/sensor/index.html#calibrate-linear
           - calibrate_linear:
@@ -51,7 +50,6 @@
           - lambda: if (x < 0.2600) return 0; else return (x - 0.0260);
       voltage:
         name: ${device_name}_voltage
-        unit_of_measurement: V
         filters:
           - calibrate_linear:
             - 109.5769 -> 110.7000
@@ -65,7 +63,6 @@
       power:
         name: ${device_name}_power
         id: wattage
-        unit_of_measurement: W
         filters:
           - calibrate_linear:
             - 0.0000 -> 0.5900 # Relay off no load
@@ -83,6 +80,3 @@
     - platform: total_daily_energy
       name: ${device_name}_total_daily_energy
       power_id: wattage
-      filters:
-        - multiply: 0.001
-      unit_of_measurement: kWh
