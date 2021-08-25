@@ -2,7 +2,9 @@
 
   <<: !include wifi.yaml
   <<: !include captive_portal.yaml
+  # No logging, e.g. when UART is in use
   #<<: !include logger.yaml
   <<: !include api.yaml
   <<: !include ota.yaml
   <<: !include time.yaml
+  <<: !include debug.yaml
