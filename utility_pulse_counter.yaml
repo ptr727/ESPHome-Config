@@ -7,7 +7,7 @@
 
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: utility_pulse_counter
+  device_name: utility-pulse-counter
   device_comment: "ESP-WROOM-32UE Utility Meter Pulse Counter"
 
 
@@ -19,6 +19,11 @@ esphome:
   board: nodemcu-32s
 
 
+# https://esphome.io/components/esphome.html#changing-esphome-node-name
+# wifi:
+#   use_address: utility_pulse_counter
+
+
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   common: !include templates/common.yaml
@@ -26,12 +31,8 @@ packages:
   version_sensor: !include templates/version_sensor.yaml
   wifi_sensor: !include templates/wifi_sensor.yaml
   uptime_sensor:  !include templates/uptime_sensor.yaml
+  memory_sensor:  !include templates/esp32_memory_sensor.yaml
   restart_switch: !include templates/restart_switch.yaml
-  # web_server: !include templates/web_server.yaml
-
-  
-# https://esphome.io/components/debug.html
-debug:
 
 
 # https://esphome.io/components/status_led.html
@@ -50,12 +51,12 @@ sensor:
       number: GPIO32
       mode: INPUT_PULLUP
     unit_of_measurement: 'gal/min'
-    name: 'Water Meter'
+    name: ${device_name}_water_meter
     icon: 'mdi:water'
     filters:
       - multiply: 10
     total:
-      name: 'Water Meter Total'
+      name: ${device_name}_water_meter_total
       icon: 'mdi:water'
       unit_of_measurement: 'gal'
       filters:
@@ -65,12 +66,12 @@ sensor:
       number: GPIO33
       mode: INPUT_PULLUP
     unit_of_measurement: 'ft³/min'
-    name: 'Gas Meter'
+    name: ${device_name}_gas_meter
     icon: 'mdi:fire'
     filters:
       - multiply: 10
     total:
-      name: 'Gas Meter Total'
+      name: ${device_name}_gas_meter_total
       icon: 'mdi:fire'
       unit_of_measurement: 'ft³'
       filters:

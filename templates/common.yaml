@@ -6,3 +6,4 @@
   <<: !include api.yaml
   <<: !include ota.yaml
   <<: !include time.yaml
+  <<: !include debug.yaml
