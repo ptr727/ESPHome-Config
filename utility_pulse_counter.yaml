@@ -53,12 +53,20 @@ sensor:
     unit_of_measurement: 'gal/min'
     name: ${device_name}_water_meter
     icon: 'mdi:water'
+    # There is no water class
+    # device_class: 'water'
     filters:
       - multiply: 10
     total:
       name: ${device_name}_water_meter_total
+      # Default device class and icon is not inherited
       icon: 'mdi:water'
+      # There is no water class
+      # device_class: 'water'
+      id: water_total
       unit_of_measurement: 'gal'
+      # Manually set the accuracy to match the main sensor
+      accuracy_decimals: 2
       filters:
       - multiply: 10
   - platform: pulse_meter
@@ -68,11 +76,35 @@ sensor:
     unit_of_measurement: 'ft³/min'
     name: ${device_name}_gas_meter
     icon: 'mdi:fire'
+    device_class: 'gas'
     filters:
       - multiply: 10
     total:
       name: ${device_name}_gas_meter_total
+      # Default device class and icon is not inherited
       icon: 'mdi:fire'
+      device_class: 'gas'
+      id: gas_total
       unit_of_measurement: 'ft³'
+      # Manually set the accuracy to match the main sensor
+      accuracy_decimals: 2
       filters:
       - multiply: 10
+  # https://esphome.io/components/sensor/template.html
+  - platform: template
+    name: ${device_name}_water_meter_total_l
+    # There is no water class
+    # device_class: 'water'
+    state_class: 'total_increasing'
+    accuracy_decimals: 2
+    unit_of_measurement: 'l'
+    lambda: |-
+      return id(water_total).state / 3.785;
+  - platform: template
+    name: ${device_name}_gas_meter_total_m3
+    device_class: 'gas'
+    state_class: 'total_increasing'
+    accuracy_decimals: 2
+    unit_of_measurement: 'm³'
+    lambda: |-
+      return id(gas_total).state / 35.315;
