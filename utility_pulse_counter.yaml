@@ -90,6 +90,7 @@ sensor:
   # https://esphome.io/components/sensor/template.html
   - platform: template
     name: ${device_name}_water_meter_total_l
+    icon: 'mdi:water'
     # There is no water class
     # device_class: 'water'
     state_class: 'total_increasing'
@@ -99,6 +100,7 @@ sensor:
       return id(water_total).state / 3.785;
   - platform: template
     name: ${device_name}_gas_meter_total_m3
+    icon: 'mdi:fire'
     device_class: 'gas'
     state_class: 'total_increasing'
     accuracy_decimals: 2
