@@ -53,8 +53,6 @@ sensor:
     unit_of_measurement: 'gal/min'
     name: ${device_name}_water_meter
     icon: 'mdi:water'
-    # There is no water class
-    # device_class: 'water'
     filters:
       - multiply: 10
     total:
@@ -76,7 +74,6 @@ sensor:
     unit_of_measurement: 'ft³/min'
     name: ${device_name}_gas_meter
     icon: 'mdi:fire'
-    device_class: 'gas'
     filters:
       - multiply: 10
     total:
