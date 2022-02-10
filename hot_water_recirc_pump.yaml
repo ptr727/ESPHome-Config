@@ -1,105 +1,16 @@
-# https://esphome.io/devices/sonoff.html#sonoff-th10-th16
-# https://templates.blakadder.com/sonoff_TH.html
-# https://tasmota.github.io/docs/devices/Sonoff-TH/
-
-# Button: GPIO0, Inverted
-# Relay, Red LED: GPIO12
-# Blue LED: GPIO13, Inverted
-# UART Tx : GPIO1
-# UART Rx : GPIO3
-# Sensor 1 : GPIO4
-# Sensor 2 : GPIO14
-# EXP-LOG : GPIO2
-
-
-# https://www.superhouse.tv/21-six-sonoff-secrets/
-# https://tinkerman.cat/post/sonoff-th10-th16-sensors-displays-actuators/
-
-# Tip : GPIO14 (BME280 SDA) (Red)
-# Ring 1 : GPIO4 (BME280 SCL) (White)
-# Ring 2 : GND (Green)
-# Sleeve : 3.3V (Black)
-
-
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: hot_water_recirc_pump
+  device_name: hot-water-recirc-pump
   device_comment: "Sonoff TH10 Hot Water Recirculation Pump Controller"
-  recirc_interval: 30min
+  recirc_interval: 45min
   recirc_duration: 2min
-  measure_interval: 30s
-  target_temperature_low: "30.0" # ~85F
-  target_temperature_high: "40.0" # ~105F
-
-
-# https://esphome.io/components/esphome.html  
-esphome:
-  name: ${device_name}
-  comment: ${device_comment}
-  platform: ESP8266
-  board: esp8285
-  # https://github.com/esphome/issues/issues/2270
-  on_boot:
-    priority: 500
-    then:
-      - climate.control:
-          id: bangbang
-          mode: HEAT
+  target_temperature_low: '30.0' # ~85F
+  target_temperature_high: '40.0' # ~105F
 
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  common: !include templates/common.yaml
-  status_sensor: !include templates/status_sensor.yaml
-  version_sensor: !include templates/version_sensor.yaml
-  wifi_sensor: !include templates/wifi_sensor.yaml
-  uptime_sensor:  !include templates/uptime_sensor.yaml
-  restart_switch: !include templates/restart_switch.yaml
-  # web_server: !include templates/web_server.yaml
-
-  
-# https://esphome.io/components/debug.html
-debug:
-
-
-# https://esphome.io/components/binary_sensor/index.html
-binary_sensor:
-
-  # https://esphome.io/components/binary_sensor/gpio.html
-  - platform: gpio
-    name: ${device_name}_button
-    device_class: power
-    pin:
-      number: GPIO0
-      inverted: true
-    on_press:
-      # Manual activation may interfere with the bangbang controller
-      - logger.log: "Button : Toggle Relay."
-      - switch.toggle: relay
-  
-      
-# https://esphome.io/components/switch/index.html
-switch:
-
-  # https://esphome.io/components/switch/gpio.html
-  - platform: gpio
-    name: ${device_name}_relay
-    id: relay
-    pin: GPIO12
-    # Always start in off state
-    restore_mode: ALWAYS_OFF
-
-
-# https://esphome.io/components/status_led.html
-status_led:
-  pin:
-    number: GPIO13
-
-
-# https://esphome.io/components/sensor/dallas.html
-dallas:
-  - pin: GPIO14
-    update_interval: ${measure_interval}
+  sonoff_th10: !include templates/sonoff_th10.yaml
     
 
 # https://esphome.io/components/sensor/index.html    
@@ -154,7 +65,7 @@ climate:
     id: bangbang
     sensor: recirc_temp
     # https://github.com/esphome/issues/issues/2270
-    # default_mode: HEAT
+    # default_mode: heat
     default_target_temperature_low: ${target_temperature_low}
     default_target_temperature_high: ${target_temperature_high}
     heat_action:
@@ -181,7 +92,7 @@ interval:
       - logger.log: "RecircTimer : Setting Thermostat to Off."
       - climate.control: 
           id: bangbang
-          mode: "OFF"
+          mode: 'off'
       # Turn relay on
       - logger.log: "Recirctimer : Turning Relay On."
       - switch.turn_on: relay
@@ -196,4 +107,4 @@ interval:
       - logger.log: "RecircTimer : Setting Thermostat to Heat."
       - climate.control: 
           id: bangbang
-          mode: HEAT
+          mode: 'heat'
