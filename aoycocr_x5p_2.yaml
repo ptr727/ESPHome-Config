@@ -3,6 +3,5 @@ substitutions:
   device_comment: "Aoycocr X5P Smart Plug"
 
 packages:
-  common: !include templates/common.yaml
   aoycocr_x5p: !include templates/aoycocr_x5p.yaml
   
