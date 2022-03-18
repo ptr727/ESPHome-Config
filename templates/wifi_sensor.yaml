@@ -6,13 +6,7 @@
     # https://esphome.io/components/sensor/wifi_signal.html
     - platform: wifi_signal
       name: ${device_name}_wifi_signal
-      update_interval: 20s
-      filters:
-        # Average and update every 3 x 20s = 60s
-        - sliding_window_moving_average:
-            window_size: 3
-            send_every: 3
-            send_first_at: 3
+      update_interval: 60s
 
 
   # https://esphome.io/components/text_sensor/index.html      
@@ -22,8 +16,11 @@
     - platform: wifi_info
       ip_address:
         name: ${device_name}_wifi_ip
+        update_interval: 60s
       ssid:
         name: ${device_name}_wifi_ssid
+        update_interval: 60s
       bssid:
         name: ${device_name}_wifi_bssid
+        update_interval: 60s
      
