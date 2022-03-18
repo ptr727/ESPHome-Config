@@ -50,7 +50,11 @@ sensor:
     pin:
       number: GPIO32
       mode: INPUT_PULLUP
+    internal_filter_mode: PULSE
+    internal_filter: 100ms
+    timeout: 60s
     unit_of_measurement: 'gal/min'
+    accuracy_decimals: 3
     name: ${device_name}_water_meter
     icon: 'mdi:water'
     filters:
@@ -64,14 +68,18 @@ sensor:
       id: water_total
       unit_of_measurement: 'gal'
       # Manually set the accuracy to match the main sensor
-      accuracy_decimals: 2
+      accuracy_decimals: 3
       filters:
       - multiply: 10
   - platform: pulse_meter
     pin:
       number: GPIO33
       mode: INPUT_PULLUP
+    internal_filter_mode: PULSE
+    internal_filter: 100ms
+    timeout: 60s
     unit_of_measurement: 'ft³/min'
+    accuracy_decimals: 3
     name: ${device_name}_gas_meter
     icon: 'mdi:fire'
     filters:
@@ -84,7 +92,7 @@ sensor:
       id: gas_total
       unit_of_measurement: 'ft³'
       # Manually set the accuracy to match the main sensor
-      accuracy_decimals: 2
+      accuracy_decimals: 3
       filters:
       - multiply: 10
   # https://esphome.io/components/sensor/template.html
@@ -94,7 +102,7 @@ sensor:
     # There is no water class
     # device_class: 'water'
     state_class: 'total_increasing'
-    accuracy_decimals: 2
+    accuracy_decimals: 3
     unit_of_measurement: 'l'
     lambda: |-
       return id(water_total).state / 3.785;
@@ -103,7 +111,7 @@ sensor:
     icon: 'mdi:fire'
     device_class: 'gas'
     state_class: 'total_increasing'
-    accuracy_decimals: 2
+    accuracy_decimals: 3
     unit_of_measurement: 'm³'
     lambda: |-
       return id(gas_total).state / 35.315;
