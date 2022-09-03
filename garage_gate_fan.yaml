@@ -2,7 +2,7 @@
 substitutions:
   device_name: garage-gate-fan
   device_comment: "Sonoff TH10 Garage Gate Fan Thermostat"
-  target_temperature_high: "30.0" # ~85F
+  target_temperature_high: "28.0" # ~80F
 
 
 # https://esphome.io/guides/configuration-types.html#packages
