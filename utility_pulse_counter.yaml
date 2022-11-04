@@ -92,7 +92,7 @@ sensor:
       filters:
       - multiply: 10
   # https://esphome.io/components/sensor/template.html
-  # TODO: l unit for water is not used, m³ is used, remove l when no longer neded
+  # TODO: l unit for water is not used, m³ is used, remove l when no longer needed
   - platform: template
     name: ${device_name}_water_meter_total_l
     icon: 'mdi:water'
