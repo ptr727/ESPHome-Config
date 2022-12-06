@@ -46,6 +46,7 @@ status_led:
 sensor:
   # https://esphome.io/components/sensor/pulse_meter.html
   # https://esphome.io/components/sensor/pulse_counter.html
+  # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
   - platform: pulse_meter
     pin:
       number: GPIO32
@@ -61,13 +62,10 @@ sensor:
       - multiply: 10
     total:
       name: ${device_name}_water_meter_total
-      # Default device class and icon is not inherited
       icon: 'mdi:water'
-      # There is no water class
-      # device_class: 'water'
+      device_class: 'water'
       id: water_total
       unit_of_measurement: 'gal'
-      # Manually set the accuracy to match the main sensor
       accuracy_decimals: 3
       filters:
       - multiply: 10
@@ -86,26 +84,35 @@ sensor:
       - multiply: 10
     total:
       name: ${device_name}_gas_meter_total
-      # Default device class and icon is not inherited
       icon: 'mdi:fire'
       device_class: 'gas'
       id: gas_total
       unit_of_measurement: 'ft³'
-      # Manually set the accuracy to match the main sensor
       accuracy_decimals: 3
       filters:
       - multiply: 10
   # https://esphome.io/components/sensor/template.html
+  # TODO: l unit for water is not used, m³ is used, remove l when no longer needed
   - platform: template
     name: ${device_name}_water_meter_total_l
     icon: 'mdi:water'
-    # There is no water class
-    # device_class: 'water'
+    device_class: 'water'
     state_class: 'total_increasing'
     accuracy_decimals: 3
     unit_of_measurement: 'l'
+    # Convert gal to l
     lambda: |-
       return id(water_total).state / 3.785;
+  - platform: template
+    name: ${device_name}_water_meter_total_m3
+    icon: 'mdi:water'
+    device_class: 'water'
+    state_class: 'total_increasing'
+    accuracy_decimals: 3
+    unit_of_measurement: 'm³'
+    # Convert gal to m³ 
+    lambda: |-
+      return id(water_total).state / 0.003785;
   - platform: template
     name: ${device_name}_gas_meter_total_m3
     icon: 'mdi:fire'
@@ -113,5 +120,6 @@ sensor:
     state_class: 'total_increasing'
     accuracy_decimals: 3
     unit_of_measurement: 'm³'
+    # Convert ft³ to m³
     lambda: |-
       return id(gas_total).state / 35.315;

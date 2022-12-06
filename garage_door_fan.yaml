@@ -2,7 +2,7 @@
 substitutions:
   device_name: garage-door-fan
   device_comment: "Sonoff TH10 Garage Door Fan Thermostat"
-  target_temperature_high: "30.0" # ~85F
+  target_temperature_high: "28.0" # ~82F
 
 
 # https://esphome.io/guides/configuration-types.html#packages
@@ -34,8 +34,6 @@ climate:
     name: ${device_name}_thermostat
     id: thermo
     sensor: temp
-    default_mode: cool
-    default_target_temperature_high: ${target_temperature_high}
     min_cooling_off_time: 60s 
     min_cooling_run_time: 60s
     min_idle_time: 60s
@@ -45,6 +43,10 @@ climate:
     idle_action:
       - logger.log: "Thermostat : Idle Action, Turning Relay Off."
       - switch.turn_off: relay
+    default_preset: Default
+    preset:
+      - name: Default
+        default_target_temperature_high: ${target_temperature_high}
     visual:
       min_temperature: 20.0
       max_temperature: 40.0
