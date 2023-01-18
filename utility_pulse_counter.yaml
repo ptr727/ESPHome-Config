@@ -92,17 +92,6 @@ sensor:
       filters:
       - multiply: 10
   # https://esphome.io/components/sensor/template.html
-  # TODO: l unit for water is not used, m³ is used, remove l when no longer needed
-  - platform: template
-    name: ${device_name}_water_meter_total_l
-    icon: 'mdi:water'
-    device_class: 'water'
-    state_class: 'total_increasing'
-    accuracy_decimals: 3
-    unit_of_measurement: 'l'
-    # Convert gal to l
-    lambda: |-
-      return id(water_total).state / 3.785;
   - platform: template
     name: ${device_name}_water_meter_total_m3
     icon: 'mdi:water'
@@ -112,7 +101,7 @@ sensor:
     unit_of_measurement: 'm³'
     # Convert gal to m³ 
     lambda: |-
-      return id(water_total).state / 0.003785;
+      return id(water_total).state / 264.2;
   - platform: template
     name: ${device_name}_gas_meter_total_m3
     icon: 'mdi:fire'
