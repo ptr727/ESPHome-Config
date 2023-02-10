@@ -2,6 +2,5 @@
 
   # https://esphome.io/components/api.html
   api:
-    password: !secret api_password
     # Do not reboot if HA is down
     reboot_timeout: 0s

@@ -3,7 +3,7 @@ substitutions:
   device_name: hot-water-recirc-pump
   device_comment: "Sonoff TH10 Hot Water Recirculation Pump Controller"
   recirc_interval: 30min
-  recirc_duration: 3min
+  recirc_duration: 2min
   target_temperature_low: '35.0' # ~95F
   target_temperature_high: '45.0' # ~113F
 
