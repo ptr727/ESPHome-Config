@@ -8,7 +8,7 @@ ESPHome configuration.
 - Sync Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
   - `git pull https://github.com/ptr727/ESPHome-Config .`
-- Deploy `secrets.yaml`.
+- Deploy `secrets.yaml`, use `secrets._yaml` as template.
 - Use VSCode and open remote SSH folder.
 
 ## Device Templates
