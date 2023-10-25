@@ -1,5 +1,6 @@
 substitutions:
-  device_name: sonoff_s31_1
+  # TODO: Rename "_" to "-"" when online
+  device_name: sonoff_s31_2
   device_comment: "Sonoff S31 Energy Monitoring Smart Plug"
 
 packages:

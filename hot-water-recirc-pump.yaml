@@ -11,9 +11,9 @@ substitutions:
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   sonoff_th10: !include templates/sonoff_th10.yaml
-    
 
-# https://esphome.io/components/sensor/index.html    
+
+# https://esphome.io/components/sensor/index.html
 sensor:
 
   # https://esphome.io/components/sensor/dallas.html
@@ -88,23 +88,31 @@ interval:
   # Periodically circulate hot water even when recirc is not calling for heat, making sure water in lines are never cold.
   - interval: ${recirc_interval}
     then:
-      # Disable thermostat before modifying underlying relay state
-      - logger.log: "RecircTimer : Setting Thermostat to Off."
-      - climate.control: 
-          id: bangbang
-          mode: 'off'
-      # Turn relay on
-      - logger.log: "Recirctimer : Turning Relay On."
-      - switch.turn_on: relay
-      - logger.log: "RecircTimer : Delay Start."
-      # Sleep
-      - delay: ${recirc_duration}
-      - logger.log: "RecircTimer : Delay End."
-      # Turn relay off
-      - logger.log: "RecircTimer : Turning Relay Off."
-      - switch.turn_off: relay
-      # Turn thermostat back on for normal operation
-      - logger.log: "RecircTimer : Setting Thermostat to Heat."
-      - climate.control: 
-          id: bangbang
-          mode: 'heat'
+      if:
+        # Only run if thermostat is not off
+        condition:
+          lambda: 'return id(bangbang).mode == CLIMATE_MODE_OFF;'
+        then:
+          - logger.log: "RecircTimer : Thermostat is Off."
+        else:
+          - logger.log: "RecircTimer : Thermostat is not Off."
+          # Disable thermostat before modifying underlying relay state
+          - logger.log: "RecircTimer : Setting Thermostat to Off."
+          - climate.control: 
+              id: bangbang
+              mode: 'off'
+          # Turn relay on
+          - logger.log: "Recirctimer : Turning Relay On."
+          - switch.turn_on: relay
+          - logger.log: "RecircTimer : Delay Start."
+          # Sleep
+          - delay: ${recirc_duration}
+          - logger.log: "RecircTimer : Delay End."
+          # Turn relay off
+          - logger.log: "RecircTimer : Turning Relay Off."
+          - switch.turn_off: relay
+          # Turn thermostat back on for normal operation
+          - logger.log: "RecircTimer : Setting Thermostat to Heat."
+          - climate.control: 
+              id: bangbang
+              mode: 'heat'

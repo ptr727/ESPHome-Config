@@ -49,6 +49,7 @@ sensor:
   # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
   # https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
   # https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
+  # Water and Gas device class does not support flow rates
   - platform: pulse_counter
     pin:
       number: GPIO32
@@ -64,7 +65,8 @@ sensor:
     unit_of_measurement: 'gal/min'
     name: ${device_name}_water_meter
     icon: 'mdi:water'
-    device_class: 'water'
+    # device_class: 'water'
+    # state_class: 'measurement'
     filters:
       - multiply: 10
     total:
@@ -92,7 +94,8 @@ sensor:
     unit_of_measurement: 'ft³/min'
     name: ${device_name}_gas_meter
     icon: 'mdi:fire'
-    device_class: 'gas'
+    # device_class: 'gas'
+    # state_class: 'measurement'
     filters:
       - multiply: 10
     total:

@@ -1,5 +1,5 @@
 substitutions:
-  device_name: m5stack_core_test
+  device_name: m5stack-core-test
   device_comment: "M5Stack Test Device"
 
 esphome:
