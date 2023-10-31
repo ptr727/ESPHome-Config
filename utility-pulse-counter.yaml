@@ -47,62 +47,68 @@ sensor:
   # https://esphome.io/components/sensor/pulse_meter.html
   # https://esphome.io/components/sensor/pulse_counter.html
   # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
-  - platform: pulse_meter
+  # https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
+  # https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
+  # Water and Gas device class does not support flow rates
+  - platform: pulse_counter
     pin:
       number: GPIO32
-      mode: INPUT_PULLUP
-    internal_filter_mode: PULSE
+      mode: 
+        input: true
+        pullup: true
+    update_interval: 60s
+    use_pcnt: false
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
     internal_filter: 100ms
-    timeout: 60s
     unit_of_measurement: 'gal/min'
-    accuracy_decimals: 3
     name: ${device_name}_water_meter
     icon: 'mdi:water'
+    # device_class: 'water'
+    # state_class: 'measurement'
     filters:
       - multiply: 10
     total:
       name: ${device_name}_water_meter_total
       icon: 'mdi:water'
       device_class: 'water'
+      state_class: 'total_increasing'
       id: water_total
       unit_of_measurement: 'gal'
-      accuracy_decimals: 3
       filters:
-      - multiply: 10
-  - platform: pulse_meter
+        - multiply: 10
+
+  - platform: pulse_counter
     pin:
       number: GPIO33
-      mode: INPUT_PULLUP
-    internal_filter_mode: PULSE
+      mode: 
+        input: true
+        pullup: true
+    update_interval: 60s
+    use_pcnt: false
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
     internal_filter: 100ms
-    timeout: 60s
     unit_of_measurement: 'ft³/min'
-    accuracy_decimals: 3
     name: ${device_name}_gas_meter
     icon: 'mdi:fire'
+    # device_class: 'gas'
+    # state_class: 'measurement'
     filters:
       - multiply: 10
     total:
       name: ${device_name}_gas_meter_total
       icon: 'mdi:fire'
       device_class: 'gas'
+      state_class: 'total_increasing'
       id: gas_total
       unit_of_measurement: 'ft³'
-      accuracy_decimals: 3
       filters:
       - multiply: 10
+
   # https://esphome.io/components/sensor/template.html
-  # TODO: l unit for water is not used, m³ is used, remove l when no longer needed
-  - platform: template
-    name: ${device_name}_water_meter_total_l
-    icon: 'mdi:water'
-    device_class: 'water'
-    state_class: 'total_increasing'
-    accuracy_decimals: 3
-    unit_of_measurement: 'l'
-    # Convert gal to l
-    lambda: |-
-      return id(water_total).state / 3.785;
   - platform: template
     name: ${device_name}_water_meter_total_m3
     icon: 'mdi:water'
@@ -112,7 +118,8 @@ sensor:
     unit_of_measurement: 'm³'
     # Convert gal to m³ 
     lambda: |-
-      return id(water_total).state / 0.003785;
+      return id(water_total).state / 264.2;
+
   - platform: template
     name: ${device_name}_gas_meter_total_m3
     icon: 'mdi:fire'

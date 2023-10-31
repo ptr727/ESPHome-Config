@@ -6,6 +6,6 @@
     # https://esphome.io/components/sensor/uptime.html  
     - platform: uptime
       name: ${device_name}_uptime
-      unit_of_measurement: minutes
+      unit_of_measurement: min
       filters:
         - lambda: return x / 60.0;
