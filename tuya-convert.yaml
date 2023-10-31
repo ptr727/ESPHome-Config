@@ -1,5 +1,5 @@
 substitutions:
-  device_name: tuya_convert
+  device_name: tuya-convert
   device_comment: "Temporary device used during Tuya to Tasmota to ESPHome conversion"
 
 # wifi:

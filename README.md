@@ -5,10 +5,17 @@ ESPHome configuration.
 ## Usage
 
 - Run ESPHome in Docker container.
+  - Run container as root to avoid permission issues.
+  - Make sure that container user has file and directory ownership, e.g.:
+    - `sudo chown -R nobody:users /data/appdata/esphome/config`
+    - `sudo chmod -R ugo+rwx /data/appdata/esphome/config`
+  - Make sure that container user has Git permissions.
+    - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
+    - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
 - Sync Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
   - `git pull https://github.com/ptr727/ESPHome-Config .`
-- Deploy `secrets.yaml`.
+- Deploy `secrets.yaml`, use `secrets._yaml` as template.
 - Use VSCode and open remote SSH folder.
 
 ## Device Templates

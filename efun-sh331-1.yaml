@@ -1,4 +1,5 @@
 substitutions:
+  # TODO: Rename "_" to "-"" when online
   device_name: efun_sh331_1
   device_comment: "EFUN SH331 Energy Monitoring Smart Plug"
 
