@@ -2,18 +2,18 @@
 
 ESPHome configuration.
 
-## Usage
+## Deployment
 
 - Run [ESPHome](https://hub.docker.com/r/esphome/esphome) in a Docker container.
-  - Run the container as root to avoid permission issues.
-  - Run using `macvlan` and a static IP to support device discovery.
-  - Make sure that container user has file and directory ownership, e.g.:
+  - Run the container as `root`, running as a regular user results in permission [problems](https://github.com/esphome/issues/issues/3558).
+  - Run using `macvlan` and a static IP to support automatic device discovery.
+  - Make sure that container user has correct file and directory permissions, e.g.:
     - `sudo chown -R nobody:users /data/appdata/esphome/config`
     - `sudo chmod -R ugo+rwx /data/appdata/esphome/config`
   - Make sure that container user has Git permissions for mixed user file permissions.
     - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
     - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
-- Sync Git repository in ESPHome config folder.
+- Sync this Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
   - `git pull https://github.com/ptr727/ESPHome-Config .`
 - Deploy `secrets.yaml`, use `secrets._yaml` as template.
@@ -46,9 +46,32 @@ ESPHome configuration.
 - [Template](./templates/sonoff_s31.yaml) for the [Sonoff S31](https://www.amazon.com/Sonoff-Monitoring-Certified-Assistant-Supporting/dp/B08GKGS197) US 120V AC WiFi power monitoring wall plug.
 - Follow the Tasmota [guide](https://tasmota.github.io/docs/devices/Sonoff-S31/) for flashing instructions, but use the ESPHome firmware.
 
+## Projects
+
+### Garage Fan Thermostat
+
+- The [`garage-gate-fan.yaml`](./garage-gate-fan.yaml) and [`garage-door-fan.yaml`](./garage-door-fan.yaml) configs are used to control Sonoff TH16's as thermostats for cool air ventilation in my garage.
+- See blog [post](https://blog.insanegenius.com/2021/08/11/trying-to-keep-my-garage-cool/) for project details.
+
+### Utility Gas and Water Meter Pulse Counter
+
+- The [`utility-pulse-counter.yaml`](./utility-pulse-counter.yaml) config is used to measure water and gas consumption from utility meter pulse counters.
+- See blog [post](https://blog.insanegenius.com/2021/08/09/esp32-water-and-gas-utility-meter/) for project details.
+
+### Hot Water Recirculation Pump
+
+- The [`hot-water-recirc-pump.yaml`](./hot-water-recirc-pump.yaml) config is used to control my whole home hot water recirculation pump using a Sonoff TH16 and several temperature probes.
+- See blog [post](https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/) for project details.
+
 ## Notes
 
-### Renaming a Device
+### Hardware Availability
+
+- The Sonoff TH10 and TH16 have been replaced by the [SONOFF TH Origin](https://itead.cc/product/sonoff-th/), see the [Tasmota Templates](https://templates.blakadder.com/sonoff_THR316.html) for pin layouts.
+- EFUN SH331W is no longer listed on Amazon.
+- I have switched away from WiFi smart plugs and now use [Sengled](https://www.amazon.com/gp/product/B092DBFFBY/) Zigbee power monitoring smart plugs, much easier to deploy.
+
+### Renaming a Device in Home Assistant
 
 - Rename HA entities:
   - Stop HA container using `docker stop home-assistant`.
