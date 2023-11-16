@@ -1,0 +1,50 @@
+# Customized
+# https://github.com/ratgdo/esphome-ratgdo/blob/main/static/v25board_esp8266_d1_mini_lite.yaml
+
+# Substitutions used by templates
+substitutions:
+  # Substitutions used by local templates
+  device_name: ratgdov25
+  device_comment: "RatGDO v2.5 Garage Door Controller"
+  # Substitutions used by ratgdo
+  id_prefix: ratgdov25
+  friendly_name: "ratgdo"
+  uart_tx_pin: D1
+  uart_rx_pin: D2
+  input_obst_pin: D7
+  status_door_pin: D0
+  status_obstruction_pin: D8
+  dry_contact_open_pin: D5
+  dry_contact_close_pin: D6
+  dry_contact_light_pin: D3
+
+# Expected ids for time is homeassistant_time and api is api_server
+# They happen to match template ids used
+
+# https://esphome.io/components/esphome.html
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  project:
+    name: ratgdo.esphome
+    version: "2.5"
+
+# https://esphome.io/components/esp8266.html
+esp8266:
+  board: d1_mini_lite
+  restore_from_flash: true
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/guides/configuration-types.html#remote-git-packages
+packages:
+  common: !include templates/common.yaml
+  debug: !include templates/debug.yaml
+  status_sensor: !include templates/status_sensor.yaml
+  version_sensor: !include templates/version_sensor.yaml
+  wifi_sensor: !include templates/wifi_sensor.yaml
+  uptime_sensor:  !include templates/uptime_sensor.yaml
+  memory_sensor:  !include templates/esp8266_memory_sensor.yaml
+  restart_switch: !include templates/restart_switch.yaml
+  ratgdo_package:
+    url: https://github.com/ratgdo/esphome-ratgdo
+    files: [base.yaml]
