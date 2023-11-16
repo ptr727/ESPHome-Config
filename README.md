@@ -63,6 +63,14 @@ ESPHome configuration.
 - The [`hot-water-recirc-pump.yaml`](./hot-water-recirc-pump.yaml) config is used to control my whole home hot water recirculation pump using a Sonoff TH16 and several temperature probes.
 - See blog [post](https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/) for project details.
 
+### TubesZB Ethernet Zigbee Coordinator
+
+- Customized version of the [TubesZB Ethernet Zigbee Coordinator](https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-eth_usb/firmware/esphome/tubezb-cc2652p2-ethusb-2022.yaml).
+
+### RatGDO Garage Door Controller
+
+- Customized version of the [RatGDO Garage Door Controller](https://github.com/ratgdo/esphome-ratgdo/blob/main/static/v25board_esp8266_d1_mini_lite.yaml).
+
 ## Notes
 
 ### Hardware Availability
@@ -91,3 +99,8 @@ ESPHome configuration.
   - Look at ESPHome integration entities, fix incorrect entries.
   - E.g. search for entities named `foo_2`, delete `foo`, and rename `foo_2` to `foo`.
   - E.g. replace short entity names with fully qualified names.
+
+### TODO
+
+- Consolidate common templates, e.g. sensors, to be included in the common templates.
+- Update TubesZB when [PR #7](https://github.com/tube0013/esphome-stream-server-v2/pull/7) is merged.

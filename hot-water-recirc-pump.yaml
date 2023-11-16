@@ -7,11 +7,9 @@ substitutions:
   target_temperature_low: '35.0' # ~95F
   target_temperature_high: '45.0' # ~113F
 
-
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   sonoff_th10: !include templates/sonoff_th10.yaml
-
 
 # https://esphome.io/components/sensor/index.html
 sensor:
