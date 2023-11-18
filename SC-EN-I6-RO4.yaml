@@ -1,11 +1,13 @@
-# SC-EN-I6-RO4
+# SC-EN-I6-RO4 / NORVI-ENET-AE06-R
 # https://sensoper.com/shop/sc-en-i6-ro4/
 # https://sensoper.com/wp-content/uploads/2021/09/SC-EN-Range-Datasheet.pdf
 # https://iiotproducts.com/product/sc-en-i6-ro4/
 # https://iiotproducts.com/wp-content/uploads/2021/11/SC-EN-I6-RO4_SC-EN-Range-Datasheet.pdf
 # https://iiotproducts.com/wp-content/uploads/2022/07/SENSOPER-SC-EN-I6-TO4.zip
 # https://iiotproducts.com/wp-content/uploads/2022/07/SC-EN-I6-R04_Test_Guide.docx.pdf
+# https://shop.norvi.lk/products/norvi-enet-ae06-r
 # https://norvi.lk/product/industrial-esp32-ethernet/
+# https://norvi.lk/docs/norvi-enet-ae06-r-norvi-enet-ae06-r-user-guide/
 # https://norvi.lk/docs/norvi-enet-ae06-r-datasheet/
 
 # ESP32-WROOM32
@@ -27,15 +29,17 @@
 ## Resolution 128 x 64
 
 # Ethernet W5500
-## SCK IO18
+## SCLK IO18
 ## MISO IO19
 ## MOSI IO23
-## CS IO26
+## SCSn IO26
+## RSTn IO27
 ## IO5 CS of microSD should be High for the W5500
 
 # RTC DS3231
 ## I2C IO16(SDA) - IO17(SCL)
 ## Module Address 0x68
+## Reset IO21
 # Battery Backup YES
 
 # microSD Card
@@ -68,7 +72,7 @@
 ## R2 IO12
 ## R3 IO13
 
-# Source / Sink Input (IO in docs are wrong!)
+# Source / Sink Input (SensOper docs are wrong, Norvi docs are correct)
 ## I0 IO21
 ## I1 IO14
 ## I2 IO33
@@ -79,9 +83,9 @@
 ## I7 IO22
 
 # ADS1115 not present in I6-RO4
-# DS3231 not present in I6-RO4, or DS1307 does not initialize?
+# DS3231 not present in I6-RO4, it is documented as supported?
 
-# DS3231 not yet supported, use DS1307
+# DS3231 not yet supported
 # https://github.com/esphome/feature-requests/issues/515
 
 # WS5500 not yet supported
@@ -113,8 +117,15 @@ packages:
 i2c:
   sda: GPIO16
   scl: GPIO17
+  scan: true
   # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
   frequency: 400kHz
+
+# Use expansion slot Pin6 GPIO15 for Dallas
+# https://esphome.io/components/sensor/dallas.html
+dallas:
+  - pin: GPIO15
+    update_interval: 5s
 
 # https://esphome.io/components/display/index.html
 font:
@@ -141,6 +152,7 @@ display:
       const auto fontLarge = id(font_large);
       const auto fontSmall = id(font_small);
       const auto time = id(homeassistant_time).now();
+      const auto ip = id(wifi_ip).state.c_str();
       // TextAlign: TOP_LEFT, TOP_RIGHT, BASELINE_LEFT
       // print (int x, int y, BaseFont *font, Color color, TextAlign align, const char *text)
       it.print(0, 0, fontLarge, color, TextAlign::TOP_LEFT, "${device_name}");
@@ -148,7 +160,7 @@ display:
       // strftime (int x, int y, BaseFont *font, Color color, TextAlign align, const char *format, ESPTime time)
       it.strftime(0, 28, fontSmall, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
       // printf (int x, int y, BaseFont *font, TextAlign align, const char *format,...)
-      it.printf(0, 63, fontSmall, color, TextAlign::BASELINE_LEFT, "ADC: %.2f", id(adc_buttons).state);
+      it.printf(0, 63, fontSmall, color, TextAlign::BASELINE_LEFT, "IP: %s", ip);
 
 # https://esphome.io/components/sensor/
 sensor:
@@ -162,6 +174,18 @@ sensor:
     # TODO: Increase interval without spamming debug logs
     update_interval: 500ms
     internal: true
+
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallas
+    address: 0x05011455296AAA28
+    name: ${device_name}_temp
+    id: temp
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
 
 # https://esphome.io/components/switch/index.html
 switch:
@@ -271,3 +295,4 @@ binary_sensor:
     lambda: |-
       const auto adc = id(adc_buttons).state;
       return (adc > 2.6 && adc < 3.0);
+

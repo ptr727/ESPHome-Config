@@ -74,6 +74,7 @@
     - platform: wifi_info
       ip_address:
         name: ${device_name}_wifi_ip
+        id: wifi_ip
         update_interval: 60s
       ssid:
         name: ${device_name}_wifi_ssid
