@@ -9,8 +9,7 @@
   # CSE7766 Rx: GPIO3
   # Relay: GPIO12 (Connected to Red LED)
   # Blue LED: GPIO13
-  
-  
+
   # https://esphome.io/components/esphome.html
   esphome:
     name: ${device_name}
@@ -18,30 +17,21 @@
     platform: ESP8266
     board: esp01_1m
 
-
   # https://esphome.io/components/logger.html
   logger:
     # Disable UART logging, it is used for the CSE7766
     baud_rate: 0
-
 
   # https://esphome.io/components/uart.html
   uart:
     rx_pin: RX
     baud_rate: 4800      
 
-
   # https://esphome.io/guides/configuration-types.html#packages
   packages:
     # UART is in use, do not log over UART
     common: !include common_no_logger.yaml
-    status_sensor: !include status_sensor.yaml
-    version_sensor: !include version_sensor.yaml
-    wifi_sensor: !include wifi_sensor.yaml
-    uptime_sensor:  !include uptime_sensor.yaml
     memory_sensor:  !include esp8266_memory_sensor.yaml
-    restart_switch: !include restart_switch.yaml
-
 
   # https://esphome.io/components/binary_sensor/index.html
   binary_sensor:
@@ -59,7 +49,6 @@
       on_press:
         - switch.toggle: relay
 
-
   # https://esphome.io/components/switch/index.html
   switch:
 
@@ -71,13 +60,11 @@
       # Off on power-on
       restore_mode: ALWAYS_OFF
 
-
   # https://esphome.io/components/status_led.html
   status_led:
     pin:
       number: GPIO13
 
-  
   # https://esphome.io/components/sensor/index.html
   sensor:
 

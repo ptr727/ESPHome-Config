@@ -7,26 +7,19 @@
   # Relay: GPIO15
   # Red LED: GPIO0, Inverted
   # Blue LED: GPIO2, Inverted
-  
-  
-  # https://esphome.io/components/esphome.html
+
+
+  # https://esphome.io/components/esphome
   esphome:
     name: ${device_name}
     comment: ${device_comment}
     platform: ESP8266
     board: esp01_1m
 
-
   # https://esphome.io/guides/configuration-types.html#packages
   packages:
     common: !include common.yaml
-    status_sensor: !include status_sensor.yaml
-    version_sensor: !include version_sensor.yaml
-    wifi_sensor: !include wifi_sensor.yaml
-    uptime_sensor:  !include uptime_sensor.yaml
     memory_sensor:  !include esp8266_memory_sensor.yaml
-    restart_switch: !include restart_switch.yaml
-
 
   # https://esphome.io/components/binary_sensor/index.html
   binary_sensor:
@@ -41,7 +34,6 @@
       # Toggle relay state on button press
       on_press:
         - switch.toggle: relay
-
 
   # https://esphome.io/components/switch/index.html
   switch:

@@ -5,4 +5,3 @@ substitutions:
 
 packages:
   aoycocr_x5p: !include templates/aoycocr_x5p.yaml
-  

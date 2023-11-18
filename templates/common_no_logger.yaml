@@ -1,10 +1,87 @@
 ---
 
-  <<: !include wifi.yaml
-  <<: !include captive_portal.yaml
-  # No logging, e.g. when UART is in use
-  #<<: !include logger.yaml
-  <<: !include api.yaml
-  <<: !include ota.yaml
-  <<: !include time.yaml
-  <<: !include debug.yaml
+# Keep in sync with common.yaml
+# Remove logger related configuration
+
+# https://esphome.io/components/wifi
+  wifi:
+    ssid: !secret wifi_ssid
+    password: !secret wifi_password
+    domain: !secret wifi_domain
+    reboot_timeout: 5min
+    # Do not fallback to AP mode as that requires a physical reset
+    # ap:
+    #   ssid: ${device_name}_ap
+    #   password: !secret wifi_password
+
+  # https://esphome.io/components/captive_portal
+  # captive_portal:
+
+  # https://esphome.io/components/api
+  api:
+    id: api_server
+    reboot_timeout: 5min
+
+  # https://esphome.io/components/ota
+  ota:
+    password: !secret ota_password
+
+  # https://esphome.io/components/time
+  time:
+    - platform: homeassistant
+      id: homeassistant_time
+
+  # https://esphome.io/components/debug
+  debug:
+
+  # https://esphome.io/components/web_server
+  web_server:
+    port: 80
+
+  # https://esphome.io/components/button/
+  button:
+
+    # https://esphome.io/components/button/restart.html
+    - platform: restart
+      name: ${device_name}_restart
+
+  # https://esphome.io/components/binary_sensor
+  binary_sensor:
+
+    # https://esphome.io/components/binary_sensor/status.html
+    - platform: status
+      name: ${device_name}_status
+
+  # https://esphome.io/components/text_sensor
+  text_sensor:
+
+    # https://esphome.io/components/text_sensor/version.html
+    - platform: version
+      name: ${device_name}_version
+
+    # https://esphome.io/components/text_sensor/wifi_info.html
+    - platform: wifi_info
+      ip_address:
+        name: ${device_name}_wifi_ip
+        update_interval: 60s
+      ssid:
+        name: ${device_name}_wifi_ssid
+        update_interval: 60s
+      bssid:
+        name: ${device_name}_wifi_bssid
+        update_interval: 60s
+
+  # https://esphome.io/components/sensor
+  sensor:
+
+    # https://esphome.io/components/sensor/wifi_signal.html
+    - platform: wifi_signal
+      name: ${device_name}_wifi_signal
+      update_interval: 60s
+
+    # https://esphome.io/components/sensor/uptime
+    - platform: uptime
+      name: ${device_name}_uptime
+      unit_of_measurement: min
+      filters:
+        - lambda: return x / 60.0;

@@ -9,3 +9,4 @@
 **/partitions.csv
 
 *.log
+/docs

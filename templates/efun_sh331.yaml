@@ -12,14 +12,12 @@
   # BL0937 CF: GPIO5
   # BL0937 CF1: GPIO14
 
-  
   # https://esphome.io/guides/configuration-types.html#packages
   packages:
     # Use the Aoycocr X5P as a generic Tuya template for the LED's, button, and relay
     aoycocr_x5p: !include aoycocr_x5p.yaml
 
-
-  # https://esphome.io/components/sensor/index.html
+  # https://esphome.io/components/sensor
   sensor:
 
     # https://esphome.io/components/sensor/hlw8012.html

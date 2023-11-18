@@ -11,7 +11,7 @@ substitutions:
 packages:
   sonoff_th10: !include templates/sonoff_th10.yaml
 
-# https://esphome.io/components/sensor/index.html
+# https://esphome.io/components/sensor
 sensor:
 
   # https://esphome.io/components/sensor/dallas.html
@@ -53,8 +53,7 @@ sensor:
           send_every: 3
           send_first_at: 3
 
-
-# https://esphome.io/components/climate/index.html
+# https://esphome.io/components/climate
 climate:
 
   # https://esphome.io/components/climate/bang_bang.html

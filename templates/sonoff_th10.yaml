@@ -13,7 +13,6 @@
 # Sensor 2 : GPIO14
 # EXP-LOG : GPIO2
 
-
 # https://www.superhouse.tv/21-six-sonoff-secrets/
 # https://tinkerman.cat/post/sonoff-th10-th16-sensors-displays-actuators/
 
@@ -21,8 +20,7 @@
 # Ring 1 : GPIO4 (BME280 SCL) (White)
 # Ring 2 : GND (Green)
 # Sleeve : 3.3V (Black)
-  
-  
+
   # https://esphome.io/components/esphome.html
   esphome:
     name: ${device_name}
@@ -30,17 +28,10 @@
     platform: ESP8266
     board: esp8285
 
-
   # https://esphome.io/guides/configuration-types.html#packages
   packages:
     common: !include common.yaml
-    status_sensor: !include status_sensor.yaml
-    version_sensor: !include version_sensor.yaml
-    wifi_sensor: !include wifi_sensor.yaml
-    uptime_sensor:  !include uptime_sensor.yaml
     memory_sensor:  !include esp8266_memory_sensor.yaml
-    restart_switch: !include restart_switch.yaml
-
 
   # https://esphome.io/components/binary_sensor/index.html
   binary_sensor:
@@ -57,8 +48,7 @@
       on_press:
         - switch.toggle: relay
 
-
-  # https://esphome.io/components/switch/index.html
+  # https://esphome.io/components/switch
   switch:
 
     # https://esphome.io/components/switch/gpio.html
@@ -68,11 +58,9 @@
       pin: GPIO12
       restore_mode: ALWAYS_OFF
 
-
-  # https://esphome.io/components/status_led.html
+  # https://esphome.io/components/status_led
   status_led:
     pin: GPIO13
-
 
   # https://esphome.io/components/sensor/dallas.html
   dallas:
