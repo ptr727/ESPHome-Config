@@ -38,13 +38,7 @@ esp8266:
 # https://esphome.io/guides/configuration-types.html#remote-git-packages
 packages:
   common: !include templates/common.yaml
-  debug: !include templates/debug.yaml
-  status_sensor: !include templates/status_sensor.yaml
-  version_sensor: !include templates/version_sensor.yaml
-  wifi_sensor: !include templates/wifi_sensor.yaml
-  uptime_sensor:  !include templates/uptime_sensor.yaml
   memory_sensor:  !include templates/esp8266_memory_sensor.yaml
-  restart_switch: !include templates/restart_switch.yaml
   ratgdo_package:
     url: https://github.com/ratgdo/esphome-ratgdo
     files: [base.yaml]

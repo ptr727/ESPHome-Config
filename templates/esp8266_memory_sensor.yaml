@@ -1,9 +1,9 @@
 ---
 
-  # https://esphome.io/components/sensor/index.html
+  # https://esphome.io/components/sensor
   sensor:
 
-    # https://esphome.io/components/sensor/template.html
+    # https://esphome.io/components/sensor/template
     # https://github.com/esp8266/Arduino/blob/master/cores/esp8266/Esp.h#L116
     - platform: template
       name: ${device_name}_heap_free

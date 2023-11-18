@@ -1,5 +1,0 @@
----
-
-  # https://esphome.io/components/logger.html
-  logger:
-    level: debug # none, error, warn, info, debug, verbose, very_verbose

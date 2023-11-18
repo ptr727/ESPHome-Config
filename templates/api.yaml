@@ -1,7 +1,0 @@
----
-
-  # https://esphome.io/components/api.html
-  api:
-    id: api_server
-    # Default reboot in 15min if HA not connected
-    # reboot_timeout: 0s

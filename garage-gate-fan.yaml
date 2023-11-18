@@ -4,13 +4,11 @@ substitutions:
   device_comment: "Sonoff TH10 Garage Gate Fan Thermostat"
   target_temperature_high: "28.0" # ~80F
 
-
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   sonoff_th10: !include templates/sonoff_th10.yaml
-    
 
-# https://esphome.io/components/sensor/index.html    
+# https://esphome.io/components/sensor/index
 sensor:
 
   # https://esphome.io/components/sensor/dallas.html
@@ -25,8 +23,7 @@ sensor:
           send_every: 3
           send_first_at: 3
 
-
-# https://esphome.io/components/climate/index.html
+# https://esphome.io/components/climate
 climate:
 
   # https://esphome.io/components/climate/thermostat.html

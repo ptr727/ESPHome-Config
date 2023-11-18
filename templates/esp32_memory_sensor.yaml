@@ -1,9 +1,9 @@
 ---
 
-  # https://esphome.io/components/sensor/index.html
+  # https://esphome.io/components/sensor
   sensor:
 
-    # https://esphome.io/components/sensor/template.html
+    # https://esphome.io/components/sensor/template
     # https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/system.html#_CPPv222esp_get_free_heap_sizev
     # https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Esp.h#L69
     - platform: template

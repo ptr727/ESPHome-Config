@@ -50,26 +50,32 @@ ESPHome configuration.
 
 ### Garage Fan Thermostat
 
-- The [`garage-gate-fan.yaml`](./garage-gate-fan.yaml) and [`garage-door-fan.yaml`](./garage-door-fan.yaml) configs are used to control Sonoff TH16's as thermostats for cool air ventilation in my garage.
+- Project [`garage-gate-fan.yaml`](./garage-gate-fan.yaml) and [`garage-door-fan.yaml`](./garage-door-fan.yaml) configs are used to control Sonoff TH10's as thermostats for cool air ventilation in my garage.
 - See blog [post](https://blog.insanegenius.com/2021/08/11/trying-to-keep-my-garage-cool/) for project details.
 
 ### Utility Gas and Water Meter Pulse Counter
 
-- The [`utility-pulse-counter.yaml`](./utility-pulse-counter.yaml) config is used to measure water and gas consumption from utility meter pulse counters.
+- Project [`utility-pulse-counter.yaml`](./utility-pulse-counter.yaml) config is used to measure water and gas consumption from my utility meter pulse counters.
 - See blog [post](https://blog.insanegenius.com/2021/08/09/esp32-water-and-gas-utility-meter/) for project details.
 
 ### Hot Water Recirculation Pump
 
-- The [`hot-water-recirc-pump.yaml`](./hot-water-recirc-pump.yaml) config is used to control my whole home hot water recirculation pump using a Sonoff TH16 and several temperature probes.
+- Project [`hot-water-recirc-pump.yaml`](./hot-water-recirc-pump.yaml) config is used to control my whole home hot water recirculation pump using a Sonoff TH10 and several temperature probes.
 - See blog [post](https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/) for project details.
 
 ### TubesZB Ethernet Zigbee Coordinator
 
+- Project [`tubezb-cc2652p2-ethusb-2022.yaml`](./tubezb-cc2652p2-ethusb-2022.yaml) is used as my Zigbee Coordinator.
 - Customized version of the [TubesZB Ethernet Zigbee Coordinator](https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-eth_usb/firmware/esphome/tubezb-cc2652p2-ethusb-2022.yaml).
 
-### RatGDO Garage Door Controller
+### RatGDO LiftMaster Garage Door Controller
 
+- Project [`ratgdov25.yaml`](./ratgdov25.yaml) is used as to control my LiftMaster garage door opener.
 - Customized version of the [RatGDO Garage Door Controller](https://github.com/ratgdo/esphome-ratgdo/blob/main/static/v25board_esp8266_d1_mini_lite.yaml).
+
+### SensOper Controls SC-EN-I6-RO4 DIN Controller
+
+- Project [`SC-EN-I6-RO4.yaml`](./SC-EN-I6-RO4.yaml) SensOper Controls SC-EN-I6-RO4 DIN Controller (aka norvi-enet-ae06-r).
 
 ## Notes
 
@@ -99,8 +105,3 @@ ESPHome configuration.
   - Look at ESPHome integration entities, fix incorrect entries.
   - E.g. search for entities named `foo_2`, delete `foo`, and rename `foo_2` to `foo`.
   - E.g. replace short entity names with fully qualified names.
-
-### TODO
-
-- Consolidate common templates, e.g. sensors, to be included in the common templates.
-- Update TubesZB when [PR #7](https://github.com/tube0013/esphome-stream-server-v2/pull/7) is merged.
