@@ -1,0 +1,71 @@
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://templates.blakadder.com/aoycocr_X5P.html
+# https://www.esphome-devices.com/devices/Aoycocr-X10S-Plug/
+
+# Button: GPIO13, Inverted
+# Relay: GPIO15
+# Red LED: GPIO0, Inverted
+# Blue LED: GPIO2, Inverted
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+
+# https://esphome.io/components/esp8266
+esp82666:
+  board: esp01_1m
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  common: !include common.yaml
+  memory_sensor:  !include esp8266-memory-sensor.yaml
+
+# https://esphome.io/components/binary_sensor
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio.html
+  - platform: gpio
+    name: ${device_name}_button
+    device_class: power
+    pin:
+      number: GPIO13
+      inverted: true
+    # Toggle relay state on button press
+    on_press:
+      - switch.toggle: relay
+
+# https://esphome.io/components/switch
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay
+    id: relay
+    pin: GPIO15
+    # Off on power-on
+    restore_mode: ALWAYS_OFF
+    # Red LED follows relay state
+    on_turn_on:
+      - switch.turn_on:
+          id: red_led
+    on_turn_off:
+      - switch.turn_off: red_led
+
+  - platform: gpio
+    name: ${device_name}_red_led
+    id: red_led
+    pin: 
+      number: GPIO0
+      inverted: true
+    # Off on power-on
+    restore_mode: ALWAYS_OFF
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin:
+    # Blue LED
+    number: GPIO2
