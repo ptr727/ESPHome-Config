@@ -3,7 +3,7 @@
 
 # Substitutions used by templates
 substitutions:
-  device_name: tubezb-cc2652p2-ethusb-2022
+  device_name: tubezb-cc2652p2-ethusb
   device_comment: "TubesZB CC2652P2 Ethernet Zigbee Zoordinator"
 
 # https://esphome.io/components/esphome.html
@@ -11,7 +11,7 @@ esphome:
   name: ${device_name}
   comment: ${device_comment}
   project: 
-    name: tubezb.cc2652p2-ethusb-2022
+    name: tubezb.cc2652p2-ethusb
     version: "3.3"
 
 esp32:
@@ -21,8 +21,8 @@ esp32:
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  common_no_wifi: !include templates/common_no_wifi.yaml
-  memory_sensor:  !include templates/esp8266_memory_sensor.yaml
+  common_no_wifi: !include templates/common-no-wifi.yaml
+  memory_sensor:  !include templates/esp8266-memory-sensor.yaml
 
 # https://esphome.io/components/external_components.html
 # https://github.com/tube0013/esphome-stream-server-v2
@@ -40,6 +40,8 @@ ethernet:
   clk_mode: GPIO0_IN
   phy_addr: 1
   power_pin: GPIO16
+  # Specify current address when renaming devices
+  # use_address: foo
 
   # Static IP
   # tubeszb.home.insanegenius.net

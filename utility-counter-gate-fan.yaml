@@ -1,34 +1,28 @@
-# https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-devkitc.html
-# https://esphome.io/devices/nodemcu_esp32.html
-# LED: GPIO27
-# Input 1 : GPIO32
-# Input 2 : GPIO33
-
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: utility-pulse-counter
-  device_comment: "ESP-WROOM-32UE Utility Meter Pulse Counter"
-
-# https://esphome.io/components/esphome.html  
-esphome:
-  name: ${device_name}
-  comment: ${device_comment}
-  platform: ESP32
-  board: nodemcu-32s
+  device_name: utility-counter-gate-fan
+  device_comment: "SC-EN-I6-RO4 Utility Pulse Counter and Garage Gate Fan Controller"
+  target_temperature_high: "28.0" # ~80F
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp32-memory-sensor.yaml
+  norvi: !include templates/norvi-enet-ae06-r.yaml
 
-# https://esphome.io/components/status_led.html
-status_led:
-  pin:
-    number: GPIO27
-    inverted: true
-
-# https://esphome.io/components/sensor/index.html
+# https://esphome.io/components/sensor/
 sensor:
+
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallas
+    address: 0xC7012026F75E6028
+    name: ${device_name}_temp
+    id: temp
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
   # https://esphome.io/components/sensor/pulse_meter.html
   # https://esphome.io/components/sensor/pulse_counter.html
   # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
@@ -37,10 +31,10 @@ sensor:
   # Water and Gas device class does not support flow rates
   - platform: pulse_counter
     pin:
-      number: GPIO32
-      mode: 
-        input: true
-        pullup: true
+      # Use input 0 for water
+      number: GPIO21
+      inverted: true
+      # TODO: Do we need input and pullup?
     update_interval: 60s
     use_pcnt: false
     count_mode:
@@ -66,10 +60,9 @@ sensor:
 
   - platform: pulse_counter
     pin:
-      number: GPIO33
-      mode: 
-        input: true
-        pullup: true
+      # Use input 1 for gas
+      number: GPIO14
+      inverted: true
     update_interval: 60s
     use_pcnt: false
     count_mode:
@@ -115,3 +108,29 @@ sensor:
     # Convert ft³ to m³
     lambda: |-
       return id(gas_total).state / 35.315;
+
+# https://esphome.io/components/climate
+climate:
+
+  # https://esphome.io/components/climate/thermostat.html
+  - platform: thermostat
+    name: ${device_name}_thermostat
+    id: thermo
+    sensor: temp
+    min_cooling_off_time: 60s
+    min_cooling_run_time: 60s
+    min_idle_time: 60s
+    cool_action:
+      - logger.log: "Thermostat : Cool Action, Turning Relay On."
+      - switch.turn_on: relay_0
+    idle_action:
+      - logger.log: "Thermostat : Idle Action, Turning Relay Off."
+      - switch.turn_off: relay_0
+    default_preset: Default
+    preset:
+      - name: Default
+        default_target_temperature_high: ${target_temperature_high}
+    visual:
+      min_temperature: 20.0
+      max_temperature: 40.0
+      temperature_step: 0.5

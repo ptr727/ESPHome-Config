@@ -4,10 +4,10 @@
 # Substitutions used by templates
 substitutions:
   # Substitutions used by local templates
-  device_name: ratgdov25
-  device_comment: "RatGDO v2.5 Garage Door Controller"
+  device_name: garage-door-controller
+  device_comment: "RatGDO Garage Door Controller"
   # Substitutions used by ratgdo
-  id_prefix: ratgdov25
+  id_prefix: ratgdo
   friendly_name: "ratgdo"
   uart_tx_pin: D1
   uart_rx_pin: D2
@@ -38,7 +38,7 @@ esp8266:
 # https://esphome.io/guides/configuration-types.html#remote-git-packages
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp8266_memory_sensor.yaml
+  memory_sensor:  !include templates/esp8266-memory-sensor.yaml
   ratgdo_package:
     url: https://github.com/ratgdo/esphome-ratgdo
     files: [base.yaml]

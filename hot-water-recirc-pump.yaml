@@ -9,7 +9,7 @@ substitutions:
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  sonoff_th10: !include templates/sonoff_th10.yaml
+  sonoff_th10: !include templates/sonoff-th10.yaml
 
 # https://esphome.io/components/sensor
 sensor:
@@ -75,7 +75,6 @@ climate:
       min_temperature: 20.0
       max_temperature: 50.0
       temperature_step: 0.5
-
 
 # https://esphome.io/guides/automations.html#interval
 interval:

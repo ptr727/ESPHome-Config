@@ -13,4 +13,4 @@ esphome:
 
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp8266_memory_sensor.yaml
+  memory_sensor:  !include templates/esp8266-memory-sensor.yaml

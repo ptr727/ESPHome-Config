@@ -6,7 +6,7 @@ substitutions:
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  sonoff_th10: !include templates/sonoff_th10.yaml
+  sonoff_th10: !include templates/sonoff-th10.yaml
 
 # https://esphome.io/components/sensor
 sensor:
