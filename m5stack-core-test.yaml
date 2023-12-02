@@ -5,7 +5,9 @@ substitutions:
 esphome:
   name: ${device_name}
   comment: ${device_comment}
-  platform: ESP32
+
+esp32:
+  board: esp32dev
   board: m5stack-core-esp32
 
 packages:
