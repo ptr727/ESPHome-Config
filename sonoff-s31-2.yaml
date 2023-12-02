@@ -1,7 +1,0 @@
-substitutions:
-  # TODO: Rename "_" to "-"" when online
-  device_name: sonoff_s31_2
-  device_comment: "Sonoff S31 Energy Monitoring Smart Plug"
-
-packages:
-  sonoff_s31: !include templates/sonoff_s31.yaml

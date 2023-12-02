@@ -45,7 +45,7 @@
 ## I2C IO16(SDA) - IO17(SCL)
 ## Module Address 0x68
 ## Reset IO21
-# Battery Backup YES
+## Battery Backup YES
 
 # microSD Card
 ## SCK IO18
@@ -57,7 +57,11 @@
 # Buttons
 ## ADC
 ## IO36
-## Voltage levels 3
+## Resistor network: 3.3V, S3 10K, S2 33K, S1 67K, 47K GND
+## None  : 0
+## Up    : 1.361V
+## Down  : 1.939V
+## Enter : 2.721V
 
 # Expansion
 ## 1 Not Connected
@@ -77,7 +81,7 @@
 ## R2 IO12
 ## R3 IO13
 
-# Source / Sink Input (SensOper docs are wrong, Norvi docs are correct)
+# Source/Sink Input
 ## I0 IO21
 ## I1 IO14
 ## I2 IO33
@@ -87,17 +91,43 @@
 ## I6 IO32
 ## I7 IO22
 
-# ADS1115 not present in I6-RO4
-# DS3231 not present in I6-RO4, it is documented as supported?
+# Observations on my SensOper SC-EN-I6-RO4:
+##
+## In April 2023 it was not possible to order a Norvi from the Norvi online store and ship to the US.
+## Norvi referred me to buy the SensOper branded units that were available in the US.
+## In November 2023 The Norvi shop.norvi.lk does now ship to the US, and the German minipc.de / www.cartft.com resellers also ships to the US.
+##
+## ADS1115 not present in I6-RO4 but documented as supported.
+## DS3231 not present in I6-RO4 but documented as supported.
+## Per SensOper and Norvi support, the early Ethernet units did not include a RTC, and the SensOper specs are wrong.
+##
+## TODO: 
+## SensOper will send a unit that does include a RTC, retest when received.
+## I ordered an actual NORVI-ENET-AE06-R from Norvi, retest when received.
+##
+## GPIO pins for inputs are incorrectly documented in SensOper docs, use the Norvi docs instead.
+##
+## ADC measured values for button presses are very different to theoretical values from resistor network.
+## The values are also widely different when powering from USB or from 24VDC, when the expectation is consitent measurements regardless of power source.
+## The ESP32 specs for 11dB attenuation calls for an input voltage range of 150mV to 2450mV, but the resistor network range goes to 2.71V.
+## Using 11dB attenuation, 24VDC power source, moving window average:
+## No button: ~0.9V - ~1.3V, very unstable
+## Up: ~1.9V - ~2.0V, more stable than no button
+## Down: ~2.3V - ~2.4V, more stable than no button
+## Enter: ~2.9V, very stable
+##
+## WiFi DHCP IP acquisition when running on 24VDC is very slow and continuously disconnects, while when powering from USB WiFi is very stable.
+## As with ADC seems to be a power regulation issue.
 
-# DS3231 not yet supported
-# https://github.com/esphome/feature-requests/issues/515
-
-# WS5500 not yet supported
-# https://github.com/esphome/esphome/pull/4424
-
-# microSD card not yet supported
-# https://github.com/esphome/feature-requests/issues/513
+# ESPHome support:
+## DS3231 not yet supported, use DS1307 for RTC only
+## https://github.com/esphome/feature-requests/issues/515
+##
+## WS5500 SPI based Ethernet not yet supported
+## https://github.com/esphome/esphome/pull/4424
+##
+## microSD card not yet supported
+## https://github.com/esphome/feature-requests/issues/513
 
 # https://esphome.io/components/esphome
 esphome:
@@ -121,9 +151,17 @@ i2c:
   # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
   frequency: 400kHz
 
-# Use expansion slot Pin6 GPIO15 for Dallas
+# Use expansion slot Pin6 GPIO15 for 1-wire protocol
+# TODO: Investigate why we get occasional scratchpad errors
+# https://github.com/esphome/issues/issues?q=is%3Aissue+is%3Aopen+Scratch+pad+checksum+invalid
+# Use the alternative dallasng component instead of the built in dallas component
+# https://github.com/nrandell/dallasng
+# https://github.com/pstolarz/OneWireNg
+external_components:
+  - source: github://nrandell/dallasng
+
 # https://esphome.io/components/sensor/dallas.html
-dallas:
+dallasng:
   # TODO: How to add ignore_strapping_warning: true
   # https://github.com/esphome/feature-requests/issues/2499
   # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
@@ -169,37 +207,35 @@ display:
 # https://esphome.io/components/sensor/
 sensor:
 
-  # Dallas sensors need to be handled in the device
-  # https://esphome.io/components/sensor/dallas.html
-  # - platform: dallas
-  #   address: 0xC7012026F75E6028
-  #   name: ${device_name}_temp
-  #   id: temp
-  #   # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
-  #   filters:
-  #     - sliding_window_moving_average:
-  #         window_size: 3
-  #         send_every: 3
-  #         send_first_at: 3
-
   # https://esphome.io/components/sensor/adc.html
   - platform: adc
     pin: GPIO36
     name: ${device_name}_adc_buttons
     id: adc_buttons
-    # Use 11dB attenuation for ~0 to ~2.9V input
-    attenuation: 11db
+    # Use 11dB or auto attenuation for the ~0 to ~2.7V input
+    # Note the docs say max 2.4V at 11dB, while the resistor network used max is 2.72V?
+    # https://docs.espressif.com/projects/esp-idf/en/v4.4.2/esp32/api-reference/peripherals/adc.html#_CPPv425adc1_config_channel_atten14adc1_channel_t11adc_atten_t
+    attenuation: auto #11dB
     # Update fast enough to make button presses responsive
-    update_interval: 500ms
-    # Average values, update interval divided by send_every
+    # Update interval will be multiplied by filter's send_every
+    update_interval: 100ms
+    # Average values
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
+      - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
           send_every: 3
           send_first_at: 3
-    # Used internally only, do not report to HA
+    # Used internally for switch templates only, do not report to HA
     # internal: true
+
+  # Dallas sensors need to be handled in the device config
+  # https://esphome.io/components/sensor/dallas.html
+  # - platform: dallas
+  #   address: 0xC7012026F75E6028
+  #   name: ${device_name}_temp
+  #   id: temp
 
 # https://esphome.io/components/switch/index.html
 switch:
@@ -233,80 +269,47 @@ switch:
 # https://esphome.io/components/binary_sensor/
 binary_sensor:
 
+  # https://esphome.io/components/binary_sensor/template.html
+  # Convert ADC input to button presses
+  ## Measured values are very different to theoretical values
+  ## No button: ~0.9V - ~1.3V (unstable)
+  ## Up: ~1.9V - ~2.0V
+  ## Down: ~2.3V - ~2.4V
+  ## Enter: ~2.9V
+  ## Up    : 1.8 - 2.1
+  ## Down  : 2.2 - 2.5
+  ## Enter : 2.7 - 3.0
+  - platform: template
+    name: ${device_name}_button_up
+    id: button_up
+    lambda: |-
+      const auto adc = id(adc_buttons).state;
+      return (adc > 1.8 && adc < 2.1);
+  - platform: template
+    name: ${device_name}_button_down
+    id: button_down
+    lambda: |-
+      const auto adc = id(adc_buttons).state;
+      return (adc > 2.2 && adc < 2.5);
+  - platform: template
+    name: ${device_name}_button_enter
+    id: button_enter
+    lambda: |-
+      const auto adc = id(adc_buttons).state;
+      return (adc > 2.7 && adc < 3.0);
+
+  # Inputs need to be handled in the device config as gpio, pulse counters, etc.
+  #
   # https://esphome.io/components/binary_sensor/gpio.html
-  # Inputs need to be handled in the device as GPIO, pulse counters, etc.
   # - platform: gpio
   #   name: ${device_name}_input_0
   #   id: input_0
   #   pin: 
   #     number: GPIO21
   #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_1
-  #   id: input_1
-  #   pin: 
-  #     number: GPIO14
+  #
+  # https://esphome.io/components/sensor/pulse_counter.html
+  # - platform: pulse_counter
+  #   pin:
+  #     number: GPIO21
   #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_2
-  #   id: input_2
-  #   pin: 
-  #     number: GPIO33
-  #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_3
-  #   id: input_3
-  #   pin: 
-  #     number: GPIO34
-  #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_4
-  #   id: input_4
-  #   pin: 
-  #     number: GPIO35
-  #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_5
-  #   id: input_5
-  #   pin: 
-  #     number: GPIO25
-  #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_6
-  #   id: input_6
-  #   pin: 
-  #     number: GPIO32
-  #     inverted: true
-  # - platform: gpio
-  #   name: ${device_name}_input_7
-  #   id: input_7
-  #   pin: 
-  #     number: GPIO22
-  #     inverted: true
-
-  # https://esphome.io/components/binary_sensor/template.html
-  # Convert ADC input to button presses
-  ## Resistor network: 3.3V, S3 10K, S2 33K, S1 67K, 47K GND
-  ## USe 0.2V +/- window
-  ## None  : 0
-  ## Up    : 1.361V, 1.161 - 1.561
-  ## Down  : 1.939V, 1.739 - 2.139
-  ## Enter : 2.721V, 2.521 - 2.921
-  - platform: template
-    name: ${device_name}_button_up
-    id: button_up
-    lambda: |-
-      const auto adc = id(adc_buttons).state;
-      return (adc > 1.161 && adc < 1.561);
-  - platform: template
-    name: ${device_name}_button_down
-    id: button_down
-    lambda: |-
-      const auto adc = id(adc_buttons).state;
-      return (adc > 1.739 && adc < 2.139);
-  - platform: template
-    name: ${device_name}_button_enter
-    id: button_enter
-    lambda: |-
-      const auto adc = id(adc_buttons).state;
-      return (adc > 2.521 && adc < 2.921);

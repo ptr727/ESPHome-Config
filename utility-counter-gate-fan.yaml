@@ -12,12 +12,14 @@ packages:
 sensor:
 
   # https://esphome.io/components/sensor/dallas.html
-  - platform: dallas
+  - platform: dallasng
     address: 0xC7012026F75E6028
     name: ${device_name}_temp
     id: temp
+    resolution: 12
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
+      - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
           send_every: 3
@@ -34,7 +36,6 @@ sensor:
       # Use input 0 for water
       number: GPIO21
       inverted: true
-      # TODO: Do we need input and pullup?
     update_interval: 60s
     use_pcnt: false
     count_mode:

@@ -1,23 +1,19 @@
-# Customized to use a static IP
+# Customized
 # https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-eth_usb/firmware/esphome/tubezb-cc2652p2-ethusb-2022.yaml
 
 # Substitutions used by templates
 substitutions:
-  device_name: tubezb-cc2652p2-ethusb
+  device_name: zigbee-coordinator
   device_comment: "TubesZB CC2652P2 Ethernet Zigbee Zoordinator"
 
 # https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
   comment: ${device_comment}
-  project: 
-    name: tubezb.cc2652p2-ethusb
-    version: "3.3"
 
+# https://esphome.io/components/esp32
 esp32:
   board: esp-wrover-kit
-  framework:
-    type: arduino
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
@@ -40,10 +36,8 @@ ethernet:
   clk_mode: GPIO0_IN
   phy_addr: 1
   power_pin: GPIO16
-  # Specify current address when renaming devices
-  # use_address: foo
 
-  # Static IP
+  # Use a static IP to improve Z2M reliability
   # tubeszb.home.insanegenius.net
   manual_ip:
     static_ip: 192.168.1.6
