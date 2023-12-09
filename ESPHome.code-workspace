@@ -7,6 +7,17 @@
 	"settings": {
 		"files.associations": {
 			"*.yaml": "yaml"
-		}
+		},
+		"cSpell.words": [
+			"appdata",
+			"esphome",
+			"GPIO",
+			"homeassistant",
+			"Norvi",
+			"Sonoff",
+			"Tasmota",
+			"Tuya",
+			"Zigbee"
+		]
 	}
 }

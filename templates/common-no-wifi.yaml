@@ -16,6 +16,7 @@ ota:
 
 # https://esphome.io/components/time
 time:
+  # https://esphome.io/components/time/homeassistant
   - platform: homeassistant
     id: homeassistant_time
 
