@@ -1,11 +1,5 @@
-# Required substitutions:
-# device_name
-
-# Required secrets:
-# wifi_ssid
-# wifi_password
-# wifi_domain
-# ota_password
+# Keep in sync with common.yaml
+# Remove logger related configuration
 
 # https://esphome.io/components/wifi
 wifi:
@@ -22,10 +16,6 @@ wifi:
 
 # https://esphome.io/components/captive_portal
 # captive_portal:
-
-# https://esphome.io/components/logger
-logger:
-  level: info # none, error, warn, info, debug, verbose, very_verbose
 
 # https://esphome.io/components/api
 api:

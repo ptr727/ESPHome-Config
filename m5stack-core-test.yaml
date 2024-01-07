@@ -5,10 +5,11 @@ substitutions:
 esphome:
   name: ${device_name}
   comment: ${device_comment}
-  platform: ESP32
+
+esp32:
+  board: esp32dev
   board: m5stack-core-esp32
 
-<<: !include templates/common.yaml
-
-web_server:
-  port: 80
+packages:
+  common: !include templates/common.yaml
+  memory_sensor:  !include templates/esp32-memory-sensor.yaml

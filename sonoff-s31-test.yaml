@@ -1,0 +1,6 @@
+substitutions:
+  device_name: sonoff-s31-test
+  device_comment: "Sonoff S31 Energy Monitoring Smart Plug"
+
+packages:
+  sonoff_s31: !include templates/sonoff-s31.yaml

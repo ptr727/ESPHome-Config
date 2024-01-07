@@ -7,13 +7,11 @@ substitutions:
   target_temperature_low: '35.0' # ~95F
   target_temperature_high: '45.0' # ~113F
 
-
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  sonoff_th10: !include templates/sonoff_th10.yaml
+  sonoff_th10: !include templates/sonoff-th10.yaml
 
-
-# https://esphome.io/components/sensor/index.html
+# https://esphome.io/components/sensor
 sensor:
 
   # https://esphome.io/components/sensor/dallas.html
@@ -55,8 +53,7 @@ sensor:
           send_every: 3
           send_first_at: 3
 
-
-# https://esphome.io/components/climate/index.html
+# https://esphome.io/components/climate
 climate:
 
   # https://esphome.io/components/climate/bang_bang.html
@@ -78,7 +75,6 @@ climate:
       min_temperature: 20.0
       max_temperature: 50.0
       temperature_step: 0.5
-
 
 # https://esphome.io/guides/automations.html#interval
 interval:

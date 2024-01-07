@@ -1,0 +1,185 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: recirc-pump-door-fan
+  device_comment: "Norvi IIOT-AE06-R Recirculation Pump and Garage Door Fan Controller"
+  recirc_interval: 30min
+  recirc_duration: 2min
+  recirc_temperature_low: '35.0' # ~95F
+  recirc_temperature_high: '45.0' # ~113F
+  fan_temperature_high: "28.0" # ~80F
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  norvi: !include templates/norvi-enet-ae06-r.yaml
+
+# Use expansion slot Pin6 GPIO15 for 1-wire protocol
+# TODO: Investigate why we get occasional scratchpad errors when using the default dallas component?
+# https://github.com/esphome/issues/issues?q=is%3Aissue+is%3Aopen+Scratch+pad+checksum+invalid
+# Use the alternative dallasng component instead of the built in dallas component
+# https://github.com/nrandell/dallasng
+# https://github.com/pstolarz/OneWireNg
+# external_components:
+#   - source: github://nrandell/dallasng
+
+# https://esphome.io/components/sensor/dallas.html
+dallas: #ng:
+  # TODO: How to add ignore_strapping_warning: true
+  # https://github.com/esphome/feature-requests/issues/2499
+  # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
+  # Use GPIO15 from the expansion port for 1-wire
+  - pin: GPIO15
+    update_interval: 5s
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallas #ng
+    address: 0x05011455296AAA28
+    name: ${device_name}_recirc_temp
+    id: recirc_temp
+    resolution: 12
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+  - platform: dallas #ng
+    address: 0x54011455087FAA28
+    name: ${device_name}_hot_temp
+    id: hot_temp
+    resolution: 12
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+  - platform: dallas #ng
+    address: 0x5E01145529F7AA28
+    name: ${device_name}_cold_temp
+    id: cold_temp
+    resolution: 12
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+  - platform: dallas #ng
+    address: 0xEC011454E099AA28
+    name: ${device_name}_ambient_temp
+    id: ambient_temp
+    resolution: 12
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+# https://esphome.io/components/climate
+climate:
+
+  # https://esphome.io/components/climate/bang_bang.html
+  - platform: bang_bang
+    name: ${device_name}_bangbang
+    id: bangbang
+    sensor: recirc_temp
+    # https://github.com/esphome/issues/issues/2270
+    # default_mode: heat
+    default_target_temperature_low: ${recirc_temperature_low}
+    default_target_temperature_high: ${recirc_temperature_high}
+    heat_action:
+      - logger.log: "BangBang : Heat Action, Turning Relay On."
+      - switch.turn_on: relay_0
+    idle_action:
+      - logger.log: "BangBang : Idle Action, Turning Relay Off."
+      - switch.turn_off: relay_0
+    visual:
+      min_temperature: 20.0
+      max_temperature: 50.0
+      temperature_step: 0.5
+
+  # https://esphome.io/components/climate/thermostat.html
+  - platform: thermostat
+    name: ${device_name}_thermostat
+    id: thermo
+    sensor: ambient_temp
+    min_cooling_off_time: 60s
+    min_cooling_run_time: 60s
+    min_idle_time: 60s
+    cool_action:
+      - logger.log: "Thermostat : Cool Action, Turning Relay On."
+      - switch.turn_on: relay_1
+    idle_action:
+      - logger.log: "Thermostat : Idle Action, Turning Relay Off."
+      - switch.turn_off: relay_1
+    default_preset: Default
+    preset:
+      - name: Default
+        default_target_temperature_high: ${fan_temperature_high}
+    visual:
+      min_temperature: 20.0
+      max_temperature: 40.0
+      temperature_step: 0.5
+
+# https://esphome.io/guides/automations.html#interval
+interval:
+
+  # Periodic recirc interval
+  # When ambient temperature is higher than recirc low temp threshold, recirc never turns on.
+  # Periodically circulate hot water even when recirc is not calling for heat, making sure water in lines are never cold.
+  - interval: ${recirc_interval}
+    then:
+      if:
+        # Only run if BangBang is not off
+        condition:
+          lambda: 'return id(bangbang).mode == CLIMATE_MODE_OFF;'
+        then:
+          - logger.log: "RecircTimer : BangBang is Off."
+        else:
+          - logger.log: "RecircTimer : BangBang is not Off."
+          # Disable BangBang before modifying underlying relay state
+          - logger.log: "RecircTimer : Setting BangBang to Off."
+          - climate.control: 
+              id: bangbang
+              mode: 'off'
+          # Turn relay on
+          - logger.log: "RecircTimer : Turning Relay On."
+          - switch.turn_on: relay_0
+          - logger.log: "RecircTimer : Delay Start."
+          # Sleep
+          - delay: ${recirc_duration}
+          - logger.log: "RecircTimer : Delay End."
+          # Turn relay off
+          - logger.log: "RecircTimer : Turning Relay Off."
+          - switch.turn_off: relay_0
+          # Turn BangBang back on for normal operation
+          - logger.log: "RecircTimer : Setting BangBang to Heat."
+          - climate.control: 
+              id: bangbang
+              mode: 'heat'
+
+# https://esphome.io/components/display/ssd1306.html
+display:
+  - id: !extend displayy
+    lambda: |-
+      static const auto color = Color(255, 255, 255);
+      static const auto font = id(fonnt);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
+      const auto time = id(homeassistant_time).now();
+      const auto ip = id(wifi_ip).state.c_str();
+      const auto tempp = isnan(id(ambient_temp).state) ? 0.0 : id(ambient_temp).state;
+      int line = lineSpacing.nFirstLine;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
+      line += lineSpacing.nIncrement;
+      it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
+      line += lineSpacing.nIncrement;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "Temp: %.2f°C", tempp);
+      line += lineSpacing.nIncrement;

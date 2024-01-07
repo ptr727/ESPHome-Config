@@ -1,8 +1,0 @@
----
-
-  # https://esphome.io/components/binary_sensor/index.html
-  binary_sensor:
-
-    # https://esphome.io/components/binary_sensor/status.html
-    - platform: status
-      name: ${device_name}_status

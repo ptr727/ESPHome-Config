@@ -1,0 +1,139 @@
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  on_boot:
+    - priority: 600
+      then:
+        # Read the time from the RTC
+        - ds1307.read_time:
+  includes:
+    # Utility functions
+    templates/Utils.h
+
+# https://esphome.io/components/esp32
+esp32:
+  # ESP32-WROOM32
+  board: esp32dev
+
+# https://esphome.io/components/i2c
+i2c:
+  sda: GPIO16
+  scl: GPIO17
+  scan: true
+  frequency: 400kHz
+
+# https://esphome.io/components/time
+time:
+  # https://esphome.io/components/time/ds1307
+  - platform: ds1307
+    id: ds1307_time
+    address: 0x68
+
+# https://esphome.io/components/display/index.html
+font:
+  - file:
+      type: gfonts
+      family: Open+Sans
+    id: fonnt # font as id is reserved
+    size: 14
+
+# https://esphome.io/components/display/ssd1306.html
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    id: displayy # display as id is reserved
+    # https://github.com/esphome/esphome/blob/release/esphome/components/display/display.h
+    # Use !extend displayy to replace the display lambda
+    lambda: |-
+      static const auto color = Color(255, 255, 255);
+      static const auto font = id(fonnt);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 2);
+      const auto time = id(ds1307_time).now();
+      const auto adc = id(adc_buttons).state;
+      int line = lineSpacing.nFirstLine;
+      it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
+      line += lineSpacing.nIncrement;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
+      line += lineSpacing.nIncrement;
+
+# https://esphome.io/components/sensor/
+sensor:
+
+  # https://esphome.io/components/sensor/adc.html
+  - platform: adc
+    pin: GPIO36
+    name: ${device_name}_adc_buttons
+    id: adc_buttons
+    attenuation: 11dB 
+    update_interval: 100ms # effectively multiplied by filter send_every so 300ms
+    # Average values
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+    # Used internally for switch templates only, do not report to HA
+    internal: false # true
+
+# https://esphome.io/components/switch/index.html
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay_0
+    id: relay_0
+    pin: 
+      number: GPIO2
+      ignore_strapping_warning: true
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_1
+    id: relay_1
+    pin: GPIO4
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_2
+    id: relay_2
+    pin: 
+      number: GPIO12
+      ignore_strapping_warning: true
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_3
+    id: relay_3
+    pin: GPIO13
+    restore_mode: ALWAYS_OFF
+
+# https://esphome.io/components/binary_sensor/
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/template.html
+  - platform: template
+    name: ${device_name}_button_up
+    id: button_up
+    lambda: |-
+      bool s3, s2, s1;
+      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
+      return s3;
+  - platform: template
+    name: ${device_name}_button_down
+    id: button_down
+    lambda: |-
+      bool s3, s2, s1;
+      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
+      return s2;
+  - platform: template
+    name: ${device_name}_button_enter
+    id: button_enter
+    lambda: |-
+      bool s3, s2, s1;
+      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
+      return s1;

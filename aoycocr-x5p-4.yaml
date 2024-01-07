@@ -1,7 +1,0 @@
-substitutions:
-  # TODO: Rename "_" to "-"" when online
-  device_name: aoycocr_x5p_4
-  device_comment: "Aoycocr X5P Smart Plug"
-
-packages:
-  aoycocr_x5p: !include templates/aoycocr_x5p.yaml

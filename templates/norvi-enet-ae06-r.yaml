@@ -1,0 +1,330 @@
+# Notes:
+
+# Suppliers:
+##
+## April 2023 purchased a SensOper SC-EN-I6-RO4 from IiotProducts online store.
+##   Norvi online store did not ship to the US.
+##   Norvi products sold under the SonsOper brand in the US.
+##   GPIO pins for inputs are incorrectly documented in SensOper docs, use the Norvi docs instead.
+##   DS3231: My unit was missing the DS3231 RTC as advertised, per Norvi early units did not have RTC's, current units should have RTC's.
+##   ADS1115: My unit was missing the ADS1115 ADC as advertised, per Norvi the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
+##   Still waiting for SensOper to send me a correct unit that includes the DS3221.
+## December 2023 purchased a Norvi NORVI-ENET-AE06-R from CarTFT online store.
+##   In stock and fast shipping to the US.
+## December 2023 purchased a Norvi NORVI-ENET-AE06-R from the Norvi online store.
+##   Norvi online store did now offer US shipping.
+##   Took almost a month to receive the unit.
+
+# ADC Problems:
+## Three buttons are connected with a resistor network to the internal ADC on GPIO36.
+## The ADC measurements are unstable and drift.
+##   The Espressif design calls for a low impedance input and a 100nF decoupling capacitor to prevent noise and drift.
+##   With no buttons pressed (47K to GND) the voltage drifts from 0.6V on power on to 1.7V+ after running for several hours.
+## The ESP32 specs for 11dB attenuation calls for an input voltage range of 150mV to 2450mV.
+##   The resistor network voltage range goes to 2.88V with all three buttons pressed, and 2.72V with the S3 button pressed, out of range of the ADC.
+## The values of the resistor network does not support multiple button press states.
+##   The voltage delta between S3+S2 and S3+S2+S1 is 0.042V, and the absolute is 2.88V, that is outside the 2.45V usable range of the ADC.
+## Reference
+##   https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_B_V1_1-1109A.pdf
+##   https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32/api-reference/peripherals/adc.html
+
+# WiFi problems:
+## WiFi is unstable and frequently disconnects when running from 24VDC from my programmable linear PSU or a 24V switching PSU when on my workbench.
+## The same unit on the same workbench runs stable when powered from USB using the micro-USB programming plug.
+## Move the unit to a DIN enclosure with a DIN switching 24V PSU and WiFi is stable.
+
+# Inconsistent behavior:
+## My April 2023 SensOper unit had ADC and WiFi problems from day 1.
+## My December 2023 Norvi supplied unit had ADC and WiFi problems from day 1.
+## My December 2023 CarTFT supplied Norvi unit had stable ADC and stable WiFi on the bench, but after being in operation for about two weeks the ADC is now drifting.
+
+# Speculation:
+## The ADC drift could be caused by the too high input impedance of the resistor network, or a lack of decoupling capacitor, or an unstable voltage reference, or an unstable DC-DC converter, or WiFi interference.
+## The WiFi instability could be caused by insufficient component isolation or shielding, or an unstable DC-DC converter.
+
+# Norvi NORVI-ENET-AE06-R
+# https://shop.norvi.lk/products/norvi-enet-ae06-r
+# https://norvi.lk/product/industrial-esp32-ethernet/
+# https://norvi.lk/docs/norvi-enet-ae06-r-norvi-enet-ae06-r-user-guide/
+# https://norvi.lk/docs/norvi-enet-ae06-r-datasheet/
+
+# SensOper SC-EN-I6-RO4
+# https://sensoper.com/shop/sc-en-i6-ro4/
+# https://sensoper.com/wp-content/uploads/2021/09/SC-EN-Range-Datasheet.pdf
+
+# IIOT Products SC-EN-I6-RO4
+# https://iiotproducts.com/product/sc-en-i6-ro4/
+# https://iiotproducts.com/wp-content/uploads/2021/11/SC-EN-I6-RO4_SC-EN-Range-Datasheet.pdf
+# https://iiotproducts.com/wp-content/uploads/2022/07/SENSOPER-SC-EN-I6-TO4.zip
+# https://iiotproducts.com/wp-content/uploads/2022/07/SC-EN-I6-R04_Test_Guide.docx.pdf
+
+# Example code:
+# https://norvi.lk/docs/
+# https://www.instructables.com/Working-With-Built-in-Display-and-Push-Buttons-of-/
+# https://github.com/Iconic-Devices/Norvi-IoT-Devices---ESP32-based-industrial-controllers
+
+# ESP32-WROOM32
+## ESP32 Dev Module
+## Flash Mode QIO
+## Flash Size 4MB
+## Flash Frequency 10MHz
+## PSRAM Disabled
+## Upload Speed 115200
+
+# ADC ADS1115
+## I2C IO16(SDA) - IO17(SCL)
+## Module Address 0x48
+## Resolution 16 bit
+
+# OLED SSD1306
+## I2C IO16(SDA) - IO17(SCL)
+## Module Address 0x3C
+## Resolution 128 x 64
+
+# Ethernet W5500
+## SCLK IO18
+## MISO IO19
+## MOSI IO23
+## SCSn IO26
+## RSTn IO27
+## IO5 CS of microSD should be High for the W5500
+
+# RTC DS3231
+## I2C IO16(SDA) - IO17(SCL)
+## Module Address 0x68
+## Reset IO21
+## Battery Backup YES
+
+# microSD Card
+## SCK IO18
+## MISO IO19
+## MOSI IO23
+## CS IO5
+## SD Detect IO14
+
+# Buttons
+## ADC
+## IO36
+## Resistor network: 3.3V, S3 10K, S2 33K, S1 67K, 47K GND
+
+# Expansion Port
+## 1 Not Connected
+## 2 TXD0
+## 3 5V
+## 4 RXD0
+## 5 BOOT IO0
+## 6 IO15
+## 7 3.3V
+## 8 SCL IO17
+## 9 Ground
+## 10 SDA IO16
+
+# Relay Output
+## R0 IO2
+## R1 IO4
+## R2 IO12
+## R3 IO13
+
+# Source/Sink Input
+## I0 IO21
+## I1 IO14
+## I2 IO33
+## I3 IO34
+## I4 IO35
+## I5 IO25
+## I6 IO32
+## I7 IO22
+
+# ESPHome support:
+## DS3231 is compatible with the DS1307
+## https://github.com/esphome/feature-requests/issues/515
+##
+## WS5500 SPI based Ethernet is available as an external component but not yet natively supported
+## https://github.com/esphome/esphome/pull/4424
+##
+## microSD card IO is not yet supported
+## https://github.com/esphome/feature-requests/issues/513
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  on_boot:
+    - priority: 600
+      then:
+        # Read the time from the RTC
+        - ds1307.read_time:
+  includes:
+    # Utility functions
+    templates/Utils.h
+
+# https://esphome.io/components/esp32
+esp32:
+  # ESP32-WROOM32
+  board: esp32dev
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  common: !include common-no-time.yaml
+  memory_sensor:  !include esp32-memory-sensor.yaml
+
+# https://esphome.io/components/i2c
+i2c:
+  sda: GPIO16
+  scl: GPIO17
+  scan: true
+  # Increase speed to prevent component took a long time errors
+  # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
+  frequency: 400kHz
+
+# https://esphome.io/components/time
+time:
+  # DS3231 is compatible with DS1307 RTC
+  # https://esphome.io/components/time/ds1307
+  - platform: ds1307
+    id: ds1307_time
+    address: 0x68
+    # Use HA for time sync
+    update_interval: never
+  # https://esphome.io/components/time/homeassistant
+  - platform: homeassistant
+    id: homeassistant_time
+    # Update RTC on time sync
+    on_time_sync:
+      then:
+        ds1307.write_time:
+
+# https://esphome.io/components/display/index.html
+font:
+  - file:
+      type: gfonts
+      family: Open+Sans
+    id: fonnt # font as id is reserved
+    size: 14
+
+# https://esphome.io/components/display/ssd1306.html
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    id: displayy # display as id is reserved
+    # https://github.com/esphome/esphome/blob/release/esphome/components/display/display.h
+    # Use !extend displayy to replace the display lambda
+    lambda: |-
+      static const auto color = Color(255, 255, 255);
+      static const auto font = id(fonnt);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
+      const auto time = id(homeassistant_time).now();
+      const auto ip = id(wifi_ip).state.c_str();
+      const auto adc = id(adc_buttons).state;
+      int line = lineSpacing.nFirstLine;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
+      line += lineSpacing.nIncrement;
+      it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
+      line += lineSpacing.nIncrement;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
+      line += lineSpacing.nIncrement;
+
+# https://esphome.io/components/sensor/
+sensor:
+
+  # https://esphome.io/components/sensor/adc.html
+  - platform: adc
+    pin: GPIO36
+    name: ${device_name}_adc_buttons
+    id: adc_buttons
+    attenuation: 11dB 
+    # Update fast enough to make button presses responsive
+    update_interval: 100ms # effectively multiplied by filter send_every so 300ms
+    # Average values
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+    # Used internally for switch templates only, do not report to HA
+    internal: false # true
+
+# https://esphome.io/components/switch/index.html
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay_0
+    id: relay_0
+    pin: 
+      number: GPIO2
+      ignore_strapping_warning: true
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_1
+    id: relay_1
+    pin: GPIO4
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_2
+    id: relay_2
+    pin: 
+      number: GPIO12
+      ignore_strapping_warning: true
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_3
+    id: relay_3
+    pin: GPIO13
+    restore_mode: ALWAYS_OFF
+
+# https://esphome.io/components/binary_sensor/
+binary_sensor:
+
+  # TODO: The ADC is not stable, buttons are not usable
+
+  # Refer to Utils.h NorviButtonHelper class for ADC to button mapping calculations
+  
+  # https://esphome.io/components/binary_sensor/template.html
+  - platform: template
+    name: ${device_name}_button_up
+    id: button_up
+    lambda: |-
+      bool s3, s2, s1;
+      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
+      return s3;
+  - platform: template
+    name: ${device_name}_button_down
+    id: button_down
+    lambda: |-
+      bool s3, s2, s1;
+      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
+      return s2;
+  - platform: template
+    name: ${device_name}_button_enter
+    id: button_enter
+    lambda: |-
+      bool s3, s2, s1;
+      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
+      return s1;
+
+# Input handling to be defined in the device config as gpio, pulse counters, etc.
+# https://esphome.io/components/binary_sensor/gpio.html
+# - platform: gpio
+#   pin: 
+#     number: GPIO21
+#     inverted: true
+#
+# https://esphome.io/components/sensor/pulse_counter.html
+# - platform: pulse_counter
+#   pin:
+#     number: GPIO21
+#     inverted: true
+
+# GPIO15 from the expansion bus can be used for e.g. 1-Wire Dallas
+# https://esphome.io/components/sensor/dallas.html
+# dallas:
+#   - pin: GPIO15
+#     update_interval: 5s
