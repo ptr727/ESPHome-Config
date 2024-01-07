@@ -49,6 +49,7 @@ ESPHome configuration.
 ### Norvi NORVI-ENET-AE06-R DIN Controller
 
 - [Template](./templates/norvi-enet-ae06-r.yaml) for the [Norvi NORVI-ENET-AE06-R](https://shop.norvi.lk/products/norvi-enet-ae06-r) or [SensOper SC-EN-I6-RO4](https://sensoper.com/shop/sc-en-i6-ro4/) ESP32 DIN form factor controllers.
+- Note that I am experiencing issues with the built-in ADC that monitors button presses, and some WiFi instability, see [the notes](./templates/norvi-enet-ae06-r.yaml) section for details.
 
 ## Projects
 
