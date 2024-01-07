@@ -1,0 +1,8 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: norvi-ae06r-test
+  device_comment: "Norvi AE06-R Test Device"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  norvi: !include templates/norvi-enet-ae06-r.yaml

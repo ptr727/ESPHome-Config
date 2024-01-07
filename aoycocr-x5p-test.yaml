@@ -1,0 +1,6 @@
+substitutions:
+  device_name: aoycocr-x5p-test
+  device_comment: "Aoycocr X5P Smart Plug"
+
+packages:
+  aoycocr_x5p: !include templates/aoycocr-x5p.yaml

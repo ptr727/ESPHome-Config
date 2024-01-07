@@ -7,6 +7,21 @@
 	"settings": {
 		"files.associations": {
 			"*.yaml": "yaml"
-		}
+		},
+		"cSpell.words": [
+			"appdata",
+			"bangbang",
+			"dallasng",
+			"esphome",
+			"Espressif",
+			"GPIO",
+			"homeassistant",
+			"Norvi",
+			"recirc",
+			"Sonoff",
+			"Tasmota",
+			"Tuya",
+			"Zigbee"
+		]
 	}
 }

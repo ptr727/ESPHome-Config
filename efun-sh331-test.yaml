@@ -1,0 +1,6 @@
+substitutions:
+  device_name: efun-sh331-test
+  device_comment: "EFUN SH331 Energy Monitoring Smart Plug"
+
+packages:
+  efun_sh331: !include templates/efun-sh331.yaml

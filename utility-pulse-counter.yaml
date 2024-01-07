@@ -4,12 +4,10 @@
 # Input 1 : GPIO32
 # Input 2 : GPIO33
 
-
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
   device_name: utility-pulse-counter
   device_comment: "ESP-WROOM-32UE Utility Meter Pulse Counter"
-
 
 # https://esphome.io/components/esphome.html  
 esphome:
@@ -18,29 +16,16 @@ esphome:
   platform: ESP32
   board: nodemcu-32s
 
-
-# https://esphome.io/components/esphome.html#changing-esphome-node-name
-# wifi:
-#   use_address: utility_pulse_counter
-
-
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   common: !include templates/common.yaml
-  status_sensor: !include templates/status_sensor.yaml
-  version_sensor: !include templates/version_sensor.yaml
-  wifi_sensor: !include templates/wifi_sensor.yaml
-  uptime_sensor:  !include templates/uptime_sensor.yaml
-  memory_sensor:  !include templates/esp32_memory_sensor.yaml
-  restart_switch: !include templates/restart_switch.yaml
-
+  memory_sensor:  !include templates/esp32-memory-sensor.yaml
 
 # https://esphome.io/components/status_led.html
 status_led:
   pin:
     number: GPIO27
     inverted: true
-
 
 # https://esphome.io/components/sensor/index.html
 sensor:

@@ -1,0 +1,173 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: utility-counter-gate-fan
+  device_comment: "Norvi IIOT-AE06-R Utility Pulse Counter and Garage Gate Fan Controller"
+  fan_temperature_high: "28.0" # ~80F
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  norvi: !include templates/norvi-enet-ae06-r.yaml
+
+# TODO: Investigate why we get occasional scratchpad errors when using the default dallas component?
+# https://github.com/esphome/issues/issues?q=is%3Aissue+is%3Aopen+Scratch+pad+checksum+invalid
+# Use the alternative dallasng component instead of the built in dallas component
+# https://github.com/nrandell/dallasng
+# https://github.com/pstolarz/OneWireNg
+external_components:
+  - source: github://nrandell/dallasng
+
+# Use expansion slot Pin6 GPIO15 for 1-wire protocol
+# https://esphome.io/components/sensor/dallas.html
+dallasng:
+  # TODO: How to add ignore_strapping_warning: true
+  # https://github.com/esphome/feature-requests/issues/2499
+  # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
+  # Use GPIO15 from the expansion port for 1-wire
+  - pin: GPIO15
+    update_interval: 5s
+
+# https://esphome.io/components/sensor/
+sensor:
+
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallasng
+    address: 0x1500000DC56AFC28
+    name: ${device_name}_temp
+    id: temp
+    resolution: 12
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+  # https://esphome.io/components/sensor/pulse_meter.html
+  # https://esphome.io/components/sensor/pulse_counter.html
+  # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
+  # https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
+  # https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
+  # Water and Gas device class does not support flow rates
+  - platform: pulse_counter
+    pin:
+      # Use input 0 for water
+      number: GPIO21
+      inverted: true
+    update_interval: 60s
+    use_pcnt: false
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
+    internal_filter: 100ms
+    unit_of_measurement: 'gal/min'
+    name: ${device_name}_water_meter
+    icon: 'mdi:water'
+    # device_class: 'water'
+    # state_class: 'measurement'
+    filters:
+      - multiply: 10
+    total:
+      name: ${device_name}_water_meter_total
+      icon: 'mdi:water'
+      device_class: 'water'
+      state_class: 'total_increasing'
+      id: water_total
+      unit_of_measurement: 'gal'
+      filters:
+        - multiply: 10
+
+  - platform: pulse_counter
+    pin:
+      # Use input 1 for gas
+      number: GPIO14
+      inverted: true
+    update_interval: 60s
+    use_pcnt: false
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
+    internal_filter: 100ms
+    unit_of_measurement: 'ft³/min'
+    name: ${device_name}_gas_meter
+    icon: 'mdi:fire'
+    # device_class: 'gas'
+    # state_class: 'measurement'
+    filters:
+      - multiply: 10
+    total:
+      name: ${device_name}_gas_meter_total
+      icon: 'mdi:fire'
+      device_class: 'gas'
+      state_class: 'total_increasing'
+      id: gas_total
+      unit_of_measurement: 'ft³'
+      filters:
+      - multiply: 10
+
+  # https://esphome.io/components/sensor/template.html
+  - platform: template
+    name: ${device_name}_water_meter_total_m3
+    icon: 'mdi:water'
+    device_class: 'water'
+    state_class: 'total_increasing'
+    accuracy_decimals: 3
+    unit_of_measurement: 'm³'
+    # Convert gal to m³ 
+    lambda: |-
+      return id(water_total).state / 264.2;
+
+  - platform: template
+    name: ${device_name}_gas_meter_total_m3
+    icon: 'mdi:fire'
+    device_class: 'gas'
+    state_class: 'total_increasing'
+    accuracy_decimals: 3
+    unit_of_measurement: 'm³'
+    # Convert ft³ to m³
+    lambda: |-
+      return id(gas_total).state / 35.315;
+
+# https://esphome.io/components/climate
+climate:
+
+  # https://esphome.io/components/climate/thermostat.html
+  - platform: thermostat
+    name: ${device_name}_thermostat
+    id: thermo
+    sensor: temp
+    min_cooling_off_time: 60s
+    min_cooling_run_time: 60s
+    min_idle_time: 60s
+    cool_action:
+      - logger.log: "Thermostat : Cool Action, Turning Relay On."
+      - switch.turn_on: relay_0
+    idle_action:
+      - logger.log: "Thermostat : Idle Action, Turning Relay Off."
+      - switch.turn_off: relay_0
+    default_preset: Default
+    preset:
+      - name: Default
+        default_target_temperature_high: ${fan_temperature_high}
+    visual:
+      min_temperature: 20.0
+      max_temperature: 40.0
+      temperature_step: 0.5
+
+# https://esphome.io/components/display/ssd1306.html
+display:
+  - id: !extend displayy
+    lambda: |-
+      static const auto color = Color(255, 255, 255);
+      static const auto font = id(fonnt);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
+      const auto time = id(homeassistant_time).now();
+      const auto ip = id(wifi_ip).state.c_str();
+      const auto tempp = isnan(id(temp).state) ? 0.0 : id(temp).state;
+      int line = lineSpacing.nFirstLine;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
+      line += lineSpacing.nIncrement;
+      it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
+      line += lineSpacing.nIncrement;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "Temp: %.2f°C", tempp);
+      line += lineSpacing.nIncrement;

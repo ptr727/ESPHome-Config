@@ -1,11 +1,5 @@
-# Required substitutions:
-# device_name
-
-# Required secrets:
-# wifi_ssid
-# wifi_password
-# wifi_domain
-# ota_password
+# Keep in sync with common.yaml
+# Remove time related configuration
 
 # https://esphome.io/components/wifi
 wifi:
@@ -35,12 +29,6 @@ api:
 # https://esphome.io/components/ota
 ota:
   password: !secret ota_password
-
-# https://esphome.io/components/time
-time:
-  # https://esphome.io/components/time/homeassistant
-  - platform: homeassistant
-    id: homeassistant_time
 
 # https://esphome.io/components/debug
 debug:
