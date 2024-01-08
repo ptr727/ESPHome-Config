@@ -41,6 +41,7 @@
 # Speculation:
 ## The ADC drift could be caused by the too high input impedance of the resistor network, or a lack of decoupling capacitor, or an unstable voltage reference, or an unstable DC-DC converter, or WiFi interference.
 ## The WiFi instability could be caused by insufficient component isolation or shielding, or an unstable DC-DC converter.
+## The ADC button configuration may have been more accurate and supported multiple button presses if a R2R ladder with doubling resistor values were used, and the voltage remained within ADC spec.
 
 # Norvi NORVI-ENET-AE06-R
 # https://shop.norvi.lk/products/norvi-enet-ae06-r

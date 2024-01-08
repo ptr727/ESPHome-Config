@@ -117,6 +117,8 @@ public:
             ESP_LOGI("NorviButtonHelper", "S3: %d, S2: %d, S1: %d, V: %f", buttonValues[i].S3, buttonValues[i].S2, buttonValues[i].S1, buttonValues[i].Volt);
             // std::cout << "NorviButtonHelper: Index: " << i << " S3: " << buttonValues[i].S3 << " S2: " << buttonValues[i].S2 << " S1: " << buttonValues[i].S1 << " V: " << buttonValues[i].Volt << std::endl;
         }
+        delete[] buttonValues;
+        buttonValues = nullptr;
     }
 
 private:

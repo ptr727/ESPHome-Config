@@ -160,14 +160,17 @@ display:
     lambda: |-
       static const auto color = Color(255, 255, 255);
       static const auto font = id(fonnt);
-      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 4);
       const auto time = id(homeassistant_time).now();
       const auto ip = id(wifi_ip).state.c_str();
       const auto tempp = isnan(id(temp).state) ? 0.0 : id(temp).state;
+      const auto adc = id(adc_buttons).state;
       int line = lineSpacing.nFirstLine;
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
       line += lineSpacing.nIncrement;
       it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
       line += lineSpacing.nIncrement;
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "Temp: %.2f°C", tempp);
+      line += lineSpacing.nIncrement;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
       line += lineSpacing.nIncrement;
