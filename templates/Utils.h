@@ -42,7 +42,9 @@ class DisplayHelper
 // 1  | 0  | 1  | 8701.298701 | 2.78449522  | 0.063442589 | 1.922502689
 // 1  | 1  | 0  | 7674.418605 | 2.836792854 | 0.052297634 | 1.584776781
 // 1  | 1  | 1  | 6885.705388 | 2.878314367 | 0.041521513 | 1.258227667
-// TODO: https://github.com/espressif/esp-adf/blob/master/components/esp_peripherals/lib/adc_button/adc_button.c
+// TODO: Alternatives:
+//   https://github.com/espressif/esp-adf/blob/master/components/esp_peripherals/lib/adc_button/adc_button.c
+//   https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
 class NorviButtonHelper
 {
 public:
