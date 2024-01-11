@@ -1,0 +1,164 @@
+# RocketController / RobotDyn ASTRA
+# https://rocketcontroller.com/product-category/controllers/
+# https://www.aliexpress.com/store/1101158421/pages/all-items.html?productGroupId=10000003463819
+
+# R4G4DL: 4 x relay, 8 x GPIO
+# https://rocketcontroller.com/product/astra-controller-4-relays-16a-8-gpio-input-dc-power-led-br4g8al/
+
+# R4A4AL: 4 x relay, 4 x AC in
+# https://rocketcontroller.com/product/astra-basic-controller-4-relays-16a-4-ac-input-ac-power-led-br4a4al/
+
+# R4D4DL: 4 x relay, 4 x DC in
+# https://rocketcontroller.com/product/astra-controller-4-relays-16a-4-dc-dry-contact-input-dc-power-led-br4d4dl/
+
+# T4A4AL: 4 x SSR, 4 x AC in
+# https://rocketcontroller.com/product/astra-controller-4-ssr-16a-4-ac-input-ac-power-led-bt4a4al/
+
+# M4D4DL: 4 x FET, 4 x DC in
+# ?
+
+# https://rocketcontroller.com/how-to-update-tasmota-firmware-on-astra-controller/
+# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
+# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
+
+# https://templates.blakadder.com/rocket_R4A4.html
+# https://templates.blakadder.com/assets/ASTRA_controller.pdf
+
+# https://community.home-assistant.io/t/rocket-controller/596231
+
+# ESP32-D0WDQ6, 4MB flash, ESP32-WROOM-32U
+
+# GPIO13: IO-1
+# GPIO14: IO-2
+# GPIO15: IO-3
+# GPIO27: IO-4
+
+# GPIO34: Input-1 / IO-5
+# GPIO35: Input-2 / IO-6
+# GPIO36: Input-3 / IO-7
+# GPIO39: Input-4 / IO-8
+
+# GPIO25: Output-1
+# GPIO26: Output-2
+# GPIO33: Output-3
+# GPIO32: Output-4
+
+# GPIO4: LED / WiFi
+# GPIO12: Buzzer
+# GPIO27: RF
+
+# RXD0: Serial-1-Rx
+# TXD0: Serial-1-Tx
+# GPIO16: Serial-2-Rx
+# GPIO17: Serial-2-Tx
+# GPIO13: Serial-2-Cs / IO-1
+
+# GPIO5: SPI-Cso
+# GPIO18: SPI-Clk
+# GPIO19: SPI-Miso
+# GPIO23: SPI-Mosi
+
+# GPIO21: I2C-Sda
+# GPIO22: I2C-Scl
+# GPIO2: I2C-Int
+
+# GPIO0: Prog
+# EN: Reset
+
+# I2C-1: NC
+# I2C-2: GND
+# I2C-3: I2C-Sda
+# I2C-4: I2C-Scl
+# I2C-5: I2C-Int
+# I2C-6: NC
+
+# RS-1: NC
+# RS-2: GND
+# RS-3: Serial-2-Rx
+# RS-4: Serial-2-Tx
+# RS-5: Serial-2-Cs
+# RS-6: NC
+
+# SPI-1: 3.3V
+# SPI-2: GND
+# SPI-3: SPI-Mosi
+# SPI-4: SPI-Miso
+# SPI-5: SPI-Clk
+# SPI-6: SPI-Cso
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  on_boot:
+    priority: -100
+    then:
+      - rtttl.play: "Scale-Up:d=32,o=5,b=100:c,c#,d#,e,f#,g#,a#,b"
+
+# https://esphome.io/components/esp32
+esp32:
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32doit-devkit-v1.html
+  board: esp32doit-devkit-v1
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  common: !include common.yaml
+  memory_sensor:  !include esp32-memory-sensor.yaml
+
+# https://esphome.io/components/status_led
+status_led:
+  pin:
+    number: GPIO4
+    inverted: true
+
+# https://esphome.io/components/output/ledc
+output:
+  - platform: ledc
+    pin: GPIO12
+    id: rtttl_out
+
+# https://esphome.io/components/rtttl
+rtttl:
+  output: rtttl_out
+
+# https://esphome.io/components/switch
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay_0
+    id: relay_0
+    pin: GPIO25
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_1
+    id: relay_1
+    pin: GPIO26
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_2
+    id: relay_2
+    pin: GPIO33
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_3
+    id: relay_3
+    pin: GPIO32
+    restore_mode: ALWAYS_OFF
+
+# Input handling to be defined in the device config as gpio, pulse counters, etc.
+# https://esphome.io/components/binary_sensor/gpio.html
+# - platform: gpio
+#   pin: 
+#     number: GPIO34
+#     inverted: true
+#
+# https://esphome.io/components/sensor/pulse_counter.html
+# - platform: pulse_counter
+#   pin:
+#     number: GPIO34
+#     inverted: true

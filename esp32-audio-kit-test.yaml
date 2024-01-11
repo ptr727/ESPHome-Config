@@ -1,0 +1,145 @@
+# https://docs.ai-thinker.com/en/esp32-a1s
+# https://docs.ai-thinker.com/en/esp32-audio-kit
+# https://github.com/mulcmu/esphome-es8388-a1s/tree/nightdav-patch
+# https://github.com/esphome/esphome/pull/3552
+# https://community.home-assistant.io/t/esp32-a1s-audio-kit-for-voice-assistant/568301/39
+
+substitutions:
+  device_name: esp32-audio-kit-test
+  device_comment: "ESP32-A1S Wi-Fi+BT Audio Development Kit V2.2 A247"
+
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+
+esp32:
+  board: esp-wrover-kit
+  framework:
+    type: arduino
+
+packages:
+  common: !include templates/common.yaml
+  memory_sensor:  !include templates/esp32-memory-sensor.yaml
+
+external_components:
+  # - source: github://pr#3552
+  - source: github://mulcmu/esphome-es8388-a1s@nightdav-patch
+    components: [es8388]
+
+es8388:
+
+i2c:
+  sda: GPIO33
+  scl: GPIO32
+
+media_player:
+  - platform: i2s_audio
+    name: "ESPAudioKit"
+    id: AudioKit
+    i2s_dout_pin: GPIO26
+    dac_type: external
+    mode: stereo
+
+i2s_audio:
+  i2s_lrclk_pin: GPIO25
+  i2s_bclk_pin: GPIO27
+
+microphone:
+  - platform: i2s_audio
+    i2s_din_pin: GPIO35
+    id: mic1
+    adc_type: external
+    pdm: false
+
+switch:
+  - platform: gpio
+    pin: GPIO21
+    name: "AMP Switch"
+    restore_mode: ALWAYS_ON
+
+voice_assistant:
+  microphone: mic1
+    
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+      mode:
+        input: true
+    name: "Jack Status"
+
+  - platform: gpio
+    pin:
+      number: GPIO036
+      inverted: true
+    name: "Key 1"
+    filters:
+      - delayed_off: 10ms
+
+  - platform: gpio
+    pin:
+      number: GPIO013
+      inverted: true
+    name: "Key 2"
+    filters:
+      - delayed_off: 10ms
+
+  - platform: gpio
+    pin:
+      number: GPIO019
+      inverted: true
+    name: "Key 3"
+    filters:
+      - delayed_off: 10ms
+      
+  - platform: gpio
+    pin:
+      number: GPIO023
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: "Key 4"
+    filters:
+      - delayed_off: 10ms
+      
+  - platform: gpio
+    pin:
+      number: GPIO018
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: "Key 5"
+    filters:
+      - delayed_off: 10ms
+      
+  - platform: gpio
+    pin: 
+      number: GPIO005
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: "Key 6"
+    filters:
+     - delayed_off: 10ms
+
+    on_press:
+      - voice_assistant.start:
+    on_release:
+      - voice_assistant.stop:
+    on_click:
+      - media_player.toggle: AudioKit  
+
+light:
+  - platform: binary
+    name: "Test LED 1"
+    output: light_output_1
+ 
+output:
+  - id: light_output_1
+    platform: gpio
+    pin: GPIO22
+    inverted: true
