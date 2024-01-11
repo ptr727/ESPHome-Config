@@ -49,7 +49,15 @@ ESPHome configuration.
 ### Norvi NORVI-ENET-AE06-R DIN Controller
 
 - [Template](./templates/norvi-enet-ae06-r.yaml) for the [Norvi NORVI-ENET-AE06-R](https://shop.norvi.lk/products/norvi-enet-ae06-r) or [SensOper SC-EN-I6-RO4](https://sensoper.com/shop/sc-en-i6-ro4/) ESP32 DIN form factor controllers.
-- Note that I am experiencing issues with the built-in ADC that monitors button presses, and some WiFi instability, see [the notes](./templates/norvi-enet-ae06-r.yaml) section for details.
+- *Note*: I am experiencing issues with instability in several units, see [the notes](./templates/norvi-enet-ae06-r.yaml) section for details.
+
+### RocketController ASTRA DIN Controller
+
+- [Template](./templates/rocket-astra.yaml) for the [RocketController / RocketDyn ASTRA](https://rocketcontroller.com/product-category/controllers/) ESP32 DIN form factor controllers.
+
+### Kincony KC868-ASR DIN Controller
+
+- [Template](./templates/kincony-kc868-asr.yaml) for the [Kincony KC868-ASR](https://www.kincony.com/esp32-sd-card-rtc-ds3231.html) ESP32 DIN form factor controllers.
 
 ## Projects
 

@@ -6,3 +6,56 @@ substitutions:
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   norvi: !include templates/norvi-enet-ae06-r.yaml
+
+# https://esphome.io/components/binary_sensor/
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio.html
+  - platform: gpio
+    name: ${device_name}_input_1
+    id: input_1
+    pin: 
+      number: GPIO21
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_2
+    id: input_2
+    pin: 
+      number: GPIO14
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_3
+    id: input_3
+    pin: 
+      number: GPIO33
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_4
+    id: input_4
+    pin: 
+      number: GPIO34
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_5
+    id: input_5
+    pin: 
+      number: GPIO35
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_6
+    id: input_6
+    pin: 
+      number: GPIO25
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_7
+    id: input_7
+    pin: 
+      number: GPIO32
+      inverted: true
+  - platform: gpio
+    name: ${device_name}_input_8
+    id: input_8
+    pin: 
+      number: GPIO22
+      inverted: true
