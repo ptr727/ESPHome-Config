@@ -15,7 +15,14 @@
 ##   Norvi online store did now offer US shipping.
 ##   Took almost a month to receive the unit.
 
-# ADC Problems:
+# PSU problems:
+## The device seems to be very sensitive to the type of PSU used.
+## E.g. Meanwell DIN 24V PSU works.
+## E.g. USB powered works.
+## E.g. Rigol linear bench PSU, no WiFi.
+## E.g. Wanptek switching bench PSU, PSU interference/overload/undervoltage, no WiFi.
+
+# ADC problems:
 ## Three buttons are connected with a resistor network to the internal ADC on GPIO36.
 ## The ADC measurements are unstable and drift.
 ##   The Espressif design calls for a low impedance input and a 100nF decoupling capacitor to prevent noise and drift.
@@ -33,12 +40,19 @@
 ## The same unit on the same workbench runs stable when powered from USB using the micro-USB programming plug.
 ## Move the unit to a DIN enclosure with a DIN switching 24V PSU and WiFi is stable.
 
+# GPIO pin choice:
+## ESP32 has strapping pins on GPIO0, GPIO2, GPIO5, GPIO12, and GPIO15.
+## GPIO15 is used on the expansion port.
+## Using strapping pins on external peripherals is potentially problematic, as an external device may pull GPIO15 low on boot changing SDIO slave timing.
+## It may be possible to instead use GPIO12 that is used as output only, instead of GPIO15.
+
 # Inconsistent behavior:
 ## My April 2023 SensOper unit had ADC and WiFi problems from day 1.
 ## My December 2023 Norvi supplied unit had ADC and WiFi problems from day 1.
 ## My December 2023 CarTFT supplied Norvi unit had stable ADC and stable WiFi on the bench, but after being in operation for about two weeks the ADC is now drifting.
 
 # Speculation:
+## The PSU instability could be caused by poor switching PSU design, or a common component that failed in all 3 my units.
 ## The ADC drift could be caused by the too high input impedance of the resistor network, or a lack of decoupling capacitor, or an unstable voltage reference, or an unstable DC-DC converter, or WiFi interference.
 ## The WiFi instability could be caused by insufficient component isolation or shielding, or an unstable DC-DC converter.
 ## The ADC button configuration may have been more accurate and supported multiple button presses if a R2R ladder with doubling resistor values were used, and the voltage remained within ADC spec.
@@ -100,7 +114,7 @@
 ## SCK IO18
 ## MISO IO19
 ## MOSI IO23
-## CS IO5
+## CS IO5 (strapping)
 ## SD Detect IO14
 
 # Buttons
@@ -108,25 +122,29 @@
 ## IO36
 ## Resistor network: 3.3V, S3 10K, S2 33K, S1 67K, 47K GND
 
+# I2C
+## SDA IO16
+## SCL IO17
+
 # Expansion Port
 ## 1 Not Connected
-## 2 TXD0
+## 2 TXD0 / IO1
 ## 3 5V
-## 4 RXD0
+## 4 RXD0 / IO3
 ## 5 BOOT IO0
-## 6 IO15
+## 6 IO15 (strapping)
 ## 7 3.3V
-## 8 SCL IO17
+## 8 SCL / IO17
 ## 9 Ground
-## 10 SDA IO16
+## 10 SDA / IO16
 
 # Relay Output
 ## R0 IO2
 ## R1 IO4
-## R2 IO12
+## R2 IO12 (strapping)
 ## R3 IO13
 
-# Source/Sink Input
+# Source / Sink Input
 ## I0 IO21
 ## I1 IO14
 ## I2 IO33
@@ -165,7 +183,7 @@ esphome:
 
 # https://esphome.io/components/esp32
 esp32:
-  # ESP32-WROOM32
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
   board: esp32dev
 
 # https://esphome.io/guides/configuration-types.html#local-packages
@@ -177,7 +195,6 @@ packages:
 i2c:
   sda: GPIO16
   scl: GPIO17
-  scan: true
   # Increase speed to prevent component took a long time errors
   # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
   frequency: 400kHz
@@ -238,21 +255,23 @@ sensor:
     pin: GPIO36
     name: ${device_name}_adc_buttons
     id: adc_buttons
-    attenuation: 11dB 
-    # Update fast enough to make button presses responsive
-    update_interval: 100ms # effectively multiplied by filter send_every so 300ms
-    # Average values
+    attenuation: 11dB
+    # Average over 64 samples, emit every 32 samples, every 320ms at 10ms sampling
+    # ~3 times per second to keep key presses responsive
+    update_interval: 10ms
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
-          window_size: 3
-          send_every: 3
-          send_first_at: 3
+          window_size: 64
+          send_every: 32
+          # TODO: https://github.com/esphome/issues/issues/5353
+          # send_first_at: 64
+          send_first_at: 32
     # Used internally for switch templates only, do not report to HA
     internal: false # true
 
-# https://esphome.io/components/switch/index.html
+# https://esphome.io/components/switch
 switch:
 
   # https://esphome.io/components/switch/gpio.html

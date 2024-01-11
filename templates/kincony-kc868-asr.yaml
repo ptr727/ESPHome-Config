@@ -1,0 +1,154 @@
+# Kincony KC868-ASR
+
+# https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
+# https://www.aliexpress.us/item/3256805196044212.html
+# https://www.kincony.com/download/KC868-ASR-schematic.pdf
+# https://www.kincony.com/forum/showthread.php?tid=3197
+# https://www.kincony.com/forum/showthread.php?tid=2650
+# https://templates.blakadder.com/kincony_KC868-ASR.html
+# https://devices.esphome.io/devices/KinCony-KC868-ASR
+
+# https://github.com/Lmanangka/esp32-4-channel-relays/blob/main/schematic/schematic.pdf
+# https://github.com/OLIMEX/ESP32-DevKit-LiPo/tree/master/HARDWARE/ESP32-DevKit-LiPo-Rev.C
+# https://github.com/ansemjo/luftctl/blob/main/schematic.pdf
+# https://github.com/esp-rs/esp-rust-board
+# https://github.com/clackotron/clackotron_hardware
+# https://learn.adafruit.com/adafruit-esp32-s3-feather/downloads
+# https://oshwlab.com/Miraculix200/esp32-s3-mini_copy
+
+# https://github.com/mortens-lab/iot-thing
+# https://github.com/strid3r21/Bee-Data-Logger
+# https://www.kincony.com/download/KC868-ASR-schematic.pdf
+# https://www.kincony.com/download/KC868-A4-schematic.pdf
+# https://github.com/CrabikBoards/slot-esp32-s3-hardware
+# https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo
+# https://github.com/Lmanangka/esp32-4-channel-relays
+# https://github.com/ansemjo/luftctl
+
+# ESP32-WROOM-32E
+
+# GPIO19: Relay-1
+# GPIO5: Relay-2
+# GPIO23: LED-1
+# GPIO22: LED-2
+# GPIO18: Buzzer
+# GPIO32: TH-1, 1-Wire, GPIO
+# GPIO33: TH-2, 1-Wire, GPIO
+# GPIO26: I2C-SDA
+# GPIO27: I2C-SCL
+# GPIO16: GPIO
+# GPIO17: GPIO
+
+# DS3231:
+# I2C 0x68
+
+# SD Card:
+# GPIO12: DAT2
+# GPIO13: CD/DAT3 / CS
+# GPIO15: CMD / DI
+# GPIO14: CLK / SCLK
+# GPIO2: DAT0 / D0
+# GPIO4: DAT1
+# GPIO21: WP
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  on_boot:
+    - priority: 600
+      then:
+        - ds1307.read_time:
+    - priority: -100
+      then:
+        - rtttl.play: "Scale-Up:d=32,o=5,b=100:c,c#,d#,e,f#,g#,a#,b"
+
+# https://esphome.io/components/esp32
+esp32:
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
+  board: esp32dev
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  common: !include common-no-time.yaml
+  memory_sensor:  !include esp32-memory-sensor.yaml
+
+# https://esphome.io/components/i2c
+i2c:
+  sda: GPIO26
+  scl: GPIO27
+  frequency: 400kHz
+
+# https://esphome.io/components/time
+time:
+
+  # https://esphome.io/components/time/ds1307
+  - platform: ds1307
+    id: ds1307_time
+    address: 0x68
+    # Use HA for time sync
+    update_interval: never
+  # https://esphome.io/components/time/homeassistant
+  - platform: homeassistant
+    id: homeassistant_time
+    # Update RTC on time sync
+    on_time_sync:
+      then:
+        ds1307.write_time:
+
+# https://esphome.io/components/status_led
+status_led:
+  pin:
+    # LED-2
+    number: GPIO22
+
+# https://esphome.io/components/rtttl
+rtttl:
+  output: rtttl_out
+
+# https://esphome.io/components/switch
+switch:
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_relay_0
+    id: relay_0
+    pin: GPIO19
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${device_name}_relay_1
+    id: relay_1
+    pin: 
+      number: GPIO5
+      ignore_strapping_warning: true
+    restore_mode: ALWAYS_OFF
+
+# https://esphome.io/components/light/
+light:
+  
+  # https://esphome.io/components/light/
+  - platform: binary
+    name: ${device_name}_led_0
+    output: led_0
+
+# https://esphome.io/components/output
+output:
+
+  # https://esphome.io/components/output/ledc
+  - platform: ledc
+    id: rtttl_out
+    pin: GPIO18
+
+  # https://esphome.io/components/output/gpio
+  - platform: gpio
+    id: led_0
+    # LED-1
+    pin: GPIO23
+    inverted: true
+
+# GPIO16 and GPIO17 can be used as IO, pulse counters, etc.
+# GPIO32 and GPIO33 can be used as IO or as 1-Wire Dallas
