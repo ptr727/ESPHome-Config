@@ -1,26 +1,32 @@
 # Notes:
 
-# Suppliers:
+# Timeline:
 ##
-## April 2023 purchased a SensOper SC-EN-I6-RO4 from IiotProducts online store.
+## April 2023, purchased a SensOper SC-EN-I6-RO4 from IiotProducts online store.
 ##   Norvi online store did not ship to the US.
 ##   Norvi products sold under the SonsOper brand in the US.
 ##   GPIO pins for inputs are incorrectly documented in SensOper docs, use the Norvi docs instead.
 ##   DS3231: My unit was missing the DS3231 RTC as advertised, per Norvi early units did not have RTC's, current units should have RTC's.
 ##   ADS1115: My unit was missing the ADS1115 ADC as advertised, per Norvi the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
 ##   Still waiting for SensOper to send me a correct unit that includes the DS3221.
-## December 2023 purchased a Norvi NORVI-ENET-AE06-R from CarTFT online store.
+## December 2023, purchased a Norvi NORVI-ENET-AE06-R from CarTFT online store.
 ##   In stock and fast shipping to the US.
-## December 2023 purchased a Norvi NORVI-ENET-AE06-R from the Norvi online store.
+## December 2023, purchased a Norvi NORVI-ENET-AE06-R from the Norvi online store.
 ##   Norvi online store did now offer US shipping.
 ##   Took almost a month to receive the unit.
+## January 2024, all 3 units suffering from some sort of stability issue.
+##   SensOper from IiotProduct never worked correctly, ADC drift, no WiFi on bench PSU, and missing RTC.
+##   Norvi from Norvi never worked correctly, ADC drift and no WiFi on bench PSU.
+##   Norvi from CarTFT worked fine for about 2 weeks, then ADC started drifting.
+##   Returning all units to Norvi for inspection.
 
 # PSU problems:
 ## The device seems to be very sensitive to the type of PSU used.
-## E.g. Meanwell DIN 24V PSU works.
-## E.g. USB powered works.
-## E.g. Rigol linear bench PSU, no WiFi.
-## E.g. Wanptek switching bench PSU, PSU interference/overload/undervoltage, no WiFi.
+## E.g. XP Power DIN 24V PSU, WiFi works, ADC drift.
+## E.g. Meanwell DIN 24V PSU, WiFi works, ADC drift.
+## E.g. USB powered, WiFi works, ADC drift.
+## E.g. Rigol linear bench PSU, no WiFi, ADC drift.
+## E.g. Wanptek switching bench PSU, PSU fails to sync, no WiFi, ADC drift.
 
 # ADC problems:
 ## Three buttons are connected with a resistor network to the internal ADC on GPIO36.
@@ -31,9 +37,7 @@
 ##   The resistor network voltage range goes to 2.88V with all three buttons pressed, and 2.72V with the S3 button pressed, out of range of the ADC.
 ## The values of the resistor network does not support multiple button press states.
 ##   The voltage delta between S3+S2 and S3+S2+S1 is 0.042V, and the absolute is 2.88V, that is outside the 2.45V usable range of the ADC.
-## Reference
-##   https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_B_V1_1-1109A.pdf
-##   https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32/api-reference/peripherals/adc.html
+## Reference Utils.h for numeric calculations
 
 # WiFi problems:
 ## WiFi is unstable and frequently disconnects when running from 24VDC from my programmable linear PSU or a 24V switching PSU when on my workbench.
