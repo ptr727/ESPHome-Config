@@ -28,6 +28,8 @@ class DisplayHelper
 
 // Refer to Norvi docs for resistor ladder values:
 // https://norvi.lk/docs/norvi-enet-ae06-r-norvi-enet-ae06-r-user-guide/
+// https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32/api-reference/peripherals/adc.html
+// https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_B_V1_1-1109A.pdf
 // 3.3V, S3, 10K, 47K, GND
 // 3.3V, S2, 33K, 47K, GND
 // 3.3V, S1, 67K, 47K, GND
@@ -42,7 +44,11 @@ class DisplayHelper
 // 1  | 0  | 1  | 8701.298701 | 2.78449522  | 0.063442589 | 1.922502689
 // 1  | 1  | 0  | 7674.418605 | 2.836792854 | 0.052297634 | 1.584776781
 // 1  | 1  | 1  | 6885.705388 | 2.878314367 | 0.041521513 | 1.258227667
-// TODO: Alternatives:
+// TODO: Choice of resistor values are suboptimal
+//   Max voltage from resistor ladder is 2.88V exceeding ADC max input of 2.45V at 11dB
+//   Minimum button press V delta is 0.042V, about 1.3% of 3.3V range, making the state change overly sensitive
+//   As alternative a standard R2R ladder configuration could have been used
+// TODO: Alternative ADC button components:
 //   https://github.com/espressif/esp-adf/blob/master/components/esp_peripherals/lib/adc_button/adc_button.c
 //   https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
 class NorviButtonHelper

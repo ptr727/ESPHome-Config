@@ -18,12 +18,16 @@
 			"GPIO",
 			"homeassistant",
 			"kincony",
+			"Meanwell",
 			"Norvi",
 			"recirc",
+			"Rigol",
 			"rtttl",
+			"SDIO",
 			"Sonoff",
 			"Tasmota",
 			"Tuya",
+			"Wanptek",
 			"Zigbee"
 		]
 	}
