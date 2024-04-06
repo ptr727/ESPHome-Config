@@ -8,23 +8,6 @@
 # https://templates.blakadder.com/kincony_KC868-ASR.html
 # https://devices.esphome.io/devices/KinCony-KC868-ASR
 
-# https://github.com/Lmanangka/esp32-4-channel-relays/blob/main/schematic/schematic.pdf
-# https://github.com/OLIMEX/ESP32-DevKit-LiPo/tree/master/HARDWARE/ESP32-DevKit-LiPo-Rev.C
-# https://github.com/ansemjo/luftctl/blob/main/schematic.pdf
-# https://github.com/esp-rs/esp-rust-board
-# https://github.com/clackotron/clackotron_hardware
-# https://learn.adafruit.com/adafruit-esp32-s3-feather/downloads
-# https://oshwlab.com/Miraculix200/esp32-s3-mini_copy
-
-# https://github.com/mortens-lab/iot-thing
-# https://github.com/strid3r21/Bee-Data-Logger
-# https://www.kincony.com/download/KC868-ASR-schematic.pdf
-# https://www.kincony.com/download/KC868-A4-schematic.pdf
-# https://github.com/CrabikBoards/slot-esp32-s3-hardware
-# https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo
-# https://github.com/Lmanangka/esp32-4-channel-relays
-# https://github.com/ansemjo/luftctl
-
 # ESP32-WROOM-32E
 
 # GPIO19: Relay-1
