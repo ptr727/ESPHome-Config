@@ -262,6 +262,7 @@ sensor:
     attenuation: 11dB
     # Average over 64 samples, emit every 32 samples, every 320ms at 10ms sampling
     # ~3 times per second to keep key presses responsive
+    # TODO: Debug logging will flood the output, how to change to info just for this component?
     update_interval: 10ms
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:

@@ -12,14 +12,19 @@
 			"appdata",
 			"astra",
 			"bangbang",
+			"bssid",
 			"dallasng",
+			"dout",
 			"esphome",
 			"Espressif",
 			"GPIO",
 			"homeassistant",
 			"kincony",
 			"Meanwell",
+			"mulcmu",
+			"nightdav",
 			"Norvi",
+			"PULLUP",
 			"recirc",
 			"Rigol",
 			"rtttl",
@@ -27,8 +32,11 @@
 			"Sonoff",
 			"Tasmota",
 			"Tuya",
+			"UART",
 			"Wanptek",
 			"Zigbee"
-		]
+		],
+		"editor.renderWhitespace": "boundary",
+		"diffEditor.ignoreTrimWhitespace": false
 	}
 }

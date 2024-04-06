@@ -25,7 +25,7 @@ wifi:
 
 # https://esphome.io/components/logger
 logger:
-  level: info # none, error, warn, info, debug, verbose, very_verbose
+  level: debug # none, error, warn, info, debug, verbose, very_verbose
 
 # https://esphome.io/components/api
 api:
