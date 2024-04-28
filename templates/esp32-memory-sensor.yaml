@@ -1,3 +1,5 @@
+# TODO: Only works with Arduino not ISP-IDF
+
 # https://esphome.io/components/sensor
 sensor:
 

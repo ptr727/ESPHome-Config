@@ -254,6 +254,7 @@ display:
 # https://esphome.io/components/sensor/
 sensor:
 
+  # TODO: Replace with https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
   # https://esphome.io/components/sensor/adc.html
   - platform: adc
     pin: GPIO36
