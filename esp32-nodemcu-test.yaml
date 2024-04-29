@@ -10,7 +10,6 @@ esphome:
 
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp32-memory-sensor.yaml
 
 dallas:
   - pin: GPIO25

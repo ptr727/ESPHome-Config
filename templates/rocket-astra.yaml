@@ -107,7 +107,6 @@ esp32:
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   common: !include common.yaml
-  memory_sensor:  !include esp32-memory-sensor.yaml
 
 # https://esphome.io/components/status_led
 status_led:

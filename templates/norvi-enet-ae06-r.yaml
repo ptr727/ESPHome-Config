@@ -193,7 +193,6 @@ esp32:
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
   common: !include common-no-time.yaml
-  memory_sensor:  !include esp32-memory-sensor.yaml
 
 # https://esphome.io/components/i2c
 i2c:
