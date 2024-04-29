@@ -19,7 +19,6 @@ esp32:
 
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp32-memory-sensor.yaml
 
 external_components:
   # - source: github://pr#3552

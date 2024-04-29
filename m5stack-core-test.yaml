@@ -7,9 +7,7 @@ esphome:
   comment: ${device_comment}
 
 esp32:
-  board: esp32dev
   board: m5stack-core-esp32
 
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp32-memory-sensor.yaml

@@ -37,7 +37,6 @@ esp8266:
 # https://esphome.io/guides/configuration-types.html#remote-git-packages
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp8266-memory-sensor.yaml
   ratgdo_package:
     url: https://github.com/ratgdo/esphome-ratgdo
     files: [base.yaml]

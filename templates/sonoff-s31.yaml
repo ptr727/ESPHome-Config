@@ -35,7 +35,6 @@ uart:
 packages:
   # UART is in use, do not log over UART
   common: !include common-no-logger.yaml
-  memory_sensor:  !include esp8266-memory-sensor.yaml
 
 # https://esphome.io/components/binary_sensor/index.html
 binary_sensor:
