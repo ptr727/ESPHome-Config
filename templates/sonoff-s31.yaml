@@ -34,7 +34,12 @@ uart:
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   # UART is in use, do not log over UART
-  common: !include common-no-logger.yaml
+  api: !include api.yaml
+  basic: !include basic.yaml
+  debug: !include debug.yaml
+  ota: !include ota.yaml
+  time: !include time.yaml
+  wifi: !include wifi.yaml
 
 # https://esphome.io/components/binary_sensor/index.html
 binary_sensor:
