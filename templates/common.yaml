@@ -13,10 +13,6 @@ wifi:
   password: !secret wifi_password
   domain: !secret wifi_domain
   reboot_timeout: 5min
-  # Do not fallback to AP mode as that requires a physical reset
-  # ap:
-  #   ssid: ${device_name}_ap
-  #   password: !secret wifi_password
   # Specify current address when renaming devices
   # use_address: foo
 
