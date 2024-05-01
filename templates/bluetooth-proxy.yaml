@@ -19,6 +19,10 @@ esp32:
 packages:
   common: !include common.yaml
 
+# https://github.com/esphome/issues/issues/5754
+wifi:
+  fast_connect: true
+
 # https://esphome.io/components/esp32_ble_tracker.html
 esp32_ble_tracker:
   scan_parameters:

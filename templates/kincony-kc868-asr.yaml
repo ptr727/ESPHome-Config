@@ -57,7 +57,7 @@ esp32:
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  common: !include common-no-time.yaml
+  common: !include common.yaml
 
 # https://esphome.io/components/i2c
 i2c:
@@ -65,6 +65,7 @@ i2c:
   scl: GPIO27
   frequency: 400kHz
 
+# Add to common.yaml time configuration
 # https://esphome.io/components/time
 time:
 
@@ -74,9 +75,9 @@ time:
     address: 0x68
     # Use HA for time sync
     update_interval: never
+
   # https://esphome.io/components/time/homeassistant
   - platform: homeassistant
-    id: homeassistant_time
     # Update RTC on time sync
     on_time_sync:
       then:
