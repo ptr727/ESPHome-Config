@@ -1,0 +1,18 @@
+substitutions:
+  device_name: esp32-test
+  device_comment: "ESP32 test Device"
+
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+
+esp32:
+  board: esp32dev
+#  framework:
+#    type: esp-idf
+
+packages:
+  common: !include templates/common.yaml
+
+web_server:
+  port: 80
