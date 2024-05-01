@@ -17,7 +17,13 @@ esp32:
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  common_no_wifi: !include templates/common-no-wifi.yaml
+  # No wifi
+  api: !include templates/api.yaml
+  basic: !include templates/basic.yaml
+  debug: !include templates/debug.yaml
+  logger: !include templates/logger.yaml
+  ota: !include templates/ota.yaml
+  time: !include templates/time.yaml
 
 # https://esphome.io/components/external_components.html
 # https://github.com/tube0013/esphome-stream-server-v2

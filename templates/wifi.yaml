@@ -1,0 +1,38 @@
+# Required substitutions:
+# device_name
+
+# Required secrets:
+# wifi_ssid
+# wifi_password
+# wifi_domain
+
+# https://esphome.io/components/wifi
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+  reboot_timeout: 5min
+
+# https://esphome.io/components/text_sensor
+text_sensor:
+
+  # https://esphome.io/components/text_sensor/wifi_info.html
+  - platform: wifi_info
+    ip_address:
+      name: ${device_name}_wifi_ip
+      id: wifi_ip
+      update_interval: 60s
+    ssid:
+      name: ${device_name}_wifi_ssid
+      update_interval: 60s
+    bssid:
+      name: ${device_name}_wifi_bssid
+      update_interval: 60s
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # https://esphome.io/components/sensor/wifi_signal.html
+  - platform: wifi_signal
+    name: ${device_name}_wifi_signal
+    update_interval: 60s
