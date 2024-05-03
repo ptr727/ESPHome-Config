@@ -1,15 +1,28 @@
 substitutions:
-  device_name: esp32-test
-  device_comment: "ESP32 Test Device"
+  device_name: esp32-s3-test
+  device_comment: "ESP32-S3 Test Device"
 
 esphome:
   name: ${device_name}
   comment: ${device_comment}
 
 esp32:
-  board: esp32dev
+  # Adafruit ESP32-S3 8MB Flash 5323, 5885 (w.FL)
+  board: adafruit_feather_esp32s3_nopsram
+  # Adafruit ESP32-S3 4MB Flash 2MB PSRAM 5477
+  # board: adafruit_feather_esp32s3
+  variant: esp32s3
+  flash_size: 8MB
   framework:
     type: esp-idf
+# https://github.com/Xinyuan-LilyGO/LilyGo-LoRa-Series/issues/121#issuecomment-1840353183
+# https://github.com/mu-editor/mu/issues/2313
+# https://github.com/esphome/issues/issues/5187
+# https://esphome.io/components/esp32.html#esp-idf-framework
+# https://esphome.io/guides/getting_started_command_line
+# https://learn.microsoft.com/en-us/windows/wsl/connect-usb
+# https://docs.platformio.org/en/latest/boards/espressif32/adafruit_feather_esp32s3_nopsram.html
+# https://www.adafruit.com/product/5323
 
 wifi:
   ssid: !secret wifi_ssid
@@ -17,7 +30,7 @@ wifi:
   domain: !secret wifi_domain
   reboot_timeout: 5min
   # power_save_mode: none
-  fast_connect: true
+  # fast_connect: true
 
 logger:
   level: debug
