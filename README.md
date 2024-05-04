@@ -120,3 +120,33 @@ ESPHome configuration.
   - Look at ESPHome integration entities, fix incorrect entries.
   - E.g. search for entities named `foo_2`, delete `foo`, and rename `foo_2` to `foo`.
   - E.g. replace short entity names with fully qualified names.
+
+### Debugging on Windows WSL
+
+- Install Ubuntu from Microsoft Store.
+- Install [USBIPD-WIN](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) from [GitHub Releases](https://github.com/dorssel/usbipd-win/releases/latest).
+- Open Ubuntu WSL in Terminal.
+  - Update: `sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y`
+  - Install Python3 and USBUtils: `sudo apt install python3 usbutils -y`
+- Open PowerShell as Admin in Terminal.
+  - Make sure USBIPD is installed: `usbipd list`
+- Install VSCode and Remote Explorer extension.
+- Open VSCode Remote WSL Ubuntu session.
+  - Install extensions: Python, PlatformIO
+  - Clone `ptr727/ESPHome-Config` repo and open workspace.
+  - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
+  - Install ESPHome (in venv terminal): `pip install wheel esphome`
+  - Make sure ESPHome is installed: `esphome version`
+- Bind serial port.
+  - Windows: `usbipd list`: `7-1    303a:1001  USB Serial Device (COM4), USB JTAG/serial debug unit          Not shared`
+  - Windows: `usbipd bind --busid 7-1`
+  - Windows: `usbipd attach --wsl --busid 7-1`
+  - WSL: `lsusb`: `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
+  - WSL: `dmesg | grep tty`: `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
+  - WSL: `ls /dev/tty*`: `/dev/ttyACM0`
+- Upload `secrets.yaml`
+- Compile ESPHome project: `esphome compile esp32-s3-test.yaml`
+- TODO: `ModuleNotFoundError: No module named 'pkg_resources':`
+- Unbind serial port.
+  - `usbipd detach --busid 7-1`
+
