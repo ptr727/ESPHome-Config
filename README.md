@@ -127,7 +127,8 @@ ESPHome configuration.
 - Install [USBIPD-WIN](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) from [GitHub Releases](https://github.com/dorssel/usbipd-win/releases/latest).
 - Open Ubuntu WSL in Terminal.
   - Update: `sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y`
-  - Install Python3 and USBUtils: `sudo apt install python3 usbutils -y`
+  - Install Python3 and USBUtils: `sudo apt install python3 python3-venv usbutils -y`
+  - Test `venv`: `python3 -m venv venv && source venv/bin/activate`
 - Open PowerShell as Admin in Terminal.
   - Make sure USBIPD is installed: `usbipd list`
 - Install VSCode and Remote Explorer extension.
