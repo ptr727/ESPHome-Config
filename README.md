@@ -136,7 +136,7 @@ ESPHome configuration.
   - Clone `ptr727/ESPHome-Config` repo and open workspace.
   - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
   - Install ESPHome (in venv terminal): `pip install wheel esphome`
-  - Make sure ESPHome is installed: `esphome version`
+  - Make sure [ESPHome](https://esphome.io/guides/cli) is installed: `esphome version`
 - Bind serial port.
   - Windows: `usbipd list`: `7-1    303a:1001  USB Serial Device (COM4), USB JTAG/serial debug unit          Not shared`
   - Windows: `usbipd bind --busid 7-1`
@@ -146,7 +146,7 @@ ESPHome configuration.
   - WSL: `ls /dev/tty*`: `/dev/ttyACM0`
 - Upload `secrets.yaml`
 - Compile ESPHome project: `esphome compile esp32-s3-test.yaml`
-- TODO: `ModuleNotFoundError: No module named 'pkg_resources':`
+  - TODO: `ModuleNotFoundError: No module named 'pkg_resources':`
 - Unbind serial port.
   - `usbipd detach --busid 7-1`
 
