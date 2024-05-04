@@ -11,9 +11,11 @@
 		"cSpell.words": [
 			"appdata",
 			"astra",
+			"autoremove",
 			"Ayococr",
 			"bangbang",
 			"bssid",
+			"busid",
 			"dallasng",
 			"dout",
 			"EFUN",
@@ -22,7 +24,9 @@
 			"Espressif",
 			"GPIO",
 			"homeassistant",
+			"JTAG",
 			"kincony",
+			"lsusb",
 			"macvlan",
 			"Meanwell",
 			"mulcmu",
@@ -39,10 +43,20 @@
 			"Tasmota",
 			"Tuya",
 			"UART",
+			"USBIPD",
+			"usbutils",
+			"venv",
 			"Wanptek",
 			"Zigbee"
 		],
 		"editor.renderWhitespace": "boundary",
 		"diffEditor.ignoreTrimWhitespace": false
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"streetsidesoftware.code-spell-checker",
+			"platformio.platformio-ide"
+		]
 	}
 }
