@@ -125,29 +125,158 @@ ESPHome configuration.
 
 - Install Ubuntu from Microsoft Store.
 - Install [USBIPD-WIN](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) from [GitHub Releases](https://github.com/dorssel/usbipd-win/releases/latest).
-- Open Ubuntu WSL in Terminal.
-  - Update: `sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y`
-  - Install Python3 and USBUtils: `sudo apt install python3 python3-venv usbutils -y`
-  - Test `venv`: `python3 -m venv venv && source venv/bin/activate`
-- Open PowerShell as Admin in Terminal.
-  - Make sure USBIPD is installed: `usbipd list`
+- Bind serial port.
+  - Open PowerShell as Admin in Terminal, referred to as Windows.
+  - Open Ubuntu in Terminal, referred to as WSL.
+  - Windows: `usbipd list`, e.g. `7-1    303a:1001  USB Serial Device (COM4), USB JTAG/serial debug unit          Not shared`
+  - Windows: `usbipd bind --busid 7-1`
+  - Windows: `usbipd attach --wsl --busid 7-1`
+  - WSL: `sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y`
+  - WSL: `sudo apt install python3 python3-venv usbutils -y`
+  - WSL: `lsusb`, e.g. `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
+  - WSL: `dmesg | grep tty`, e.g. `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
+  - WSL: `ls /dev/tty*`, e.g. `/dev/ttyACM0`, `/dev/ttyUSB0`
 - Install VSCode and Remote Explorer extension.
 - Open VSCode Remote WSL Ubuntu session.
   - Install extensions: Python, PlatformIO
   - Clone `ptr727/ESPHome-Config` repo and open workspace.
+  - Upload `secrets.yaml`
   - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
+  - Open terminal, make sure venv is active.
   - Install ESPHome (in venv terminal): `pip install wheel esphome`
   - Make sure [ESPHome](https://esphome.io/guides/cli) is installed: `esphome version`
-- Bind serial port.
-  - Windows: `usbipd list`: `7-1    303a:1001  USB Serial Device (COM4), USB JTAG/serial debug unit          Not shared`
-  - Windows: `usbipd bind --busid 7-1`
-  - Windows: `usbipd attach --wsl --busid 7-1`
-  - WSL: `lsusb`: `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
-  - WSL: `dmesg | grep tty`: `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
-  - WSL: `ls /dev/tty*`: `/dev/ttyACM0`
-- Upload `secrets.yaml`
-- Compile ESPHome project: `esphome compile esp32-s3-test.yaml`
-  - TODO: `ModuleNotFoundError: No module named 'pkg_resources':`
+  - Compile ESPHome project: `esphome compile esp32-s3-test.yaml`
+  - Upload firmware: `esphome run --device /dev/ttyUSB0 esp32-s3-test.yaml`
 - Unbind serial port.
-  - `usbipd detach --busid 7-1`
+  - Windows: `usbipd detach --busid 7-1`
+  - Windows: `usbipd unbind --all`
 
+TODO: No reset after upload?
+
+```console
+$ esphome run --device /dev/ttyACM0 esp32-s3-test.yaml
+INFO ESPHome 2024.4.2
+INFO Reading configuration esp32-s3-test.yaml...
+INFO Detected timezone 'America/Los_Angeles'
+INFO Generating C++ source...
+INFO Compiling app...
+Processing esp32-s3-test (board: adafruit_feather_esp32s3_nopsram; framework: espidf; platform: platformio/espressif32@5.4.0)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+HARDWARE: ESP32S3 240MHz, 320KB RAM, 8MB Flash
+ - framework-espidf @ 3.40406.240122 (4.4.6) 
+ - tool-cmake @ 3.16.4 
+ - tool-ninja @ 1.7.1 
+ - toolchain-esp32ulp @ 2.35.0-20220830 
+ - toolchain-riscv32-esp @ 8.4.0+2021r2-patch5 
+ - toolchain-xtensa-esp32s3 @ 8.4.0+2021r2-patch5
+Reading CMake configuration...
+No dependencies
+RAM:   [=         ]   9.9% (used 32568 bytes from 327680 bytes)
+Flash: [==        ]  17.7% (used 696777 bytes from 3932160 bytes)
+==================================================================================================================================== [SUCCESS] Took 6.46 seconds ====================================================================================================================================
+INFO Successfully compiled program.
+esptool.py v4.7.0
+Serial port /dev/ttyACM0
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.1)
+Features: WiFi, BLE, Embedded Flash 8MB (GD)
+Crystal is 40MHz
+MAC: dc:54:75:cf:bc:d8
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Auto-detected Flash size: 8MB
+Flash will be erased from 0x00010000 to 0x000bafff...
+Flash will be erased from 0x00000000 to 0x00005fff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+Flash will be erased from 0x00009000 to 0x0000afff...
+Compressed 697136 bytes to 453296...
+Wrote 697136 bytes (453296 compressed) at 0x00010000 in 4.8 seconds (effective 1171.9 kbit/s)...
+Hash of data verified.
+Compressed 20912 bytes to 13091...
+Wrote 20912 bytes (13091 compressed) at 0x00000000 in 0.3 seconds (effective 537.4 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 134...
+Wrote 3072 bytes (134 compressed) at 0x00008000 in 0.0 seconds (effective 607.9 kbit/s)...
+Hash of data verified.
+Compressed 8192 bytes to 31...
+Wrote 8192 bytes (31 compressed) at 0x00009000 in 0.1 seconds (effective 978.7 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+INFO Successfully uploaded program.
+INFO Starting log output from /dev/ttyACM0 with baud rate 115200
+ERROR Serial port closed!
+```
+
+```console
+$ esphome run --device /dev/ttyACM0 adafruit-esp32-s3-feather-test.yaml 
+INFO ESPHome 2024.4.2
+INFO Reading configuration adafruit-esp32-s3-feather-test.yaml...
+INFO Detected timezone 'America/Los_Angeles'
+WARNING GPIO3 is a strapping PIN and should only be used for I/O with care.
+Attaching external pullup/down resistors to strapping pins can cause unexpected failures.
+See https://esphome.io/guides/faq.html#why-am-i-getting-a-warning-about-strapping-pins
+WARNING GPIO33 is used by the PSRAM interface on ESP32-S3R8 / ESP32-S3R8V and should be avoided on these models
+INFO Generating C++ source...
+INFO Compiling app...
+Processing adafruit-esp32-s3-feather-test (board: adafruit_feather_esp32s3_nopsram; framework: arduino; platform: platformio/espressif32@5.4.0)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+HARDWARE: ESP32S3 240MHz, 320KB RAM, 8MB Flash
+ - toolchain-riscv32-esp @ 8.4.0+2021r2-patch5 
+ - toolchain-xtensa-esp32s3 @ 8.4.0+2021r2-patch5
+Dependency Graph
+|-- WiFi @ 2.0.0
+|-- ESPmDNS @ 2.0.0
+|-- Update @ 2.0.0
+|-- Wire @ 2.0.0
+RAM:   [=         ]  14.8% (used 48396 bytes from 327680 bytes)
+Flash: [=====     ]  46.6% (used 854709 bytes from 1835008 bytes)
+==================================================================================================================================== [SUCCESS] Took 2.29 seconds ====================================================================================================================================
+INFO Successfully compiled program.
+esptool.py v4.7.0
+Serial port /dev/ttyACM0
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.1)
+Features: WiFi, BLE, Embedded Flash 8MB (GD)
+Crystal is 40MHz
+MAC: dc:54:75:cf:bc:d8
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Auto-detected Flash size: 8MB
+Flash will be erased from 0x00010000 to 0x000e0fff...
+Flash will be erased from 0x00000000 to 0x00003fff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+Flash will be erased from 0x0000e000 to 0x0000ffff...
+Flash will be erased from 0x002d0000 to 0x002f8fff...
+Compressed 855104 bytes to 559172...
+Wrote 855104 bytes (559172 compressed) at 0x00010000 in 6.1 seconds (effective 1129.9 kbit/s)...
+Hash of data verified.
+Warning: Image file at 0x0 is protected with a hash checksum, so not changing the flash size setting. Use the --flash_size=keep option instead of --flash_size=8MB in order to remove this warning, or use the --dont-append-digest option for the elf2image command in order to generate an image file without a hash checksum
+Compressed 15040 bytes to 10364...
+Wrote 15040 bytes (10364 compressed) at 0x00000000 in 0.2 seconds (effective 483.6 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 144...
+Wrote 3072 bytes (144 compressed) at 0x00008000 in 0.0 seconds (effective 558.8 kbit/s)...
+Hash of data verified.
+Compressed 8192 bytes to 47...
+Wrote 8192 bytes (47 compressed) at 0x0000e000 in 0.1 seconds (effective 838.9 kbit/s)...
+Hash of data verified.
+Compressed 165536 bytes to 106746...
+Wrote 165536 bytes (106746 compressed) at 0x002d0000 in 1.2 seconds (effective 1122.6 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+INFO Successfully uploaded program.
+INFO Starting log output from /dev/ttyACM0 with baud rate 115200
+ERROR Serial port closed!
+```
