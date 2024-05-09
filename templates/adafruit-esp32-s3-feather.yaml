@@ -23,10 +23,6 @@ esp32:
   # board: adafruit_feather_esp32s3
   # https://docs.platformio.org/en/latest/boards/espressif32/adafruit_feather_esp32s3.html
   # board: adafruit_feather_esp32s3
-  # variant: esp32s3
-  # flash_size: 8MB
-  # framework:
-  #   type: esp-idf
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
@@ -86,3 +82,6 @@ light:
     num_leds: 1
     rmt_channel: 0
     chipset: WS2812
+
+# TODO: Add status RGB LED
+# https://github.com/esphome/esphome/pull/5814
