@@ -1,6 +1,0 @@
-substitutions:
-  device_name: bluetooth-proxy-1
-  device_comment: "Bluetooth Proxy"
-
-packages:
-  bluetooth-proxy: !include templates/bluetooth-proxy.yaml

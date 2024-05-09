@@ -1,0 +1,101 @@
+# https://blakadder.com/gl-s10/
+# https://github.com/blakadder/bluetooth-proxies/blob/main/gl-s10_v2.yaml
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# GPIO32 : White LED
+# GPIO14 : Red LED
+# GPIO12 : Blue LED
+
+# GPIO33 : Reset button
+
+# IP101 RMII Ethernet
+# GPIO23 : mdc
+# GPIO18: mdio
+# GPIO0_IN : clk
+# GPIO5 : power
+
+# I2C
+# GPIO15 : sda
+# GPIO13 : scl
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_comment}
+  on_boot:
+    then:
+      - output.turn_on: power_led
+
+# https://esphome.io/components/esp32
+esp32:
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32doit-devkit-v1.html
+  board: esp32doit-devkit-v1
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  api: !include api.yaml
+  basic: !include basic.yaml
+  debug: !include debug.yaml
+  logger: !include logger.yaml
+  ota: !include ota.yaml
+  time: !include time.yaml
+
+# https://esphome.io/components/ethernet.html
+ethernet:
+  type: IP101
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO5
+
+# https://esphome.io/components/esp32_ble_tracker.html
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: true
+
+# https://esphome.io/components/bluetooth_proxy.html
+bluetooth_proxy:
+  active: true
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin:
+    number: GPIO32
+    inverted: true
+
+# Reset button
+binary_sensor:
+  - platform: gpio
+    id: reset_button
+    name: ${device_name}_reset_button
+    pin:
+      number: GPIO33
+      inverted: true
+
+# LED's
+output:
+  - platform: gpio
+    id: power_led
+    pin: 
+      number: GPIO14
+      inverted: true
+  - platform: gpio
+    id: bluetooth_led
+    pin:
+      number: GPIO12
+      inverted: true
+
+# https://esphome.io/components/i2c.html
+i2c:
+  sda: GPIO15
+  scl: GPIO13
+  scan: true
