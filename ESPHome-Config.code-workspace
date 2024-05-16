@@ -6,7 +6,7 @@
 	],
 	"settings": {
 		"files.associations": {
-			"*.yaml": "yaml"
+			"*.yaml": "esphome"
 		},
 		"cSpell.words": [
 			"adafruit",
@@ -64,9 +64,10 @@
 	},
 	"extensions": {
 		"recommendations": [
-			"ms-python.python",
 			"streetsidesoftware.code-spell-checker",
-			"platformio.platformio-ide"
+			"platformio.platformio-ide",
+			"yzhang.markdown-all-in-one",
+			"esphome.esphome-vscode"
 		]
 	}
 }

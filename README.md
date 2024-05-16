@@ -92,6 +92,8 @@ ESPHome configuration.
 
 ## Notes
 
+- Some devices, e.g. Adafruit ESP32-S3 Feather, includes just one USB port that can be used for logging at runtime, but requires the Boot button to pressed on reset to enter programming mode.
+
 ### Hardware Availability
 
 - The Sonoff TH10 and TH16 have been replaced by the [SONOFF TH Origin](https://itead.cc/product/sonoff-th/), see the [Tasmota Templates](https://templates.blakadder.com/sonoff_THR316.html) for pin layouts.
@@ -121,9 +123,35 @@ ESPHome configuration.
   - E.g. search for entities named `foo_2`, delete `foo`, and rename `foo_2` to `foo`.
   - E.g. replace short entity names with fully qualified names.
 
+## Debugging
+
+## VSCode Setup
+
+- Install VSCode.
+- Clone `ptr727/ESPHome-Config` repo and open workspace.
+- Upload `secrets.yaml`.
+- Open `ESPHome-Config` workspace.
+- Install recommended extensions (from workspace).
+- Associate YAML files with ESPHome (from the ESPHome extension).
+- Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
+- Install ESPHome (in venv terminal): `pip install --upgrade --pre setuptools wheel platformio esphome`.
+- Make sure [ESPHome](https://esphome.io/guides/cli) is installed: `esphome version`.
+- Compile ESPHome project: `esphome compile esp32-s3-test.yaml`.
+- Launch Dashboard: `esphome dashboard .`, open [http://localhost:6052/](http://localhost:6052/).
+
+### Debugging on Windows
+
+- Install Python from the Microsoft Store
+- Setup [VSCode](#vscode-setup).
+- Compile ESPHome project: `esphome compile esp32-s3-feather-test.yaml`.
+- Plugin device, hold Boot and press Reset fs required.
+- List COM ports: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
+- Upload firmware: `esphome run --device COM4 esp32-s3-feather-test.yaml`.
+- Log output: `esphome logs [--device COM5] esp32-s3-feather-test.yaml`.
+
 ### Debugging on Windows WSL
 
-- Install Ubuntu from Microsoft Store.
+- Install Ubuntu or Debian from the Microsoft Store.
 - Install [USBIPD-WIN](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) from [GitHub Releases](https://github.com/dorssel/usbipd-win/releases/latest).
 - Bind serial port.
   - Open PowerShell as Admin in Terminal, referred to as Windows.
@@ -136,19 +164,20 @@ ESPHome configuration.
   - WSL: `lsusb`, e.g. `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
   - WSL: `dmesg | grep tty`, e.g. `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
   - WSL: `ls /dev/tty*`, e.g. `/dev/ttyACM0`, `/dev/ttyUSB0`
-- Install VSCode and Remote Explorer extension.
+- Install VSCode and the Remote Explorer extension.
 - Open VSCode Remote WSL Ubuntu session.
-  - Install extensions: Python, PlatformIO
-  - Clone `ptr727/ESPHome-Config` repo and open workspace.
-  - Upload `secrets.yaml`
-  - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
-  - Open terminal, make sure venv is active.
-  - Install ESPHome (in venv terminal): `pip install wheel esphome`
-  - Make sure [ESPHome](https://esphome.io/guides/cli) is installed: `esphome version`
-  - Compile ESPHome project: `esphome compile esp32-s3-test.yaml`
+  - Setup [VSCode](#vscode-setup) in remote WSL session.
+  - List COM ports: `ls /dev/tty*`.
   - Upload firmware: `esphome run --device /dev/ttyUSB0 esp32-s3-test.yaml`
 - Unbind serial port.
   - Windows: `usbipd detach --busid 7-1`
   - Windows: `usbipd unbind --all`
-- Additional resources:
-  - [ESP-IDF DevContainer](https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/using-docker-container.md)
+
+### Debugging in PlatformIO
+
+- Setup [VSCode](#vscode-setup) and install the PlatformIO extension.
+- Compile the project using `esphome compile [project]`.
+- Launch the PlatformIO extension and open the project folder, e.g. `./.esphome/build/esp32-s3-test`
+- PlatformIO will open a new instance of VSCode for that project.
+- Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
+- PlatformIO Core will be installed in the virtual environment and use the environment Python.
