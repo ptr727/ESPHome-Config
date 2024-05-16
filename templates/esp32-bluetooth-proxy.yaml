@@ -13,7 +13,10 @@ esp32:
   board: esp32dev
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
+    # BT proxy requires ESP-IDF
     type: esp-idf
+    # TODO: Latest does not compile from CLI?
+    # version: latest
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:

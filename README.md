@@ -144,7 +144,7 @@ ESPHome configuration.
 - Install Python from the Microsoft Store
 - Setup [VSCode](#vscode-setup).
 - Compile ESPHome project: `esphome compile esp32-s3-feather-test.yaml`.
-- Plugin device, hold Boot and press Reset fs required.
+- Plugin device, hold Boot and press Reset if required.
 - List COM ports: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
 - Upload firmware: `esphome run --device COM4 esp32-s3-feather-test.yaml`.
 - Log output: `esphome logs [--device COM5] esp32-s3-feather-test.yaml`.

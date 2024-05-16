@@ -24,9 +24,17 @@ esp32:
   # https://docs.platformio.org/en/latest/boards/espressif32/adafruit_feather_esp32s3.html
   # board: adafruit_feather_esp32s3
 
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    # TODO: Temperature sensor requires ESP-IDF 4.4.3+
+    # https://github.com/esphome/issues/issues/4271
+    type: arduino
+    version: latest
+
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
   common: !include common.yaml
+  temperature: !include temperature.yaml
 
 # https://esphome.io/components/i2c
 i2c:
