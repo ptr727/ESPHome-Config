@@ -41,6 +41,7 @@
 			"nopsram",
 			"Norvi",
 			"Oper",
+			"platformio",
 			"PSRAM",
 			"PULLUP",
 			"recirc",
@@ -49,6 +50,7 @@
 			"rtttl",
 			"SDIO",
 			"Sengled",
+			"setuptools",
 			"Sonoff",
 			"Tasmota",
 			"Tuya",
@@ -57,6 +59,7 @@
 			"usbutils",
 			"venv",
 			"Wanptek",
+			"yzhang",
 			"Zigbee"
 		],
 		"editor.renderWhitespace": "boundary",

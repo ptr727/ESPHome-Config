@@ -1,0 +1,9 @@
+# Required substitutions:
+# device_name
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # https://esphome.io/components/internal_temperature
+  - platform: internal_temperature
+    name: ${device_name}_internal_temperature
