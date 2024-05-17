@@ -66,7 +66,7 @@ sensor:
     rate:
       name: ${device_name}_battery_discharge_rate
 
-# NeoPixel / WS2812
+# RGB LED
 # GPIO21 Power
 # GPIO33 Data
 
@@ -76,7 +76,7 @@ switch:
   # https://esphome.io/components/switch/gpio
   - platform: gpio
     pin: GPIO21
-    name: ${device_name}_neopixel_power"
+    name: ${device_name}_rgbled_power"
     restore_mode: ALWAYS_ON
 
 # https://esphome.io/components/light/
@@ -84,7 +84,7 @@ light:
 
   # https://esphome.io/components/light/esp32_rmt_led_strip
   - platform: esp32_rmt_led_strip
-    name: ${device_name}_neopixel
+    name: ${device_name}_rgbled
     rgb_order: GRB
     pin: GPIO33 # WARNING GPIO33 is used by the PSRAM interface on ESP32-S3R8 / ESP32-S3R8V and should be avoided on these models
     num_leds: 1
