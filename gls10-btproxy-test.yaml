@@ -1,0 +1,6 @@
+substitutions:
+  device_name: gls10-btproxy-test
+  device_comment: "GL-S10 Bluetooth Proxy Test Device"
+
+packages:
+  feather: !include templates/gls10-bluetooth-proxy.yaml

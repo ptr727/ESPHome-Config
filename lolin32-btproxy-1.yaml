@@ -1,0 +1,26 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: lolin32-btproxy-1
+  device_comment: "WEMOS LOLIN32 Lite Bluetooth Proxy"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  feather: !include templates/wemos-lolin32-lite.yaml
+
+# https://esphome.io/components/esp32
+esp32:
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    # BT proxy requires ESP-IDF
+    type: esp-idf
+
+# https://esphome.io/components/esp32_ble_tracker.html
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: true
+
+# https://esphome.io/components/bluetooth_proxy.html
+bluetooth_proxy:
+  active: true

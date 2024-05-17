@@ -92,8 +92,6 @@ ESPHome configuration.
 
 ## Notes
 
-- Some devices, e.g. Adafruit ESP32-S3 Feather, includes just one USB port that can be used for logging at runtime, but requires the Boot button to pressed on reset to enter programming mode.
-
 ### Hardware Availability
 
 - The Sonoff TH10 and TH16 have been replaced by the [SONOFF TH Origin](https://itead.cc/product/sonoff-th/), see the [Tasmota Templates](https://templates.blakadder.com/sonoff_THR316.html) for pin layouts.
@@ -145,7 +143,9 @@ ESPHome configuration.
 - Setup [VSCode](#vscode-setup).
 - Compile ESPHome project: `esphome compile esp32-s3-feather-test.yaml`.
 - Plugin device, hold Boot and press Reset if required.
-- List COM ports: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
+- List COM ports:
+  - Msft drivers: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
+  - Custom drivers: `Get-CimInstance -ClassName Win32_PnPEntity | Where-Object { $_.Name -match '.*\(COM(\d)\)' } Select-Object Caption`.
 - Upload firmware: `esphome run --device COM4 esp32-s3-feather-test.yaml`.
 - Log output: `esphome logs [--device COM5] esp32-s3-feather-test.yaml`.
 
