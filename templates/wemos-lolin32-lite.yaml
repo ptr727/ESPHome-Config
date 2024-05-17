@@ -1,0 +1,33 @@
+# WEMOS LOLIN32 Lite
+# https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite
+# https://web.archive.org/web/20190902005100/https://wiki.wemos.cc/_media/products:lolin32:sch_lolin32_lite_v1.0.0.pdf
+# https://templates.blakadder.com/wemos_LOLIN32_Lite_v1.html
+
+# E.g. Screek Bluetooth Proxy, screek.io/bp1
+
+# JST, 3.7V LiPo charger, Blue LED
+# ESP32-D0WDQ6-V3, 520KB SRAM, 4MB Flash
+# GPIO22: Blue LED
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+
+# https://esphome.io/components/esp32
+esp32:
+  # https://docs.platformio.org/en/latest/boards/espressif32/lolin32_lite.html
+  board: lolin32_lite
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  api: !include common.yaml
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin:
+    number: GPIO22

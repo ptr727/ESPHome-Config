@@ -1,0 +1,8 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: wemos-lolin32-lite-test
+  device_comment: "WEMOS LOLIN32 Lite Test Device"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  feather: !include templates/wemos-lolin32-lite.yaml

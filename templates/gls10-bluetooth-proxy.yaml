@@ -24,7 +24,7 @@
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  friendly_name: ${device_comment}
+  comment: ${device_comment}
   on_boot:
     then:
       - output.turn_on: power_led

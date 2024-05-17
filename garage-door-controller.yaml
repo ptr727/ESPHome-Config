@@ -1,6 +1,8 @@
 # Customized
 # https://github.com/ratgdo/esphome-ratgdo/blob/main/static/v25board_esp8266_d1_mini_lite.yaml
 
+# TODO: Consolidate comment and description and prefix
+
 # Substitutions used by templates
 substitutions:
   # Substitutions used by local templates
