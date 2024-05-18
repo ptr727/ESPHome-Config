@@ -10,7 +10,10 @@
 # ESP32-S3-WROOM-1U-N8R2    : 8MB  Flash, 2MB PSRAM, 3.3V
 # ESP32-S3-DEVKITC-1U-N8R8  : 8MB  Flash, 8MB PSRAM, 3.3V
 
+# GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
 # GPIO38 : RGB LED
+# GPIO43, GPIO44 : SiLabs CP210x USB-UART
+# GPIO19, GPIO20 : USB-CDC
 
 # Required substitutions:
 # device_name
@@ -29,6 +32,7 @@ esphome:
   comment: ${device_comment}
   platformio_options:
     # TODO: Required else bootloop after USB programming
+    # `esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0`
     board_build.arduino.memory_type: opi_opi
 
 # https://esphome.io/components/esp32
@@ -36,7 +40,7 @@ esp32:
   # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
   # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32-s3-devkitc-1.json
   board: esp32-s3-devkitc-1
-  # TODO: Match board type
+  # TODO: Match with board type
   flash_size: 32MB
 
   # https://esphome.io/components/esp32#esp-idf-framework
@@ -52,7 +56,13 @@ packages:
   temperature: !include temperature.yaml
   rgbledstatus: !include rgb-led-status.yaml
 
-# TODO: Match board type
+# TODO: Match programming setup
+# Log to USB-UART port
+# https://esphome.io/components/logger
+logger:
+  hardware_uart: UART0 # UART0, USB_CDC, USB_SERIAL_JTAG
+
+# TODO: Add only if board has PSRAM
 # https://esphome.io/components/psram
 psram:
   mode: octal

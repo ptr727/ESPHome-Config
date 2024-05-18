@@ -21,6 +21,7 @@
 			"chipset",
 			"dallasng",
 			"devkit",
+			"DEVKITC",
 			"dout",
 			"EFUN",
 			"ENET",
@@ -70,7 +71,8 @@
 			"streetsidesoftware.code-spell-checker",
 			"platformio.platformio-ide",
 			"yzhang.markdown-all-in-one",
-			"esphome.esphome-vscode"
+			"esphome.esphome-vscode",
+			"ms-vscode.vscode-serial-monitor"
 		]
 	}
 }
