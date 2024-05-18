@@ -143,7 +143,8 @@ ESPHome configuration.
 - Setup [VSCode](#vscode-setup).
 - Compile ESPHome project: `esphome compile esp32-s3-feather-test.yaml`.
 - Plugin device, hold Boot and press Reset if required.
-- List COM ports:
+- List COM ports from PowerShell:
+  - Serial ports: `[System.IO.Ports.SerialPort]::getportnames()`
   - Msft drivers: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
   - Custom drivers: `Get-CimInstance -ClassName Win32_PnPEntity | Where-Object { $_.Name -match '.*\(COM(\d)\)' } Select-Object Caption`.
 - Upload firmware: `esphome run --device COM4 esp32-s3-feather-test.yaml`.
