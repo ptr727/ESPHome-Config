@@ -34,6 +34,7 @@ esphome:
 # https://esphome.io/components/esp32
 esp32:
   # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
+  # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32-s3-devkitc-1.json
   board: esp32-s3-devkitc-1
   # TODO: Match board type
   flash_size: 32MB
