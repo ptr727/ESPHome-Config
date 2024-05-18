@@ -3,10 +3,13 @@
 ## Setup
 
 - ESP32-S3-DEVKITC-1-N32R8V: 32MB Flash, 8MB PSRAM
-- ESPHome 2024.5.0: `pip install --upgrade --pre setuptools wheel platformio esphome`
-- Python 3.12 : Windows Store (auto updating)
-- VSCode : Preview
-- Template : `templates\esp32-s3-devkitc.yaml`
+- ESPHome setup: `pip install --upgrade --pre setuptools wheel platformio esphome`.
+  - `> python --version Python 3.12.3`.
+  - `> esphome version Version: 2024.5.0`.
+  - `>pio --version PlatformIO Core, version 6.1.15`.
+- YAML
+  - [`templates\esp32-s3-devkitc.yaml`](https://github.com/ptr727/ESPHome-Config/blob/develop/templates/esp32-s3-devkitc.yaml).
+  - [`esp32-s3-devkitc-test.yaml](https://github.com/ptr727/ESPHome-Config/blob/develop/esp32-s3-devkitc-test.yaml).
 
 ## BootLoop
 
