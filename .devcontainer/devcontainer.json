@@ -1,75 +1,26 @@
-// Keep in sync with https://github.com/esphome/esphome/blob/dev/.devcontainer/devcontainer.json
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-    "name": "ESPHome Dev",
-    "image": "ghcr.io/esphome/esphome-lint:dev",
-    "postCreateCommand": ["script/devcontainer-post-create"],
-    "containerEnv": {
-      "DEVCONTAINER": "1",
-      "PIP_BREAK_SYSTEM_PACKAGES": "1",
-      "PIP_ROOT_USER_ACTION": "ignore"
-    },
-    "runArgs": [
-      "--privileged",
-      "-e",
-      "ESPHOME_DASHBOARD_USE_PING=1"
-      // uncomment and edit the path in order to pass though local USB serial to the conatiner
-      // , "--device=/dev/ttyACM0"
-    ],
-    "appPort": 6052,
-    // if you are using avahi in the host device, uncomment these to allow the
-    // devcontainer to find devices via mdns
-    //"mounts": [
-    //  "type=bind,source=/dev/bus/usb,target=/dev/bus/usb",
-    //  "type=bind,source=/var/run/dbus,target=/var/run/dbus",
-    //  "type=bind,source=/var/run/avahi-daemon/socket,target=/var/run/avahi-daemon/socket"
-    //],
-    "customizations": {
-      "vscode": {
-        "extensions": [
-          // python
-          "ms-python.python",
-          "visualstudioexptteam.vscodeintellicode",
-          // yaml
-          "redhat.vscode-yaml",
-          // cpp
-          "ms-vscode.cpptools",
-          // editorconfig
-          "editorconfig.editorconfig"
-        ],
-        "settings": {
-          "python.languageServer": "Pylance",
-          "python.pythonPath": "/usr/bin/python3",
-          "python.linting.pylintEnabled": true,
-          "python.linting.enabled": true,
-          "python.formatting.provider": "black",
-          "editor.formatOnPaste": false,
-          "editor.formatOnSave": true,
-          "editor.formatOnType": true,
-          "files.trimTrailingWhitespace": true,
-          "terminal.integrated.defaultProfile.linux": "bash",
-          "yaml.customTags": [
-            "!secret scalar",
-            "!lambda scalar",
-            "!extend scalar",
-            "!remove scalar",
-            "!include_dir_named scalar",
-            "!include_dir_list scalar",
-            "!include_dir_merge_list scalar",
-            "!include_dir_merge_named scalar"
-          ],
-          "files.exclude": {
-            "**/.git": true,
-            "**/.DS_Store": true,
-            "**/*.pyc": {
-              "when": "$(basename).py"
-            },
-            "**/__pycache__": true
-          },
-          "files.associations": {
-            "**/.vscode/*.json": "jsonc"
-          },
-          "C_Cpp.clang_format_path": "/usr/bin/clang-format-13"
-        }
-      }
-    }
-  }
+	"name": "ESPHome Python 3 Dev Container",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+    // Latest Python 3 image
+	"image": "mcr.microsoft.com/devcontainers/python:3",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // ESPHome Dashboard uses port 6052
+	"forwardPorts": [6052]
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "pip3 install --user -r requirements.txt"
+	// "postCreateCommand": "pip install --upgrade setuptools wheel platformio esphome"
+	// "postCreateCommand": "pip install --upgrade --pre setuptools wheel platformio esphome"
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+}
