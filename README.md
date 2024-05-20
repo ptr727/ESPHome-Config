@@ -2,23 +2,6 @@
 
 ESPHome configuration.
 
-## Deployment
-
-- I run [ESPHome](https://hub.docker.com/r/esphome/esphome) in a Docker container.
-  - Run the container as `root`, running as a regular user may result in permission [problems](https://github.com/esphome/issues/issues/3558).
-  - Run using `macvlan` and a static IP to support automatic device discovery.
-  - Make sure the container user has correct file and directory permissions, e.g.:
-    - `sudo chown -R nobody:users /data/appdata/esphome/config`
-    - `sudo chmod -R ugo+rwx /data/appdata/esphome/config`
-  - Make sure the container user has Git permissions for mixed user file permissions.
-    - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
-    - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
-- Sync this Git repository in ESPHome config folder.
-  - `cd /data/appdata/esphome/config`
-  - `git pull https://github.com/ptr727/ESPHome-Config .`
-- Deploy `secrets.yaml`, use `secrets._yaml` as template.
-- Use VSCode and open remote SSH folder.
-
 ## Device Templates
 
 ### TuyaConvert
@@ -90,15 +73,26 @@ ESPHome configuration.
 
 - Project [`utility-counter-gate-fan.yaml`](./utility-counter-gate-fan.yaml) is used as thermostat for cool air ventilation in my garage, and to measure water and gas consumption from my utility meter pulse counters.
 
+## Deployment
+
+### Docker
+
+- Run [ESPHome](https://hub.docker.com/r/esphome/esphome) in a Docker container.
+  - Run the container as `root`, running as a regular user may result in permission [problems](https://github.com/esphome/issues/issues/3558).
+  - Run using `macvlan` and a static IP to support automatic device discovery.
+  - Make sure the container user has correct file and directory permissions, e.g.:
+    - `sudo chown -R nobody:users /data/appdata/esphome/config`
+    - `sudo chmod -R ugo+rwx /data/appdata/esphome/config`
+  - Make sure the container user has Git permissions for mixed user file permissions.
+    - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
+    - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
+- Sync Git repository in ESPHome config folder.
+  - `cd /data/appdata/esphome/config`
+  - `git pull https://github.com/ptr727/ESPHome-Config .`
+- Deploy `secrets.yaml`, use `secrets._yaml` as template.
+- In VSCode open remote SSH workspace on docker host and config directory.
+
 ## Notes
-
-### Hardware Availability
-
-- The Sonoff TH10 and TH16 have been replaced by the [SONOFF TH Origin](https://itead.cc/product/sonoff-th/), see the [Tasmota Templates](https://templates.blakadder.com/sonoff_THR316.html) for pin layouts.
-- EFUN SH331W is no longer listed on Amazon.
-- I have switched away from WiFi smart plugs and now use [Sengled](https://www.amazon.com/gp/product/B092DBFFBY/) Zigbee power monitoring smart plugs, much easier to deploy.
-- Norvi devices were historically not available for purchase in the US at the [Norvi online store](https://shop.norvi.lk), and US users could buy the equivalent SensOper branded products at the [SensOper online store](https://sensoper.com/shop).
-- As of November 2023 Norvi does ship to the US from their Sri Lanka based [online store](https://shop.norvi.lk), and Norvi devices can be be shipped to the US from the Germany based [CarTFT](https://www.cartft.com) online store.
 
 ### Renaming a Device in Home Assistant
 
@@ -136,7 +130,7 @@ ESPHome configuration.
 ### VSCode Setup
 
 - Install VSCode.
-- Clone `ptr727/ESPHome-Config` repo and open workspace.
+- Clone `ptr727/ESPHome-Config` repo.
 - Upload `secrets.yaml`.
 - Open `ESPHome-Config` workspace.
 - Install recommended extensions (from workspace).
@@ -146,6 +140,12 @@ ESPHome configuration.
 - Make sure [ESPHome](https://esphome.io/guides/cli) is installed: `esphome version`.
 - Compile ESPHome project: `esphome compile esp32-s3-test.yaml`.
 - Launch Dashboard: `esphome dashboard .`, open [http://localhost:6052/](http://localhost:6052/).
+
+### Debugging in DevContainer
+
+- Setup [VSCode](#vscode-setup).
+- Open workspace and clone in devcontainer volume.
+- TODO: Serial port forwarding config.
 
 ### Debugging on Windows
 
