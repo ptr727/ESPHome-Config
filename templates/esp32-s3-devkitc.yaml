@@ -1,14 +1,15 @@
 # Espressif ESP32-S3-DevKitC-1/1U
 # https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html
 
-# ESP32-S3-WROOM-1-N8       : 8MB  Flash, 0MB PSRAM, 3.3V
-# ESP32-S3-WROOM-1-N8R2     : 8MB  Flash, 2MB PSRAM, 3.3V
-# ESP32-S3-WROOM-1-N8R8     : 8MB  Flash, 8MB PSRAM, 3.3V
-# ESP32-S3-WROOM-2-N16R8V   : 16MB Flash, 8MB PSRAM, 1.8V
-# ESP32-S3-DEVKITC-1-N32R8V : 32MB Flash, 8MB PSRAM, 1.8V
-# ESP32-S3-WROOM-1U-N8      : 8MB  Flash, 0MB PSRAM, 3.3V
-# ESP32-S3-WROOM-1U-N8R2    : 8MB  Flash, 2MB PSRAM, 3.3V
-# ESP32-S3-DEVKITC-1U-N8R8  : 8MB  Flash, 8MB PSRAM, 3.3V
+# ESP32-S3-WROOM-1-N8       : 8MB  Quad Flash, 0MB      PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N8R2     : 8MB  Quad Flash, 2MB Quad PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N8R8     : 8MB  Quad Flash, 8MB Octa PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-2-N16R8V   : 16MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
+# ESP32-S3-WROOM-2-N32R8V   : 32MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
+# ESP32-S3-DEVKITC-1-N32R8V : 32MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
+# ESP32-S3-WROOM-1U-N8      : 8MB  Quad Flash, 0MB      PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1U-N8R2    : 8MB  Quad Flash, 2MB Quad PSRAM, 3.3V SPI
+# ESP32-S3-DEVKITC-1U-N8R8  : 8MB  Quad Flash, 8MB Octa PSRAM, 3.3V SPI
 
 # GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
 # GPIO38 : RGB LED
@@ -19,51 +20,27 @@
 # device_name
 # device_comment
 
-# TODO: esp_core_dump_flash: No core dump partition found!
-# https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/core_dump.html#save-core-dump-to-flash
-
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
+  # Used by rgb-led-status.yaml
   rgb_led_pin: GPIO38
 
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
   comment: ${device_comment}
-  platformio_options:
-    # TODO: Required else bootloop after USB programming
-    # `esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0`
-    board_build.arduino.memory_type: opi_opi
-
-# https://esphome.io/components/esp32
-esp32:
-  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
-  # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32-s3-devkitc-1.json
-  board: esp32-s3-devkitc-1
-  # TODO: Match with board type
-  flash_size: 32MB
-
-  # https://esphome.io/components/esp32#esp-idf-framework
-  framework:
-    # TODO: Temperature sensor requires ESP-IDF 4.4.3+
-    # https://github.com/esphome/issues/issues/4271
-    type: arduino
-    version: latest
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
+  # TODO: Match hardware Flash and PSRAM setup
+  n32r8v: !include esp32-s3-wroom-2-n16r8v.yaml
   common: !include common.yaml
   temperature: !include temperature.yaml
   rgbledstatus: !include rgb-led-status.yaml
+  espidfversion: !include esp-idf-version.yaml
 
-# TODO: Match programming setup
+# TODO: Match programmer setup
 # Log to USB-UART port
 # https://esphome.io/components/logger
 logger:
   hardware_uart: UART0 # UART0, USB_CDC, USB_SERIAL_JTAG
-
-# TODO: Add only if board has PSRAM
-# https://esphome.io/components/psram
-psram:
-  mode: octal
-  speed: 80MHz
