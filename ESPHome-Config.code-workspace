@@ -20,6 +20,8 @@
 			"busid",
 			"chipset",
 			"dallasng",
+			"davidanson",
+			"devcontainer",
 			"devcontainers",
 			"devkit",
 			"DEVKITC",
@@ -73,9 +75,9 @@
 		"recommendations": [
 			"streetsidesoftware.code-spell-checker",
 			"platformio.platformio-ide",
-			"yzhang.markdown-all-in-one",
 			"esphome.esphome-vscode",
-			"ms-vscode.vscode-serial-monitor"
+			"ms-vscode.vscode-serial-monitor",
+			"davidanson.vscode-markdownlint"
 		]
 	}
 }
