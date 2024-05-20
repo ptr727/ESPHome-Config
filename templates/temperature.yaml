@@ -1,9 +1,6 @@
 # Required substitutions:
 # device_name
 
-# TODO: Temperature sensor requires ESP-IDF 4.4.3+
-# https://github.com/esphome/issues/issues/4271
-
 # https://esphome.io/components/sensor
 sensor:
 

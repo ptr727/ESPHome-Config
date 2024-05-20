@@ -121,9 +121,19 @@ ESPHome configuration.
   - E.g. search for entities named `foo_2`, delete `foo`, and rename `foo_2` to `foo`.
   - E.g. replace short entity names with fully qualified names.
 
+### Espressif32 and Framework Versions
+
+- PlatformIO version is determined by the ESPHome release, it cannot be updated independently.
+- `framework:` `type:` can be `arduino` or `esp-idf`, use [`esp-idf`](https://esphome.io/components/esp32#esp-idf-framework) for ESP32 devices.
+- `platform_version` specifies the `platformio/espressif32` version.
+- `version` specifies the `platformio/framework-espidf` version.
+- Using `latest` for `platform_version` is not supported, use an [exact version number](https://registry.platformio.org/platforms/platformio/espressif32/versions).
+- Using `latest` for `version` will use the `platformio/framework-espidf` version supported by the `platformio/espressif32` version at release time.
+- In some cases a later version of `platformio/framework-espidf` may be required, use an [exact version number](https://registry.platformio.org/tools/platformio/framework-espidf).
+
 ## Debugging
 
-## VSCode Setup
+### VSCode Setup
 
 - Install VSCode.
 - Clone `ptr727/ESPHome-Config` repo and open workspace.
@@ -139,7 +149,7 @@ ESPHome configuration.
 
 ### Debugging on Windows
 
-- Install Python from the Microsoft Store
+- Install Python from the Microsoft Store.
 - Setup [VSCode](#vscode-setup).
 - Compile ESPHome project: `esphome compile esp32-s3-feather-test.yaml`.
 - Plugin device, hold Boot and press Reset if required.
