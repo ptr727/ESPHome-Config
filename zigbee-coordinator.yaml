@@ -86,9 +86,6 @@ switch:
       - button.press: zRST
 
 button:
-  - platform: restart
-    name: "Restart the Device"
-
   - platform: template
     name: "Zigbee Module Reset"
     id: zRST
