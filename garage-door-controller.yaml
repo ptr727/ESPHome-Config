@@ -1,6 +1,8 @@
 # Customized
 # https://github.com/ratgdo/esphome-ratgdo/blob/main/static/v25board_esp8266_d1_mini_lite.yaml
 
+# TODO: Consolidate comment and description and prefix
+
 # Substitutions used by templates
 substitutions:
   # Substitutions used by local templates
@@ -37,7 +39,6 @@ esp8266:
 # https://esphome.io/guides/configuration-types.html#remote-git-packages
 packages:
   common: !include templates/common.yaml
-  memory_sensor:  !include templates/esp8266-memory-sensor.yaml
   ratgdo_package:
     url: https://github.com/ratgdo/esphome-ratgdo
     files: [base.yaml]

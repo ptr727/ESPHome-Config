@@ -98,7 +98,7 @@ interval:
               id: bangbang
               mode: 'off'
           # Turn relay on
-          - logger.log: "Recirctimer : Turning Relay On."
+          - logger.log: "RecircTimer : Turning Relay On."
           - switch.turn_on: relay
           - logger.log: "RecircTimer : Delay Start."
           # Sleep

@@ -1,0 +1,24 @@
+# Required substitutions:
+# device_name
+
+# https://esphome.io/components/debug
+debug:
+  update_interval: 60s
+
+# https://esphome.io/components/text_sensor
+text_sensor:
+
+  # https://esphome.io/components/debug
+  - platform: debug
+    device:
+      name: ${device_name}_device_info
+    reset_reason:
+      name: ${device_name}_reset_reason
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # https://esphome.io/components/debug
+  - platform: debug
+    free:
+      name: ${device_name}_heap_free

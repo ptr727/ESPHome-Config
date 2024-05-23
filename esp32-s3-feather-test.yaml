@@ -1,0 +1,8 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: esp32-s3-feather-test
+  device_comment: "Adafruit ESP32-S3 Feather Test Device"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  feather: !include templates/adafruit-esp32-s3-feather.yaml

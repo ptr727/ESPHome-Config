@@ -1,8 +1,8 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: kincony-kc868asr-test
-  device_comment: "Kincony KC868-ASR Test Device"
+  device_name: esp32-s3-devkitc-test
+  device_comment: "Espressif ESP32-S3 DevKitC Test Device"
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  kincony: !include templates/kincony-kc868-asr.yaml
+  feather: !include templates/esp32-s3-devkitc.yaml

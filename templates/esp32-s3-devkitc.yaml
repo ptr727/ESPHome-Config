@@ -1,0 +1,46 @@
+# Espressif ESP32-S3-DevKitC-1/1U
+# https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html
+
+# ESP32-S3-WROOM-1-N8       : 8MB  Quad Flash, 0MB      PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N8R2     : 8MB  Quad Flash, 2MB Quad PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N8R8     : 8MB  Quad Flash, 8MB Octa PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-2-N16R8V   : 16MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
+# ESP32-S3-WROOM-2-N32R8V   : 32MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
+# ESP32-S3-DEVKITC-1-N32R8V : 32MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
+# ESP32-S3-WROOM-1U-N8      : 8MB  Quad Flash, 0MB      PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1U-N8R2    : 8MB  Quad Flash, 2MB Quad PSRAM, 3.3V SPI
+# ESP32-S3-DEVKITC-1U-N8R8  : 8MB  Quad Flash, 8MB Octa PSRAM, 3.3V SPI
+
+# GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
+# GPIO38 : RGB LED
+# GPIO43, GPIO44 : SiLabs CP210x USB-UART
+# GPIO19, GPIO20 : USB-CDC
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  # Used by rgb-led-status.yaml
+  rgb_led_pin: GPIO38
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  # TODO: Match hardware Flash and PSRAM setup
+  n32r8v: !include esp32-s3-wroom-2-n16r8v.yaml
+  common: !include common.yaml
+  temperature: !include temperature.yaml
+  rgbledstatus: !include rgb-led-status.yaml
+  espidfversion: !include esp-idf-version.yaml
+
+# TODO: Match programmer setup
+# Log to USB-UART port
+# https://esphome.io/components/logger
+logger:
+  hardware_uart: UART0 # UART0, USB_CDC, USB_SERIAL_JTAG

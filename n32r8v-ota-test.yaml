@@ -1,0 +1,96 @@
+# Config for ESP32-S3-DevKitC-1-N32R8V (32MB OT Flash, 8MB OT PSRAM)
+
+# TODO: Boot log warnings
+# "spi_flash: Octal flash chip is using but dio mode is selected, will automatically swich to Octal mode"
+# "tsens: legacy driver is deprecated, please migrate to `driver/temperature_sensor.h`"
+# "rmt(legacy): legacy driver is deprecated, please migrate to `driver/rmt_tx.h` and/or `driver/rmt_rx.h`"
+
+# TODO: OTA does not work, succeeds but does not actually update the firmware, only USB programming works
+
+esphome:
+  name: n32r8v-ota-test
+  comment: "ESP32-S3-DevKitC-1-N32R8V Test Device"
+  on_boot:
+    then:
+      # Change boot up LED colors to test if firmware changed
+      - light.turn_on:
+          id: rgb_led
+          red: 0%
+          green: 100%
+          blue: 0%
+          brightness: 25%
+          effect: none
+  
+  # Modify default esp32-s3-devkitc-1 (8MB Flash, no PSRAM) board configuration for ESP32-S3-DevKitC-1-N32R8V (32MB Flash, 8MB PSRAM)
+  platformio_options:
+    # TODO: Are any Arduino options used when using ESP-IDF?
+    # Largest "default" partition type is 16MB default_16MB.csv, no default 32MB partition, closest matching in layout is large_littlefs_32MB.csv
+    # https://github.com/espressif/arduino-esp32/tree/master/tools/partitions
+    board_build.arduino.partitions: large_littlefs_32MB.csv
+    # board_build.arduino.partitions: default_16MB.csv
+    # Octal memory type for Flash and PSRAM
+    board_build.arduino.memory_type: opi_opi
+    # TODO: How to add vs. replace?
+    board_build.extra_flags:
+      - "-DARDUINO_ESP32S3_DEV"
+      # Has PSRAM
+      - "-DBOARD_HAS_PSRAM"
+      - "-DARDUINO_USB_MODE=1"
+      - "-DARDUINO_RUNNING_CORE=1"
+      - "-DARDUINO_EVENT_RUNNING_CORE=1"
+    # Octal memory type for PSRAM
+    board_build.psram_type: opi
+    board_name: "Espressif ESP32-S3-DevKitC-1-N32R8V (32MB OT Flash, 8MB OT PSRAM)"
+    # TODO: Error when setting flash size in board config?
+    # "Please specify flash_size within esp32 configuration only.""
+    #board_upload.flash_size: 32MB 
+    # 32MB
+    board_upload.maximum_size: 33554432
+
+esp32:
+  # Platformio config changes will modify esp32-s3-devkitc-1 base configuration
+  board: esp32-s3-devkitc-1
+  # TODO: Why can't we set flash size in board config?
+  flash_size: 32MB
+  # flash_size: 16MB
+  framework:
+    type: esp-idf
+    # Using latest versions to get the 32MB flash size compiling without boot loops
+    platform_version: 6.7.0
+    version: 5.2.1
+    # TODO: https://github.com/esphome/issues/issues/5404
+    # Warning! Flash memory size mismatch detected. Expected 32MB, found 2MB!
+    sdkconfig_options:
+      CONFIG_ESPTOOLPY_FLASHSIZE_32MB: "y"
+      # CONFIG_ESPTOOLPY_FLASHSIZE_16MB: "y"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+  reboot_timeout: 5min
+
+logger:
+  level: debug
+  hardware_uart: UART0
+
+ota:
+  password: !secret ota_password
+
+debug:
+  update_interval: 60s
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: rgb_led
+    disabled_by_default: true
+    entity_category: config
+    rgb_order: GRB
+    pin: GPIO38
+    num_leds: 1
+    rmt_channel: 0
+    chipset: WS2812
+
+psram:
+  mode: octal
+  speed: 80MHz

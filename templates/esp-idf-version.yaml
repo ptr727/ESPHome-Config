@@ -1,0 +1,10 @@
+# Current versions for espressif32 and framework-espidf
+
+# TODO: "latest" for platform_version is not supported, need an exact version number
+# https://registry.platformio.org/platforms/platformio/espressif32/versions
+# https://registry.platformio.org/tools/platformio/framework-espidf
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  espressif32_version: 6.7.0
+  espidf_version: 5.2.1 # latest

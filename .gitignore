@@ -1,12 +1,11 @@
 /.esphome/
 /secrets.yaml
-
 **/.pioenvs/
 **/.piolibdeps/
 **/lib/
 **/src/
 **/platformio.ini
 **/partitions.csv
-
+venv/*
 *.log
 /docs

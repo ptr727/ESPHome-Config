@@ -35,7 +35,6 @@ esp8266:
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   common: !include common.yaml
-  memory_sensor:  !include esp8266-memory-sensor.yaml
 
 # https://esphome.io/components/binary_sensor/index.html
 binary_sensor:

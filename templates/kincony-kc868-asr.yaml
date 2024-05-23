@@ -8,23 +8,6 @@
 # https://templates.blakadder.com/kincony_KC868-ASR.html
 # https://devices.esphome.io/devices/KinCony-KC868-ASR
 
-# https://github.com/Lmanangka/esp32-4-channel-relays/blob/main/schematic/schematic.pdf
-# https://github.com/OLIMEX/ESP32-DevKit-LiPo/tree/master/HARDWARE/ESP32-DevKit-LiPo-Rev.C
-# https://github.com/ansemjo/luftctl/blob/main/schematic.pdf
-# https://github.com/esp-rs/esp-rust-board
-# https://github.com/clackotron/clackotron_hardware
-# https://learn.adafruit.com/adafruit-esp32-s3-feather/downloads
-# https://oshwlab.com/Miraculix200/esp32-s3-mini_copy
-
-# https://github.com/mortens-lab/iot-thing
-# https://github.com/strid3r21/Bee-Data-Logger
-# https://www.kincony.com/download/KC868-ASR-schematic.pdf
-# https://www.kincony.com/download/KC868-A4-schematic.pdf
-# https://github.com/CrabikBoards/slot-esp32-s3-hardware
-# https://github.com/OLIMEX/ESP32-S3-DevKit-LiPo
-# https://github.com/Lmanangka/esp32-4-channel-relays
-# https://github.com/ansemjo/luftctl
-
 # ESP32-WROOM-32E
 
 # GPIO19: Relay-1
@@ -74,8 +57,7 @@ esp32:
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  common: !include common-no-time.yaml
-  memory_sensor:  !include esp32-memory-sensor.yaml
+  common: !include common.yaml
 
 # https://esphome.io/components/i2c
 i2c:
@@ -83,6 +65,7 @@ i2c:
   scl: GPIO27
   frequency: 400kHz
 
+# Add to common.yaml time configuration
 # https://esphome.io/components/time
 time:
 
@@ -92,9 +75,9 @@ time:
     address: 0x68
     # Use HA for time sync
     update_interval: never
+
   # https://esphome.io/components/time/homeassistant
   - platform: homeassistant
-    id: homeassistant_time
     # Update RTC on time sync
     on_time_sync:
       then:

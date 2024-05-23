@@ -1,0 +1,91 @@
+# Adafruit ESP32-S3 Feather
+# Adafruit ESP32-S3 8MB Flash 5323, 5885 w.FL
+# Adafruit ESP32-S3 4MB Flash 2MB PSRAM 5477
+
+# https://www.adafruit.com/product/5323#technical-details
+# https://learn.adafruit.com/adafruit-esp32-s3-feather/pinouts
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# RGB LED Power : GPIO21
+# RGB LED : GPIO33
+
+# I2C SDA : GPIO3
+# I2C SCL : GPIO4
+
+# MAX17048
+# I2C 0x36
+
+# BME280
+# I2C 0x77
+# Not populated
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  rgb_led_pin: GPIO33
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+
+# https://esphome.io/components/esp32
+esp32:
+  # Adafruit ESP32-S3 8MB Flash 5323, 5885 (w.FL)
+  # https://docs.platformio.org/en/latest/boards/espressif32/adafruit_feather_esp32s3_nopsram.html
+  board: adafruit_feather_esp32s3_nopsram
+  # Adafruit ESP32-S3 4MB Flash 2MB PSRAM 5477
+  # board: adafruit_feather_esp32s3
+  # https://docs.platformio.org/en/latest/boards/espressif32/adafruit_feather_esp32s3.html
+  # board: adafruit_feather_esp32s3
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    # TODO: Temperature sensor requires ESP-IDF 4.4.3+
+    # https://github.com/esphome/issues/issues/4271
+    type: arduino
+    version: latest
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  common: !include common.yaml
+  temperature: !include temperature.yaml
+  rgbledstatus: !include rgb-led-status.yaml
+
+# https://esphome.io/components/i2c
+i2c:
+  sda: GPIO3 # WARNING GPIO3 is a strapping PIN and should only be used for I/O with care.
+  scl: GPIO4
+
+# MAX17048
+# TODO: # https://github.com/esphome/feature-requests/issues/2277
+# https://www.analog.com/en/products/max17048.html
+# https://github.com/Option-Zero/esphome-components
+external_components:
+  - source: github://Option-Zero/esphome-components
+    components: [max17048]
+
+# https://esphome.io/components/sensor/
+sensor:
+
+  # MAX17048
+  # I2C 0x36
+  - platform: max17048
+    battery_voltage:
+      name: ${device_name}_battery_voltage
+    battery_level:
+      name: ${device_name}_battery_level
+    rate:
+      name: ${device_name}_battery_discharge_rate
+
+# https://esphome.io/components/switch/
+switch:
+
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    pin: GPIO21
+    name: ${device_name}_rgb_led_power"
+    restore_mode: ALWAYS_ON
+    internal: true

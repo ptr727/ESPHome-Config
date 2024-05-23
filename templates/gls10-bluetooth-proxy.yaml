@@ -1,0 +1,129 @@
+# https://www.gl-inet.com/products/gl-s10/
+# https://blakadder.com/gl-s10/
+# https://github.com/blakadder/bluetooth-proxies/blob/main/gl-s10_v2.yaml
+# https://devices.esphome.io/devices/GL-iNet-GL-S10
+
+# Warning: Do not connect USB power and POE power at the same time!
+
+# Board Tested: GL-S10-v2.1 / 2022-05-05
+
+# Required substitutions:
+# device_name
+# device_comment
+
+# ESP32-DOWD, 4MB Flash
+# Spec claims 8MB PSRAM, could not activate
+
+# GPIO32 : Globe LED (Green) (On when Ethernet is connected)
+# GPIO14 : Power LED (White) (ESPHome Status)
+# GPIO12 : BLE LED (Green) (On when Ethernet is not connected)
+
+# GPIO33 : Reset button (Marked as Reset, not connected to reset) (Runs safe_reboot())
+
+# IP101 RMII Ethernet
+# GPIO23 : mdc
+# GPIO18: mdio
+# GPIO0_IN : clk
+# GPIO5 : power
+
+# I2C
+# GPIO15 : sda
+# GPIO13 : scl
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  on_boot:
+    then:
+      - output.turn_on: power_led
+
+# https://esphome.io/components/esp32
+esp32:
+  # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32dev.json
+  board: esp32dev
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  api: !include api.yaml
+  basic: !include basic.yaml
+  debug: !include debug.yaml
+  logger: !include logger.yaml
+  ota: !include ota.yaml
+  time: !include time.yaml
+
+# https://esphome.io/components/ethernet.html
+ethernet:
+  type: IP101
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO5 # WARNING GPIO5 is a strapping PIN and should only be used for I/O with care.
+
+# https://esphome.io/components/esp32_ble_tracker.html
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: true
+
+# https://esphome.io/components/bluetooth_proxy.html
+bluetooth_proxy:
+  active: true
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin:
+    number: GPIO32
+
+# Reset button
+# https://esphome.io/components/binary_sensor/gpio.html
+binary_sensor:
+  - platform: gpio
+    id: reset_button
+    icon: mdi:restart
+    pin:
+      number: GPIO33
+      inverted: true
+    filters:
+      - delayed_on: 10ms
+    on_press:
+      then:
+        # https://github.com/esphome/esphome/blob/dev/esphome/core/application.h
+        - lambda: App.safe_reboot();
+
+# LED's
+output:
+  - platform: gpio
+    id: power_led
+    pin: 
+      number: GPIO14
+      inverted: true
+  - platform: gpio
+    id: ble_led
+    pin:
+      number: GPIO12 # WARNING GPIO12 is a strapping PIN and should only be used for I/O with care.
+      inverted: true
+
+# https://esphome.io/components/i2c.html
+i2c:
+  sda: GPIO15 # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
+  scl: GPIO13
+  scan: true
+
+# https://esphome.io/guides/automations.html#interval-component
+interval:
+  - interval: 1s
+    then:
+      if:
+        condition:
+          # https://github.com/esphome/esphome/blob/dev/esphome/components/ethernet/ethernet_component.h
+          lambda: return ethernet::global_eth_component->is_connected();
+        then:
+          - output.turn_on: ble_led
+        else:
+          - output.turn_off: ble_led

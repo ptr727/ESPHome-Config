@@ -1,0 +1,27 @@
+# ESP32-S3-WROOM-2-N16R8V
+# ESP32-S3R8V, 16MB Octal SPI Flash, 8MB Octal SPI PSRAM, 1.8V SPI
+# https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-2_datasheet_en.pdf
+
+# GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
+
+# Similar config to ESP32-S3-WROOM-2-N32R8V but with 16MB Flash
+# Keep in sync with esp32-s3-wroom-2-n32r8v.yaml
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  # Modify changes from 32MB to 16MB in esp32-s3-wroom-2-n32r8v.yaml
+  n32r8v: !include esp32-s3-wroom-2-n32r8v.yaml
+
+# https://esphome.io/components/esphome
+esphome:
+  platformio_options:
+    board_build.arduino.partitions: default_16MB.csv
+    board_name: "Espressif ESP32-S3-WROOM-2-N16R8V (ESP32-S3R8V, 16MB Octal SPI Flash, 8MB Octal SPI PSRAM, 1.8V SPI)"
+    board_upload.maximum_size: 16777216
+
+# https://esphome.io/components/esp32
+esp32:
+  flash_size: 16MB
+  framework:
+    sdkconfig_options:
+      CONFIG_ESPTOOLPY_FLASHSIZE_16MB: "y"

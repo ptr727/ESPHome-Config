@@ -192,8 +192,7 @@ esp32:
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  common: !include common-no-time.yaml
-  memory_sensor:  !include esp32-memory-sensor.yaml
+  common: !include common.yaml
 
 # https://esphome.io/components/i2c
 i2c:
@@ -203,8 +202,10 @@ i2c:
   # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
   frequency: 400kHz
 
+# Add to common.yaml time configuration
 # https://esphome.io/components/time
 time:
+
   # DS3231 is compatible with DS1307 RTC
   # https://esphome.io/components/time/ds1307
   - platform: ds1307
@@ -212,9 +213,9 @@ time:
     address: 0x68
     # Use HA for time sync
     update_interval: never
+
   # https://esphome.io/components/time/homeassistant
   - platform: homeassistant
-    id: homeassistant_time
     # Update RTC on time sync
     on_time_sync:
       then:
@@ -254,6 +255,7 @@ display:
 # https://esphome.io/components/sensor/
 sensor:
 
+  # TODO: Replace with https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
   # https://esphome.io/components/sensor/adc.html
   - platform: adc
     pin: GPIO36
@@ -262,6 +264,7 @@ sensor:
     attenuation: 11dB
     # Average over 64 samples, emit every 32 samples, every 320ms at 10ms sampling
     # ~3 times per second to keep key presses responsive
+    # TODO: Debug logging will flood the output, how to change to info just for this component?
     update_interval: 10ms
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
