@@ -35,7 +35,7 @@ esphome:
     board_build.arduino.partitions: large_littlefs_32MB.csv
     # Octal memory type for Flash and PSRAM
     board_build.arduino.memory_type: opi_opi
-    # TODO: How to add elements vs. replace all?
+    # TODO: Per devs adding psram in YAML should auto add -DBOARD_HAS_PSRAM
     board_build.extra_flags: 
       - "-DARDUINO_ESP32S3_DEV"
       # Has PSRAM
@@ -64,8 +64,12 @@ esp32:
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
     type: esp-idf
-    platform_version: ${espressif32_version}
-    version: ${espidf_version}
+    # TODO: "latest" for platform_version is not supported, need an exact version number
+    # TODO: "latest" for version does not use the latest version, it uses the version matching the platform_release version
+    # https://registry.platformio.org/platforms/platformio/espressif32/versions
+    # https://registry.platformio.org/tools/platformio/framework-espidf
+    platform_version: 6.7.0
+    version: 5.2.1
     # TODO: https://github.com/esphome/issues/issues/5404
     # "Warning! Flash memory size mismatch detected. Expected 32MB, found 2MB!"
     sdkconfig_options:

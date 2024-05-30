@@ -51,6 +51,7 @@ packages:
   api: !include api.yaml
   basic: !include basic.yaml
   debug: !include debug.yaml
+  ethernetsensor: !include ethernet-sensor.yaml
   logger: !include logger.yaml
   ota: !include ota.yaml
   time: !include time.yaml
