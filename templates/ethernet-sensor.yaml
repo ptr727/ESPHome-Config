@@ -1,0 +1,23 @@
+# Required substitutions:
+# device_name
+
+# https://esphome.io/components/text_sensor
+text_sensor:
+
+  # https://esphome.io/components/text_sensor/ethernet_info
+  - platform: ethernet_info
+    ip_address:
+      name: ${device_name}_ethernet_ip
+      id: ethernet_ip
+      update_interval: 60s
+
+    # TODO: Report Ethernet MAC address
+    # https://github.com/esphome/feature-requests/issues/1326
+#   - platform: template
+#     name: ${device_name}_ethernet_mac
+#     entity_category: diagnostic
+#     icon: "mdi:ip-network"
+#     # Use "global" MAC address, not the same as ethernet AMC, e.g. Ethernet: A0:A3:B3:6D:EF:1B, Global: A0:A3:B3:6D:EF:18
+#     # https://github.com/esphome/esphome/blob/dev/esphome/core/helpers.h
+#     lambda: return ::get_mac_address_pretty();
+#     update_interval: 60s

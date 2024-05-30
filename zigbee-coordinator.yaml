@@ -21,6 +21,7 @@ packages:
   api: !include templates/api.yaml
   basic: !include templates/basic.yaml
   debug: !include templates/debug.yaml
+  ethernetsensor: !include templates/ethernet-sensor.yaml
   logger: !include templates/logger.yaml
   ota: !include templates/ota.yaml
   time: !include templates/time.yaml
