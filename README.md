@@ -2,39 +2,41 @@
 
 [ESPHome](https://esphome.io/index.html) configuration.
 
-## Device Templates
+## Templates
 
-A collection of device specific configuration templates.  
+A [collection](./templates/) of utility and device specific configuration templates.  
 Some templates are customized based on other people's work, see YML files for source references.
 
-### TuyaConvert
+### Device Templates
+
+#### TuyaConvert
 
 - Generic bootstrap [template](./tuya-convert.yaml) used when converting Tuya devices to ESPHome using TuyaConvert.
 - See blog [post](https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/) for firmware conversion details.
 
-### Ayococr X5P WiFi Plug
+#### Ayococr X5P WiFi Plug
 
 - [Template](./templates/aoycocr-x5p.yaml) for the [Ayococr X5P](https://www.amazon.com/dp/B07R6CT3G7) US 120V AC WiFi wall plug.
 - See blog [post](https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/) for firmware conversion details.
 
-### EFUN SH331 WiFi Power Monitoring Plug
+#### EFUN SH331 WiFi Power Monitoring Plug
 
 - [Template](./templates/efun-sh331.yaml) for the [EFUN SH331W](https://www.amazon.com/gp/product/B07DCJ7TDR) US 120V AC WiFi power monitoring wall plug.
 - See blog [post](https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/) for firmware conversion details.
 - Note: No longer listed on Amazon.
 
-### Sonoff TH10/TH16 WiFi Relay
+#### Sonoff TH10/TH16 WiFi Relay
 
 - [Template](/templates/sonoff-th10.yaml) for the [Sonoff TH10](https://www.amazon.com/Sonoff-Temperature-Monitoring-Assistant-DS18B20/dp/B08DFQ2NP3) and [Sonoff TH16](https://www.amazon.com/Sonoff-Temperature-Humidity-Monitoring-Assistant/dp/B07TF5SYGL) WiFi relay.
 - Follow the Tasmota [guide](https://tasmota.github.io/docs/devices/Sonoff-TH/) for flashing instructions.
 - Note: Sonoff TH10 and TH16 have been replaced by the [SONOFF TH Origin](https://itead.cc/product/sonoff-th/), see the [Tasmota Templates](https://templates.blakadder.com/sonoff_THR316.html) for pin layouts.
 
-### Sonoff S31 WiFi Power Monitoring Plug
+#### Sonoff S31 WiFi Power Monitoring Plug
 
 - [Template](./templates/sonoff-s31.yaml) for the [Sonoff S31](https://www.amazon.com/Sonoff-Monitoring-Certified-Assistant-Supporting/dp/B08GKGS197) US 120V AC WiFi power monitoring wall plug.
 - Follow the Tasmota [guide](https://tasmota.github.io/docs/devices/Sonoff-S31/) for flashing instructions.
 
-### Norvi NORVI-ENET-AE06-R DIN Controller
+#### Norvi NORVI-ENET-AE06-R DIN Controller
 
 - [Template](./templates/norvi-enet-ae06-r.yaml) for the [Norvi NORVI-ENET-AE06-R](https://shop.norvi.lk/products/norvi-enet-ae06-r) or [SensOper SC-EN-I6-RO4](https://sensoper.com/shop/sc-en-i6-ro4/) ESP32 DIN form factor controllers.
 - Flash over USB.
@@ -44,21 +46,28 @@ Some templates are customized based on other people's work, see YML files for so
   - I am experiencing issues with PSU and ADC stability on several devices, see the [notes](./templates/norvi-enet-ae06-r.yaml) section in YML for details.
   - Norvi addressed the issues through a design change (May 2024 date code) and sent me replacement devices, that I still need to test and verify.
 
-### RocketController ASTRA DIN Controller
+#### RocketController ASTRA DIN Controller
 
 - [Template](./templates/rocket-astra.yaml) for the [RocketController / RocketDyn ASTRA](https://rocketcontroller.com/product-category/controllers/) ESP32 DIN form factor controllers.
 - Follow the RocketController [guide](https://rocketcontroller.com/programming-astra-module-with-uart-serial-interface-for-arduino-ide-micropython-and-any-programming-language/) for flashing instructions.
 
-### Kincony KC868-ASR DIN Controller
+#### Kincony KC868-ASR DIN Controller
 
 - [Template](./templates/kincony-kc868-asr.yaml) for the [Kincony KC868-ASR](https://www.kincony.com/esp32-sd-card-rtc-ds3231.html) ESP32 DIN form factor controllers.
 - Flash over USB.
 
-### GL-S10 POE Ethernet Bluetooth Proxy
+#### GL-S10 POE Ethernet Bluetooth Proxy
 
 - [Template](./templates/gls10-bluetooth-proxy.yaml) to use the [GL-S10 IoT Gateway](https://www.gl-inet.com/products/gl-s10/) as a Bluetooth proxy.
 - Follow the Blakadder [guide](https://blakadder.com/gl-s10/) for flashing instructions.
 - Warning: Do not connect USB power and POE power at the same time.
+
+### Utility Templates
+
+- [RGB LED Status](./templates/rgb-led-status.yaml) component. Useful for boards with only a RGB LED to use as [Status LED](https://esphome.io/components/status_led.html) component equivalent.
+- [ESP32-S3-DevKitC](/templates//esp32-s3-devkitc.yaml) devkit template, and [ESP32-S3-WROOM-2-N32R8V](./templates//esp32-s3-wroom-2-n32r8v.yaml) and [ESP32-S3-WROOM-2-N16R8V](./templates/esp32-s3-wroom-2-n16r8v.yaml) board definitions for the [ESP32-S3-DevKitC](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html) boards. The default [`esp32-s3-devkit-c-1`](https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html) board only supports the `ESP32-S3-WROOM-1-N8` with 8MB Quad Flash and no PSRAM, any other board requires some customization, especially for the Octal memory boards. Includes the on-chip temperature sensor and RGB LED as status LED.
+- [WEMOS LOLIN32 Lite](./templates//wemos-lolin32-lite.yaml) devkit template for [WEMOS LOLIN32 Lite](https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite) and clone boards. Includes the LED as status LED.
+- [Adafruit ESP32-S3 Feather](./templates//adafruit-esp32-s3-feather.yaml) devkit template for the [Adafruit ESP32-S3 Feather](https://www.adafruit.com/product/5323) board. Includes the on-chip temperature sensor, RGB LED as status LED, and [MAX17048](https://www.analog.com/en/products/max17048.html) I2C battery charge monitor.
 
 ## Projects
 
@@ -143,11 +152,10 @@ Some templates are customized based on other people's work, see YML files for so
 
 - PlatformIO version is determined by the ESPHome release, it cannot be updated independently.
 - `framework:` `type:` can be `arduino` or `esp-idf`, use [`esp-idf`](https://esphome.io/components/esp32#esp-idf-framework) for ESP32 devices.
-- `platform_version` specifies the `platformio/espressif32` version.
-- `version` specifies the `platformio/framework-espidf` version.
-- Using `latest` for `platform_version` is not supported, use an [exact version number](https://registry.platformio.org/platforms/platformio/espressif32/versions).
-- Using `latest` for `version` will use the `platformio/framework-espidf` version supported by the `platformio/espressif32` version at release time.
-- In some cases a later version of `platformio/framework-espidf` may be required, use an [exact version number](https://registry.platformio.org/tools/platformio/framework-espidf).
+- `platform_version` specifies the `platformio/espressif32` [version](https://registry.platformio.org/platforms/platformio/espressif32/versions).
+  - Using `latest` is not supported, use an exact version number.
+- `version` specifies the `platformio/framework-espidf` [version](https://registry.platformio.org/tools/platformio/framework-espidf).
+  - Using `latest` will use the version supported by `platformio/espressif32` at release time, not the current latest version.
 
 ## Debugging
 

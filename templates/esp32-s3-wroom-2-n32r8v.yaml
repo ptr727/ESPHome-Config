@@ -25,20 +25,15 @@
 esphome:
   
   # Modify default esp32-s3-devkitc-1 (8MB Flash, no PSRAM) board configuration
-  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
-  # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32-s3-devkitc-1.json
   platformio_options:
 
-    # TODO: Does ISP-IDF need a correct partition table defined in Arduino settings?
-    # Largest "default" partition type is 16MB default_16MB.csv, no default 32MB partition, closest matching in layout is large_littlefs_32MB.csv
     # https://github.com/espressif/arduino-esp32/tree/master/tools/partitions
     board_build.arduino.partitions: large_littlefs_32MB.csv
     # Octal memory type for Flash and PSRAM
     board_build.arduino.memory_type: opi_opi
-    # TODO: Per devs adding psram in YAML should auto add -DBOARD_HAS_PSRAM
+    # TODO: Per devs adding psram in YAML should auto add -DBOARD_HAS_PSRAM, could not confirm
     board_build.extra_flags: 
       - "-DARDUINO_ESP32S3_DEV"
-      # Has PSRAM
       - "-DBOARD_HAS_PSRAM"
       - "-DARDUINO_USB_MODE=1"
       - "-DARDUINO_RUNNING_CORE=1"
@@ -55,22 +50,11 @@ esphome:
 # https://esphome.io/components/esp32
 esp32:
 
-  # Platformio config changes will modify esp32-s3-devkitc-1 base configuration
-  board: esp32-s3-devkitc-1
-
   # TODO: Why can't we set flash size in board config?
   flash_size: 32MB
 
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
-    type: esp-idf
-    # TODO: "latest" for platform_version is not supported, need an exact version number
-    # TODO: "latest" for version does not use the latest version, it uses the version matching the platform_release version
-    # https://registry.platformio.org/platforms/platformio/espressif32/versions
-    # https://registry.platformio.org/tools/platformio/framework-espidf
-    platform_version: 6.7.0
-    version: 5.2.1
-    # TODO: https://github.com/esphome/issues/issues/5404
     # "Warning! Flash memory size mismatch detected. Expected 32MB, found 2MB!"
     sdkconfig_options:
       CONFIG_ESPTOOLPY_FLASHSIZE_32MB: "y"

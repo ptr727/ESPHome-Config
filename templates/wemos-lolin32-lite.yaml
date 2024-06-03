@@ -22,6 +22,9 @@ esphome:
 esp32:
   # https://docs.platformio.org/en/latest/boards/espressif32/lolin32_lite.html
   board: lolin32_lite
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:

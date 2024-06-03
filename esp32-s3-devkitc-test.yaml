@@ -5,4 +5,5 @@ substitutions:
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  feather: !include templates/esp32-s3-devkitc.yaml
+  n16r8v: !include templates/esp32-s3-wroom-2-n16r8v.yaml
+  devkitc: !include templates/esp32-s3-devkitc.yaml
