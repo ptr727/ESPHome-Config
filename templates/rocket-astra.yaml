@@ -102,8 +102,11 @@ esphome:
 
 # https://esphome.io/components/esp32
 esp32:
-  # https://docs.platformio.org/en/latest/boards/espressif32/esp32doit-devkit-v1.html
-  board: esp32doit-devkit-v1
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
+  board: esp32dev
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:

@@ -30,14 +30,33 @@ esphome:
   name: ${device_name}
   comment: ${device_comment}
 
+# https://esphome.io/components/esp32
+esp32:
+
+  # Default board config is for 8MB Quad Flash and no PSRAM
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
+  # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32-s3-devkitc-1.json
+  board: esp32-s3-devkitc-1
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    # TODO: Need to use the latest version of IDF framework else we get boot crash loops
+    type: esp-idf
+    # TODO: "latest" for platform_version is not supported, need an exact version number
+    # https://registry.platformio.org/platforms/platformio/espressif32/versions
+    platform_version: 6.7.0
+    # TODO: "latest" for version does not use the latest version, it uses the version matching the platform_release version
+    # https://registry.platformio.org/tools/platformio/framework-espidf
+    version: 5.2.1
+    # TODO: https://github.com/esphome/issues/issues/5404
+
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  # TODO: Match hardware Flash and PSRAM setup
-  n32r8v: !include esp32-s3-wroom-2-n16r8v.yaml
+  # TODO: Match Flash and PSRAM config for actual board
+  # n16r8v: !include esp32-s3-wroom-2-n16r8v.yaml
   common: !include common.yaml
   temperature: !include temperature.yaml
   rgbledstatus: !include rgb-led-status.yaml
-  espidfversion: !include esp-idf-version.yaml
 
 # TODO: Match programmer setup
 # Log to USB-UART port

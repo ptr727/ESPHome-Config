@@ -7,13 +7,6 @@ substitutions:
 packages:
   feather: !include templates/wemos-lolin32-lite.yaml
 
-# https://esphome.io/components/esp32
-esp32:
-  # https://esphome.io/components/esp32#esp-idf-framework
-  framework:
-    # BT proxy requires ESP-IDF
-    type: esp-idf
-
 # https://esphome.io/components/esp32_ble_tracker.html
 esp32_ble_tracker:
   scan_parameters:

@@ -189,6 +189,8 @@ esphome:
 esp32:
   # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
   board: esp32dev
+  framework:
+    type: esp-idf
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
