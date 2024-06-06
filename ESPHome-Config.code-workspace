@@ -5,9 +5,6 @@
 		}
 	],
 	"settings": {
-		"files.associations": {
-			"*.yaml": "esphome"
-		},
 		"cSpell.words": [
 			"adafruit",
 			"appdata",
@@ -32,15 +29,19 @@
 			"esphome",
 			"espidf",
 			"Espressif",
+			"ethernetsensor",
 			"getportnames",
 			"GPIO",
 			"homeassistant",
+			"insanegenius",
 			"JTAG",
 			"kincony",
 			"leds",
+			"LOLIN",
 			"lsusb",
 			"macvlan",
 			"mdio",
+			"mdns",
 			"Meanwell",
 			"mulcmu",
 			"neopixel",
@@ -60,17 +61,24 @@
 			"setuptools",
 			"Sonoff",
 			"Tasmota",
+			"tubeszb",
 			"Tuya",
 			"UART",
 			"USBIPD",
 			"usbutils",
 			"venv",
 			"Wanptek",
+			"WEMOS",
+			"WROOM",
 			"yzhang",
 			"Zigbee"
 		],
 		"editor.renderWhitespace": "boundary",
-		"diffEditor.ignoreTrimWhitespace": false
+		"diffEditor.ignoreTrimWhitespace": false,
+		"files.trimTrailingWhitespace": true,
+		"[markdown]": {
+			"files.trimTrailingWhitespace": false
+		}
 	},
 	"extensions": {
 		"recommendations": [
