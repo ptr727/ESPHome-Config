@@ -4,6 +4,8 @@
 # https://github.com/esphome/esphome/pull/3552
 # https://community.home-assistant.io/t/esp32-a1s-audio-kit-for-voice-assistant/568301/39
 
+# TODO: Does not work, my board has the common issue with wrong component placement
+
 substitutions:
   device_name: esp32-audio-kit-test
   device_comment: "ESP32-A1S Wi-Fi+BT Audio Development Kit V2.2 A247"
@@ -13,8 +15,9 @@ esphome:
   comment: ${device_comment}
 
 esp32:
-  board: esp-wrover-kit
+  board: esp32dev
   framework:
+    # TODO: i2s_audio is only available for Arduino not ESP-IDF
     type: arduino
 
 packages:

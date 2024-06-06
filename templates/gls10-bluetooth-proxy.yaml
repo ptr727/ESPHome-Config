@@ -40,7 +40,7 @@ esphome:
 
 # https://esphome.io/components/esp32
 esp32:
-  # https://github.com/platformio/platform-espressif32/blob/master/boards/esp32dev.json
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
   board: esp32dev
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
@@ -51,6 +51,7 @@ packages:
   api: !include api.yaml
   basic: !include basic.yaml
   debug: !include debug.yaml
+  ethernetsensor: !include ethernet-sensor.yaml
   logger: !include logger.yaml
   ota: !include ota.yaml
   time: !include time.yaml
