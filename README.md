@@ -1,10 +1,10 @@
 # ESPHome-Config
 
-[ESPHome](https://esphome.io/index.html) configuration.
+[ESPHome](https://esphome.io/index.html) configuration, templates, and projects.
 
 ## Templates
 
-A [collection](./templates/) of utility and device specific configuration templates.  
+A [collection](./templates/) of utility and device specific configuration templates.
 Some templates are customized based on other people's work, see YML files for source references.
 
 ### Device Templates
@@ -100,24 +100,31 @@ Some templates are customized based on other people's work, see YML files for so
 
 - Project [`utility-counter-gate-fan.yaml`](./utility-counter-gate-fan.yaml) is used as thermostat for cool air ventilation in my garage, and to measure water and gas consumption from my utility meter pulse counters.
 
-## Deployment
-
-### Docker
+## Docker Deployment
 
 - Run [ESPHome](https://hub.docker.com/r/esphome/esphome) in a Docker container.
-  - Run the container as `root`, running as a regular user may result in permission [problems](https://github.com/esphome/issues/issues/3558).
-  - Run using `macvlan` and a static IP to support automatic device discovery.
-  - Make sure the container user has correct file and directory permissions, e.g.:
-    - `sudo chown -R nobody:users /data/appdata/esphome/config`
-    - `sudo chmod -R ugo+rwx /data/appdata/esphome/config`
-  - Make sure the container user has Git permissions for mixed user file permissions.
-    - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
-    - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
-- Sync Git repository in ESPHome config folder.
+- Use the following volume mappings and environment variables to avoid file permission [problems](https://github.com/esphome/issues/issues/3558).
+  - `ESPHOME_DATA_DIR: "/data"` : Use `/data` for the intermediate build output directory, [default](https://github.com/esphome/esphome/blob/8ef4aaa70eac95656f2742b7e57d1010cfb235b5/esphome/core/__init__.py#L599) if not set is `/config/.esphome`.
+  - `PLATFORMIO_CORE_DIR: "/cache/platformio/core"` : PlatformIO [`core_dir`](https://docs.platformio.org/en/latest/envvars.html#envvar-PLATFORMIO_CORE_DIR) override option, [default](https://github.com/esphome/esphome/blob/ccab57fc583189976248b7574eb4ca448860b16a/docker/Dockerfile#L183) if not set is `/esphome/.temp/platformio`.
+  - `PLATFORMIO_GLOBALLIB_DIR: "/cache/platformio/lib"` : PlatformIO [`globallib_dir`](https://docs.platformio.org/en/latest/envvars.html#envvar-PLATFORMIO_GLOBALLIB_DIR) override option, [default](https://github.com/esphome/esphome/blob/ccab57fc583189976248b7574eb4ca448860b16a/docker/Dockerfile#L67) if not set is `/piolibs`.
+  - `/config` : YML project file location.
+  - `/data` : Intermediate build output as specified by `ESPHOME_DATA_DIR` environment variable.
+  - `/cache` : PlatformIO `/cache/platformio` directory, [default](https://github.com/esphome/esphome/blob/8ef4aaa70eac95656f2742b7e57d1010cfb235b5/docker/docker_entrypoint.sh#L6) if not set is `/config/.esphome/platformio`.
+  - `/build` : Build output directory, [default](https://github.com/esphome/esphome/blob/8ef4aaa70eac95656f2742b7e57d1010cfb235b5/docker/docker_entrypoint.sh#L25) if not set is `/config`.
+  - Note: The path logic is convoluted and undocumented, search the source code for references.
+- Use `host` or `macvlan` network mode to support automatic device discovery.
+- Make sure the container user has correct file and directory permissions, e.g.:
+  - `sudo chown -R nobody:users /data/appdata/esphome`
+  - `sudo chmod -R ugo+rwx /data/appdata/esphome`
+- Make sure the container user has Git permissions for mixed user file permissions.
+  - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
+  - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
+- Clone Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
-  - `git pull https://github.com/ptr727/ESPHome-Config .`
+  - `sudo git config --system --add safe.directory '*'`
+  - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
 - Deploy `secrets.yaml`, use `secrets._yaml` as template.
-- In VSCode open remote SSH workspace on docker host and config directory.
+- In VSCode open remote SSH workspace on docker host, and open workspace from config directory.
 
 ## Notes
 
