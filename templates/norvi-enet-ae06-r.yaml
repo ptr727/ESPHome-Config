@@ -19,6 +19,13 @@
 ##   Norvi from Norvi never worked correctly, ADC drift and no WiFi on bench PSU.
 ##   Norvi from CarTFT worked fine for about 2 weeks, then ADC started drifting.
 ##   Returning all units to Norvi for inspection.
+## May 2024, received new units from Norvi with design changes.
+##   GPIO36/ADC1-0/SENS_VP input GND resistor changed from 47K to 10K, improves button V scale.
+##   GPIO39/ADC1-3/SENS_VN has been grounded, reduces interference and drift on GPIO36 ADC.
+##   Observations - SensOper SC-EN-I6-RO4:
+##     This unit does have a DS3231 RTC, ok.
+##     GPIO39 ADC does not appear to be grounded, ADC on GPIO39 measure 3V+.
+##     GPIO36 button ADC, started at 0.14V, drifting up over time, does not seem fixed.
 
 # PSU problems:
 ## The device seems to be very sensitive to the type of PSU used.
@@ -124,7 +131,7 @@
 # Buttons
 ## ADC
 ## IO36
-## Resistor network: 3.3V, S3 10K, S2 33K, S1 67K, 47K GND
+## Resistor network: 3.3V to S1/S2/S3, 10K to GND, S1 67K, S2 33K, S3 10K
 
 # I2C
 ## SDA IO16
@@ -161,9 +168,7 @@
 # ESPHome support:
 ## DS3231 is compatible with the DS1307
 ## https://github.com/esphome/feature-requests/issues/515
-##
-## WS5500 SPI based Ethernet is available as an external component but not yet natively supported
-## https://github.com/esphome/esphome/pull/4424
+## https://esp-idf-lib.readthedocs.io/en/latest/groups/ds3231.html
 ##
 ## microSD card IO is not yet supported
 ## https://github.com/esphome/feature-requests/issues/513
@@ -263,22 +268,32 @@ sensor:
     pin: GPIO36
     name: ${device_name}_adc_buttons
     id: adc_buttons
-    attenuation: 11dB
+    attenuation: auto #12db
     # Average over 64 samples, emit every 32 samples, every 320ms at 10ms sampling
     # ~3 times per second to keep key presses responsive
     # TODO: Debug logging will flood the output, how to change to info just for this component?
-    update_interval: 10ms
+    update_interval: 250ms # TODO: loop interval is 18ms
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
-          window_size: 64
-          send_every: 32
-          # TODO: https://github.com/esphome/issues/issues/5353
-          # send_first_at: 64
-          send_first_at: 32
-    # Used internally for switch templates only, do not report to HA
-    internal: false # true
+          window_size: 8
+          send_every: 4
+          send_first_at: 4
+    # internal: true
+
+  # Test ADC VN grounded
+  - platform: adc
+    pin: GPIO39
+    name: ${device_name}_adc_vn
+    attenuation: auto
+    update_interval: 1s
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 8
+          send_every: 4
+          send_first_at: 4
 
 # https://esphome.io/components/switch
 switch:
@@ -287,7 +302,7 @@ switch:
   - platform: gpio
     name: ${device_name}_relay_0
     id: relay_0
-    pin: 
+    pin:
       number: GPIO2
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
@@ -299,7 +314,7 @@ switch:
   - platform: gpio
     name: ${device_name}_relay_2
     id: relay_2
-    pin: 
+    pin:
       number: GPIO12
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
@@ -315,7 +330,7 @@ binary_sensor:
   # TODO: The ADC is not stable, buttons are not usable
 
   # Refer to Utils.h NorviButtonHelper class for ADC to button mapping calculations
-  
+
   # https://esphome.io/components/binary_sensor/template.html
   - platform: template
     name: ${device_name}_button_up
@@ -342,7 +357,7 @@ binary_sensor:
 # Input handling to be defined in the device config as gpio, pulse counters, etc.
 # https://esphome.io/components/binary_sensor/gpio.html
 # - platform: gpio
-#   pin: 
+#   pin:
 #     number: GPIO21
 #     inverted: true
 #

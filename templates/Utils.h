@@ -30,6 +30,8 @@ class DisplayHelper
 // https://norvi.lk/docs/norvi-enet-ae06-r-norvi-enet-ae06-r-user-guide/
 // https://docs.espressif.com/projects/esp-idf/en/v4.4.6/esp32/api-reference/peripherals/adc.html
 // https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_B_V1_1-1109A.pdf
+
+// Original:
 // 3.3V, S3, 10K, 47K, GND
 // 3.3V, S2, 33K, 47K, GND
 // 3.3V, S1, 67K, 47K, GND
@@ -48,6 +50,24 @@ class DisplayHelper
 //   Max voltage from resistor ladder is 2.88V exceeding ADC max input of 2.45V at 11dB
 //   Minimum button press V delta is 0.042V, about 1.3% of 3.3V range, making the state change overly sensitive
 //   As alternative a standard R2R ladder configuration could have been used
+
+// Revised May 2024 (47K to GND replaced with 10K):
+// 3.3V, S3, 10K, 10K, GND
+// 3.3V, S2, 33K, 10K, GND
+// 3.3V, S1, 67K, 10K, GND
+// Rbutton = 1 / (1/R2 + 1/R3 + 1/R4)
+// Vbutton = (Vin x R6) / (Rbutton + R6)
+// S3 | S2 | S1 | Rbutton     | Vbutton     | Delta       | % of 3.3v
+// 0  | 0  | 0  | ∞           | 0           |             |
+// 0  | 0  | 1  | 67000       | 0.428571429 | 0.428571429 | 12.98701299
+// 0  | 1  | 0  | 33000       | 0.76744186  | 0.338870432 | 10.26880097
+// 0  | 1  | 1  | 22110       | 1.027717222 | 0.260275362 | 7.887132169
+// 1  | 0  | 0  | 10000       | 1.65        | 0.622282778 | 18.85705388
+// 1  | 0  | 1  | 8701.298701 | 1.764583333 | 0.114583333 | 3.472222222
+// 1  | 1  | 0  | 7674.418605 | 1.867105263 | 0.10252193  | 3.106725146
+// 1  | 1  | 1  | 6885.705388 | 1.954315751 | 0.087210487 | 2.642742045
+// Revised configuration improves on V delta and lowers V to below ADC max input.
+
 // TODO: Alternative ADC button components:
 //   https://github.com/espressif/esp-adf/blob/master/components/esp_peripherals/lib/adc_button/adc_button.c
 //   https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
@@ -69,8 +89,8 @@ public:
         }
 
         // Window needs to be less than half of smallest delta between voltages
-        // Smallest delta is 0.041521513
-        static constexpr double VWindow = 0.02;
+        // Smallest delta is 0.087210487
+        static constexpr double VWindow = 0.04;
 
         // Test all combinations of button press values
         for (int i = 1; i < Count; i++)
@@ -135,7 +155,7 @@ private:
     static const int R2 = 10000;
     static const int R3 = 33000;
     static const int R4 = 67000;
-    static const int R6 = 47000;
+    static const int R6 = 10000;
     static const int Count = 8;
 
     struct ButtonValue
