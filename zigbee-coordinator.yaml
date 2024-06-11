@@ -31,6 +31,7 @@ packages:
 
 # https://esphome.io/components/external_components.html
 external_components:
+  # TODO: https://github.com/oxan/esphome-stream-server
   # TODO: Fix initialize sin warning
   # https://github.com/tube0013/esphome-stream-server-v2/pull/10
   # https://github.com/tube0013/esphome-stream-server-v2

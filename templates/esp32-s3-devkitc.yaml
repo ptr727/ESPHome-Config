@@ -48,7 +48,6 @@ esp32:
     # TODO: "latest" for version does not use the latest version, it uses the version matching the platform_release version
     # https://registry.platformio.org/tools/platformio/framework-espidf
     version: 5.2.1
-    # TODO: https://github.com/esphome/issues/issues/5404
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
