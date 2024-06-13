@@ -8,7 +8,7 @@
 # --no-cache
 
 # Test image in shell:
-# docker run -it --rm --pull always --name Testing --entrypoint /bin/bash debian:stable-slim
+# docker run -it --rm --pull always --name Testing --entrypoint /bin/bash python:slim
 # docker run -it --rm --pull always --name Testing --entrypoint /bin/bash ptr727/esphome:latest
 # export DEBIAN_FRONTEND=noninteractive
 # apt upate && apt upgrade -y
@@ -38,11 +38,14 @@ ENV \
 # Install
 RUN \
     # Update repos and upgrade
-    apt-get update && apt-get upgrade -y \
+    apt update && apt-get upgrade -y \
     # Install dependencies
-    # TODO: Do I need build-essential or will wheel install it for me as required?
-    && apt-get install -y --no-install-recommends \
+    && apt install -y --no-install-recommends \
         build-essential \
+        curl \
+        git \
+        python3-dev \
+        wget \
     # Cleanup
     && apt-get autoremove -y \
     && apt-get clean \
@@ -51,9 +54,8 @@ RUN \
 # Builder
 WORKDIR /builder
 
-# Install
-# TODO: git clone or download from github
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /builder/wheels esphome
+# Build wheel archives
+RUN pip wheel --no-cache-dir --progress-bar off --wheel-dir /builder/wheels esphome
 
 # Final
 FROM python:slim
@@ -96,7 +98,6 @@ RUN \
     apt-get update && apt-get upgrade -y \
     # Install dependencies
     && apt-get install -y --no-install-recommends \
-        ca-certificates \
         curl \
         git \
         locales \
@@ -118,11 +119,11 @@ ENV \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8
 
-# Copy from builder
+# Copy wheels from builder
 COPY --from=builder /builder/wheels /wheels
 
-# Install
-RUN pip install --no-cache /wheels/* \
+# Install from wheels archives
+RUN pip install --no-cache --no-index --find-links /wheels esphome \
     # Cleanup
     && rm -rf /home \
     && rm -rf /root \
