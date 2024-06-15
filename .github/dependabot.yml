@@ -1,0 +1,18 @@
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# https://containers.dev/guide/dependabot
+
+version: 2
+updates:
+
+  # main
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  # develop
+  - package-ecosystem: "devcontainers"
+    target-branch: "develop"
+    directory: "/"
+    schedule:
+      interval: weekly
