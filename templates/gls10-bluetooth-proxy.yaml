@@ -1,4 +1,5 @@
 # https://www.gl-inet.com/products/gl-s10/
+# https://static.gl-inet.com/www/images/products/datasheet/s10_datasheet_20230602.pdf
 # https://blakadder.com/gl-s10/
 # https://github.com/blakadder/bluetooth-proxies/blob/main/gl-s10_v2.yaml
 # https://devices.esphome.io/devices/GL-iNet-GL-S10
@@ -11,8 +12,8 @@
 # device_name
 # device_comment
 
-# ESP32-DOWD, 4MB Flash
-# Spec claims 8MB PSRAM, could not activate
+# ESP32-D0WD, 4MB Flash, 8MB PSRAM
+# TODO: No PSRAM detected
 
 # GPIO32 : Globe LED (Green) (On when Ethernet is connected)
 # GPIO14 : Power LED (White) (ESPHome Status)
@@ -26,7 +27,7 @@
 # GPIO0_IN : clk
 # GPIO5 : power
 
-# I2C
+# I2C - Header
 # GPIO15 : sda
 # GPIO13 : scl
 
@@ -101,7 +102,7 @@ binary_sensor:
 output:
   - platform: gpio
     id: power_led
-    pin: 
+    pin:
       number: GPIO14
       inverted: true
   - platform: gpio
@@ -111,10 +112,10 @@ output:
       inverted: true
 
 # https://esphome.io/components/i2c.html
-i2c:
-  sda: GPIO15 # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
-  scl: GPIO13
-  scan: true
+# i2c:
+#   sda: GPIO15 # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
+#   scl: GPIO13
+#   scan: true
 
 # https://esphome.io/guides/automations.html#interval-component
 interval:

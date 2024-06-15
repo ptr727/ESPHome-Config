@@ -1,10 +1,10 @@
 # ESPHome-Config
 
-[ESPHome](https://esphome.io/index.html) configuration.
+[ESPHome](https://esphome.io/index.html) configuration, templates, and projects.
 
 ## Templates
 
-A [collection](./templates/) of utility and device specific configuration templates.  
+A [collection](./templates/) of utility and device specific configuration templates.
 Some templates are customized based on other people's work, see YML files for source references.
 
 ### Device Templates
@@ -100,24 +100,15 @@ Some templates are customized based on other people's work, see YML files for so
 
 - Project [`utility-counter-gate-fan.yaml`](./utility-counter-gate-fan.yaml) is used as thermostat for cool air ventilation in my garage, and to measure water and gas consumption from my utility meter pulse counters.
 
-## Deployment
+## Docker Deployment
 
-### Docker
-
-- Run [ESPHome](https://hub.docker.com/r/esphome/esphome) in a Docker container.
-  - Run the container as `root`, running as a regular user may result in permission [problems](https://github.com/esphome/issues/issues/3558).
-  - Run using `macvlan` and a static IP to support automatic device discovery.
-  - Make sure the container user has correct file and directory permissions, e.g.:
-    - `sudo chown -R nobody:users /data/appdata/esphome/config`
-    - `sudo chmod -R ugo+rwx /data/appdata/esphome/config`
-  - Make sure the container user has Git permissions for mixed user file permissions.
-    - See Git error [`fatal: detected dubious ownership in repository`](https://github.com/esphome/issues/issues/4519).
-    - Run `git config --system --add safe.directory '*'` in the container using e.g. `docker exec -it esphome /bin/bash`.
-- Sync Git repository in ESPHome config folder.
+- The standard [ESPHome](https://hub.docker.com/r/esphome/esphome) container does not support running as non-root.
+- Deploy the [ESPHome-NonRoot](https://github.com/ptr727/ESPHome-NonRoot) container for non-root operation.
+- Clone Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
-  - `git pull https://github.com/ptr727/ESPHome-Config .`
+  - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
 - Deploy `secrets.yaml`, use `secrets._yaml` as template.
-- In VSCode open remote SSH workspace on docker host and config directory.
+- In VSCode open remote SSH workspace on docker host, and open workspace from config directory.
 
 ## Notes
 

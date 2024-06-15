@@ -23,7 +23,7 @@
 
 # https://esphome.io/components/esphome
 esphome:
-  
+
   # Modify default esp32-s3-devkitc-1 (8MB Flash, no PSRAM) board configuration
   platformio_options:
 
@@ -32,7 +32,7 @@ esphome:
     # Octal memory type for Flash and PSRAM
     board_build.arduino.memory_type: opi_opi
     # TODO: Per devs adding psram in YAML should auto add -DBOARD_HAS_PSRAM, could not confirm
-    board_build.extra_flags: 
+    board_build.extra_flags:
       - "-DARDUINO_ESP32S3_DEV"
       - "-DBOARD_HAS_PSRAM"
       - "-DARDUINO_USB_MODE=1"
@@ -41,6 +41,7 @@ esphome:
     # Octal memory type for PSRAM
     board_build.psram_type: opi
     board_name: "Espressif ESP32-S3-WROOM-2-N32R8V (ESP32-S3R8V, 32MB Octal SPI Flash, 8MB Octal SPI PSRAM, 1.8V SPI)"
+    # TODO: https://github.com/esphome/issues/issues/5404
     # TODO: Error when setting flash size in board config?
     # "Please specify flash_size within esp32 configuration only.""
     # board_upload.flash_size: 32MB

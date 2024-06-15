@@ -4,7 +4,7 @@
 # Substitutions used by templates
 substitutions:
   device_name: zigbee-coordinator
-  device_comment: "TubesZB CC2652P2 Ethernet Zigbee Zoordinator"
+  device_comment: "TubesZB CC2652P2 Ethernet Zigbee Coordinator"
 
 # https://esphome.io/components/esphome.html
 esphome:
@@ -16,8 +16,7 @@ esp32:
   # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
   board: esp32dev
   framework:
-    # TODO: zeroconf is only available for Arduino not ESP-IDF
-    type: Arduino
+    type: esp-idf
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
@@ -31,11 +30,13 @@ packages:
   time: !include templates/time.yaml
 
 # https://esphome.io/components/external_components.html
-# https://github.com/tube0013/esphome-stream-server-v2
-# https://github.com/syssi/esphome-zeroconf
 external_components:
-  - source: github://tube0013/esphome-stream-server-v2@main
-  - source: github://syssi/esphome-zeroconf@main
+  # TODO: https://github.com/oxan/esphome-stream-server
+  # TODO: Fix initialize sin warning
+  # https://github.com/tube0013/esphome-stream-server-v2/pull/10
+  # https://github.com/tube0013/esphome-stream-server-v2
+  # - source: github://tube0013/esphome-stream-server-v2@main
+  - source: github://ptr727/tube0013-esphome-stream-server-v2@sin_zero
 
 # WT32-ETH01 Ethernet
 # https://esphome.io/components/ethernet.html
@@ -68,21 +69,21 @@ script:
       - switch.turn_off: zBSL
       - logger.log: "Please try update with cc2538-bsl tool now"
       - logger.log: "cc-bsl usage: cc2538-bsl.py -p socket://ip-of-gw:6638 -evw firmware.hex"
-      
+
 switch:
   - platform: gpio
     pin: 33
     id: zRST_gpio
     inverted: yes
     restore_mode: ALWAYS_OFF
-      
+
   - platform: gpio
     pin: 32
     name: "zBSL"
     id: zBSL
     inverted: yes
     restore_mode: ALWAYS_OFF
-    
+
   - platform: template
     name: "Prep the cc2652p2 for firmware update"
     turn_on_action:
@@ -115,13 +116,16 @@ binary_sensor:
     stream_server: ss
     name: "TubesZB Serial Connected"
 
-zeroconf:
-  - service: tubeszb
-    protocol: tcp
-    port: 6638
-    txt:
-      version: 1.0
-      name: TubesZB
-      radio_type: znp
-      baud_rate: 115200
-      data_flow_control: software
+# Use ESPHome's MDNS instead of custom ZeroConf, similar to how the v2023 boards are configured
+# https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-poe-2023/firmware/esphome/tubeszb-cc2652-poe-2023.yaml
+mdns:
+  services:
+    - service: "_tubeszb"
+      protocol: "_tcp"
+      port: 6638
+      txt:
+        version: 1.0
+        name: TubesZB
+        radio_type: znp
+        baud_rate: 115200
+        data_flow_control: software
