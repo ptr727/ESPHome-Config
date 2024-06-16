@@ -104,6 +104,9 @@ Some templates are customized based on other people's work, see YML files for so
 
 - The standard [ESPHome](https://hub.docker.com/r/esphome/esphome) container does not support running as non-root.
 - Deploy the [ESPHome-NonRoot](https://github.com/ptr727/ESPHome-NonRoot) container for non-root operation.
+- Set directory permissions:
+  - `sudo chown -R nonroot:users /data/appdata/esphome`
+  - `sudo chmod -R ugo=rwx /data/appdata/esphome`
 - Clone Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
   - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
@@ -123,7 +126,7 @@ Some templates are customized based on other people's work, see YML files for so
   - Stop HA container using `docker stop home-assistant`.
   - Reset config permissions:
     - `sudo chown -R nobody:users /data/appdata/home-assistant/config`
-    - `sudo chmod -R ugo+rwx /data/appdata/home-assistant/config`
+    - `sudo chmod -R ugo=rwx /data/appdata/home-assistant/config`
   - Edit `core.config_entries` and rename `title` and `host`.
   - Edit `core.device_registry` and rename `name`.
   - Edit `core.entity_registry` and rename `unique_id` and `original_name`.

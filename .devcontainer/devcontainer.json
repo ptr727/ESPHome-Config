@@ -5,14 +5,19 @@
 {
 	"name": "ESPHome-NonRoot Container",
 	"image": "ptr727/esphome-nonroot:latest",
-
-	// "features": {},
-
-	"forwardPorts": [6052]
-
-	// "postCreateCommand": "pip3 install --user -r requirements.txt"
-
-	// "customizations": {},
-
-	// "remoteUser": "root"
+	"workspaceMount": "source=${localWorkspaceFolder},target=/config,type=bind",
+	"workspaceFolder": "/config",
+	"forwardPorts": [
+		6052
+	],
+	"containerEnv": {
+		"ESPHOME_VERBOSE": "true",
+		"TMPDIR": "/cache/tmp" // Remove when latest syncs
+	},
+	"overrideCommand": false,
+	"containerUser": "1001:100",
+	"updateRemoteUserUID": false,
+	"mounts": [
+		"source=${localWorkspaceFolder}/../cache,target=/cache,type=bind,consistency=cached"
+	]
 }
