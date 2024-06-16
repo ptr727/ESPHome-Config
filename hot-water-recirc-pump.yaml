@@ -11,6 +11,16 @@ substitutions:
 packages:
   sonoff_th10: !include templates/sonoff-th10.yaml
 
+# https://esphome.io/components/esphome
+esphome:
+  on_boot:
+    - priority: 600
+      then:
+        # Set to default heat mode on startup
+        - climate.control:
+            id: bangbang
+            mode: 'heat'
+
 # https://esphome.io/components/sensor
 sensor:
 
@@ -94,7 +104,7 @@ interval:
           - logger.log: "RecircTimer : Thermostat is not Off."
           # Disable thermostat before modifying underlying relay state
           - logger.log: "RecircTimer : Setting Thermostat to Off."
-          - climate.control: 
+          - climate.control:
               id: bangbang
               mode: 'off'
           # Turn relay on
@@ -109,6 +119,6 @@ interval:
           - switch.turn_off: relay
           # Turn thermostat back on for normal operation
           - logger.log: "RecircTimer : Setting Thermostat to Heat."
-          - climate.control: 
+          - climate.control:
               id: bangbang
               mode: 'heat'
