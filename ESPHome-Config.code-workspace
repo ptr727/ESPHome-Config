@@ -55,6 +55,7 @@
 			"mulcmu",
 			"neopixel",
 			"nightdav",
+			"nonroot",
 			"nopsram",
 			"Norvi",
 			"Octa",
@@ -92,7 +93,8 @@
 		"files.trimTrailingWhitespace": true,
 		"[markdown]": {
 			"files.trimTrailingWhitespace": false
-		}
+		},
+		"terminal.integrated.defaultProfile.linux": "bash"
 	},
 	"extensions": {
 		"recommendations": [
