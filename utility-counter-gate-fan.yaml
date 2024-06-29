@@ -13,35 +13,31 @@ packages:
 # Use the alternative dallasng component instead of the built in dallas component
 # https://github.com/nrandell/dallasng
 # https://github.com/pstolarz/OneWireNg
-external_components:
-  - source: github://nrandell/dallasng
+# external_components:
+#  - source: github://nrandell/dallasng
 
-# Use expansion slot Pin6 GPIO15 for 1-wire protocol
-# https://esphome.io/components/sensor/dallas.html
-dallasng:
+# https://esphome.io/components/one_wire
+one_wire:
   # TODO: How to add ignore_strapping_warning: true
   # https://github.com/esphome/feature-requests/issues/2499
   # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
-  # Use GPIO15 from the expansion port for 1-wire
-  - pin: GPIO15
-    update_interval: 5s
+  # Use expansion port Pin6 GPIO15 for 1-wire protocol
+  - platform: gpio
+    pin: GPIO15
 
 # https://esphome.io/components/sensor/
 sensor:
 
-  # https://esphome.io/components/sensor/dallas.html
-  - platform: dallasng
+  # https://esphome.io/components/sensor/dallas_temp.html
+  - platform: dallas_temp
     address: 0x1500000DC56AFC28
     name: ${device_name}_temp
     id: temp
-    resolution: 12
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
-          send_every: 3
-          send_first_at: 3
 
   # https://esphome.io/components/sensor/pulse_meter.html
   # https://esphome.io/components/sensor/pulse_counter.html
@@ -54,7 +50,6 @@ sensor:
       # Use input 0 for water
       number: GPIO21
       inverted: true
-    update_interval: 60s
     use_pcnt: false
     count_mode:
       rising_edge: DISABLE
@@ -82,7 +77,6 @@ sensor:
       # Use input 1 for gas
       number: GPIO14
       inverted: true
-    update_interval: 60s
     use_pcnt: false
     count_mode:
       rising_edge: DISABLE
@@ -113,7 +107,7 @@ sensor:
     state_class: 'total_increasing'
     accuracy_decimals: 3
     unit_of_measurement: 'm³'
-    # Convert gal to m³ 
+    # Convert gal to m³
     lambda: |-
       return id(water_total).state / 264.2;
 

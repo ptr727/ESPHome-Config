@@ -21,13 +21,10 @@ text_sensor:
     ip_address:
       name: ${device_name}_wifi_ip
       id: wifi_ip
-      update_interval: 60s
     ssid:
       name: ${device_name}_wifi_ssid
-      update_interval: 60s
     bssid:
       name: ${device_name}_wifi_bssid
-      update_interval: 60s
 
 # https://esphome.io/components/sensor
 sensor:
@@ -35,4 +32,3 @@ sensor:
   # https://esphome.io/components/sensor/wifi_signal.html
   - platform: wifi_signal
     name: ${device_name}_wifi_signal
-    update_interval: 60s

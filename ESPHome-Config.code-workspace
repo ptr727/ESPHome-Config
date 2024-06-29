@@ -7,6 +7,7 @@
 	"settings": {
 		"cSpell.words": [
 			"adafruit",
+			"adcn",
 			"appdata",
 			"astra",
 			"autoremove",
@@ -65,6 +66,7 @@
 			"platformio",
 			"PSRAM",
 			"PULLUP",
+			"Rbutton",
 			"recirc",
 			"Rigol",
 			"RMII",
@@ -74,6 +76,7 @@
 			"Sengled",
 			"setuptools",
 			"Sonoff",
+			"ssieb",
 			"strftime",
 			"Tasmota",
 			"tubeszb",
@@ -81,6 +84,7 @@
 			"UART",
 			"USBIPD",
 			"usbutils",
+			"Vbutton",
 			"venv",
 			"Wanptek",
 			"WEMOS",

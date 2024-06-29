@@ -25,9 +25,14 @@
 ##   Observations - SensOper SC-EN-I6-RO4:
 ##     This unit does have a DS3231 RTC, ok.
 ##     GPIO39 ADC does not appear to be grounded, ADC on GPIO39 measure 3V+.
-##     GPIO36 button ADC, started at 0.14V, drifting up over time, does not seem fixed.
+##     GPIO36 button ADC, started at 0.14V, drifting up over time.
+##     ADC is not fixed, contacted Norvi on 25 June 2024 to arrange a device swap.
+##   Observations - Norvi NORVI-ENET-AE06-R (tested two units):
+##     GPIO39 ADC appears to be grounded, ADC on GPIO39 measures ~0.09V/~0.14V.
+##     GPIO36 button ADC, appears to remain stable at ~0.07V/~0.14V, up~=0.42V/~0.43V, down~=0.75V/~0.77V, enter~=1.61V/~1.66V, within safe ADC range.
+##     ADC is fixed.
 
-# PSU problems:
+# PSU problems (TODO: Verify with May 2024 units):
 ## The device seems to be very sensitive to the type of PSU used.
 ## E.g. XP Power DIN 24V PSU, WiFi works, ADC drift.
 ## E.g. Meanwell DIN 24V PSU, WiFi works, ADC drift.
@@ -35,7 +40,7 @@
 ## E.g. Rigol linear bench PSU, no WiFi, ADC drift.
 ## E.g. Wanptek switching bench PSU, PSU fails to sync, no WiFi, ADC drift.
 
-# ADC problems:
+# ADC problems (Corrected in May 2024 Norvi units, SensOper unit not corrected):
 ## Three buttons are connected with a resistor network to the internal ADC on GPIO36.
 ## The ADC measurements are unstable and drift.
 ##   The Espressif design calls for a low impedance input and a 100nF decoupling capacitor to prevent noise and drift.
@@ -46,7 +51,7 @@
 ##   The voltage delta between S3+S2 and S3+S2+S1 is 0.042V, and the absolute is 2.88V, that is outside the 2.45V usable range of the ADC.
 ## Reference Utils.h for numeric calculations
 
-# WiFi problems:
+# WiFi problems (TODO: Verify with May 2024 units):
 ## WiFi is unstable and frequently disconnects when running from 24VDC from my programmable linear PSU or a 24V switching PSU when on my workbench.
 ## The same unit on the same workbench runs stable when powered from USB using the micro-USB programming plug.
 ## Move the unit to a DIN enclosure with a DIN switching 24V PSU and WiFi is stable.
@@ -62,11 +67,6 @@
 ## My December 2023 Norvi supplied unit had ADC and WiFi problems from day 1.
 ## My December 2023 CarTFT supplied Norvi unit had stable ADC and stable WiFi on the bench, but after being in operation for about two weeks the ADC is now drifting.
 
-# Speculation:
-## The PSU instability could be caused by poor switching PSU design, or a common component that failed in all 3 my units.
-## The ADC drift could be caused by the too high input impedance of the resistor network, or a lack of decoupling capacitor, or an unstable voltage reference, or an unstable DC-DC converter, or WiFi interference.
-## The WiFi instability could be caused by insufficient component isolation or shielding, or an unstable DC-DC converter.
-## The ADC button configuration may have been more accurate and supported multiple button presses if a R2R ladder with doubling resistor values were used, and the voltage remained within ADC spec.
 
 # Norvi NORVI-ENET-AE06-R
 # https://shop.norvi.lk/products/norvi-enet-ae06-r
@@ -88,6 +88,24 @@
 # https://norvi.lk/docs/
 # https://www.instructables.com/Working-With-Built-in-Display-and-Push-Buttons-of-/
 # https://github.com/Iconic-Devices/Norvi-IoT-Devices---ESP32-based-industrial-controllers
+
+# ADC ladder (revised May 2024 replacing 47K with 10K to GND):
+# https://norvi.lk/docs/norvi-enet-ae06-r-norvi-enet-ae06-r-user-guide/
+# 3.3V, S3, 10K, 10K, GND
+# 3.3V, S2, 33K, 10K, GND
+# 3.3V, S1, 67K, 10K, GND
+# Rbutton = 1 / (1/R2 + 1/R3 + 1/R4)
+# Vbutton = (Vin x R6) / (Rbutton + R6)
+# S3 | S2 | S1 | Rbutton     | Vbutton     | Delta       | % of 3.3v
+# 0  | 0  | 0  | ∞           | 0           |             |
+# 0  | 0  | 1  | 67000       | 0.428571429 | 0.428571429 | 12.98701299
+# 0  | 1  | 0  | 33000       | 0.76744186  | 0.338870432 | 10.26880097
+# 0  | 1  | 1  | 22110       | 1.027717222 | 0.260275362 | 7.887132169
+# 1  | 0  | 0  | 10000       | 1.65        | 0.622282778 | 18.85705388
+# 1  | 0  | 1  | 8701.298701 | 1.764583333 | 0.114583333 | 3.472222222
+# 1  | 1  | 0  | 7674.418605 | 1.867105263 | 0.10252193  | 3.106725146
+# 1  | 1  | 1  | 6885.705388 | 1.954315751 | 0.087210487 | 2.642742045
+# ADC multi-sample: https://docs.espressif.com/projects/esp-idf/en/v4.3.2/esp32/api-reference/peripherals/adc.html
 
 # ESP32-WROOM32
 ## ESP32 Dev Module
@@ -201,6 +219,17 @@ esp32:
 packages:
   common: !include common.yaml
 
+# https://esphome.io/components/external_components.html
+external_components:
+
+  # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
+  - source: github://ssieb/esphome_components
+    components: [ analog_keypad ]
+
+  # https://github.com/esphome/esphome/pull/6985
+  - source: github://pr#6985
+    components: [ ds1307 ]
+
 # https://esphome.io/components/i2c
 i2c:
   sda: GPIO16
@@ -234,7 +263,7 @@ font:
       type: gfonts
       family: Open+Sans
     id: fonnt # font as id is reserved
-    size: 14
+    size: 13
 
 # https://esphome.io/components/display/ssd1306.html
 display:
@@ -247,10 +276,11 @@ display:
     lambda: |-
       static const auto color = Color(255, 255, 255);
       static const auto font = id(fonnt);
-      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 4);
       const auto time = id(homeassistant_time).now();
       const auto ip = id(wifi_ip).state.c_str();
       const auto adc = id(adc_buttons).state;
+      const auto adcn = id(adc_vn).state;
       int line = lineSpacing.nFirstLine;
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
       line += lineSpacing.nIncrement;
@@ -258,42 +288,45 @@ display:
       line += lineSpacing.nIncrement;
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
       line += lineSpacing.nIncrement;
+      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADCN: %.2fV", adcn);
+      line += lineSpacing.nIncrement;
 
 # https://esphome.io/components/sensor/
 sensor:
 
-  # TODO: Replace with https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
   # https://esphome.io/components/sensor/adc.html
   - platform: adc
     pin: GPIO36
     name: ${device_name}_adc_buttons
     id: adc_buttons
-    attenuation: auto #12db
-    # Average over 64 samples, emit every 32 samples, every 320ms at 10ms sampling
-    # ~3 times per second to keep key presses responsive
-    # TODO: Debug logging will flood the output, how to change to info just for this component?
-    update_interval: 250ms # TODO: loop interval is 18ms
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
-    filters:
-      - filter_out: nan
-      - sliding_window_moving_average:
-          window_size: 8
-          send_every: 4
-          send_first_at: 4
+    attenuation: 12db
+    update_interval: 5s #never
+    samples: 64
     # internal: true
 
   # Test ADC VN grounded
   - platform: adc
     pin: GPIO39
     name: ${device_name}_adc_vn
-    attenuation: auto
-    update_interval: 1s
-    filters:
-      - filter_out: nan
-      - sliding_window_moving_average:
-          window_size: 8
-          send_every: 4
-          send_first_at: 4
+    id: adc_vn
+    attenuation: 12db
+    update_interval: 5s
+    samples: 64
+
+# https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
+analog_keypad:
+  sensor: adc_buttons
+  debounce_time: 100
+  keys:
+    - voltage: 0.429
+      variance: 0.1
+      key: U # Up
+    - voltage: 0.767
+      variance: 0.1
+      key: D # Down
+    - voltage: 1.650
+      variance: 0.1
+      key: E # Enter
 
 # https://esphome.io/components/switch
 switch:
@@ -327,32 +360,20 @@ switch:
 # https://esphome.io/components/binary_sensor/
 binary_sensor:
 
-  # TODO: The ADC is not stable, buttons are not usable
 
-  # Refer to Utils.h NorviButtonHelper class for ADC to button mapping calculations
-
-  # https://esphome.io/components/binary_sensor/template.html
-  - platform: template
+  # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
+  - platform: analog_keypad
     name: ${device_name}_button_up
     id: button_up
-    lambda: |-
-      bool s3, s2, s1;
-      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
-      return s3;
-  - platform: template
+    key: U
+  - platform: analog_keypad
     name: ${device_name}_button_down
     id: button_down
-    lambda: |-
-      bool s3, s2, s1;
-      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
-      return s2;
-  - platform: template
+    key: D
+  - platform: analog_keypad
     name: ${device_name}_button_enter
     id: button_enter
-    lambda: |-
-      bool s3, s2, s1;
-      NorviButtonHelper::GetSingleButtonState(id(adc_buttons).state, s3, s2, s1);
-      return s1;
+    key: E
 
 # Input handling to be defined in the device config as gpio, pulse counters, etc.
 # https://esphome.io/components/binary_sensor/gpio.html
@@ -368,7 +389,7 @@ binary_sensor:
 #     inverted: true
 
 # GPIO15 from the expansion bus can be used for e.g. 1-Wire Dallas
-# https://esphome.io/components/sensor/dallas.html
-# dallas:
-#   - pin: GPIO15
-#     update_interval: 5s
+# https://esphome.io/components/one_wire
+# one_wire:
+#   - platform: gpio
+#     pin: GPIO15

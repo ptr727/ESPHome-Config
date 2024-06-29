@@ -218,3 +218,7 @@ Some templates are customized based on other people's work, see YML files for so
 - PlatformIO will open a new instance of VSCode for that project.
 - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
 - PlatformIO Core will be installed in the virtual environment and use the environment Python.
+
+## TODO
+
+- Norvi testing.

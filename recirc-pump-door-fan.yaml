@@ -21,20 +21,20 @@ packages:
 # external_components:
 #   - source: github://nrandell/dallasng
 
-# https://esphome.io/components/sensor/dallas.html
-dallas: #ng:
+# https://esphome.io/components/one_wire
+one_wire:
   # TODO: How to add ignore_strapping_warning: true
   # https://github.com/esphome/feature-requests/issues/2499
   # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
   # Use GPIO15 from the expansion port for 1-wire
-  - pin: GPIO15
-    update_interval: 5s
+  - platform: gpio
+    pin: GPIO15
 
 # https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/dallas.html
-  - platform: dallas #ng
+  # https://esphome.io/components/sensor/dallas_temp.html
+  - platform: dallas_temp
     address: 0x05011455296AAA28
     name: ${device_name}_recirc_temp
     id: recirc_temp
@@ -44,10 +44,8 @@ sensor:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
-          send_every: 3
-          send_first_at: 3
 
-  - platform: dallas #ng
+  - platform: dallas_temp #ng
     address: 0x54011455087FAA28
     name: ${device_name}_hot_temp
     id: hot_temp
@@ -56,10 +54,8 @@ sensor:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
-          send_every: 3
-          send_first_at: 3
 
-  - platform: dallas #ng
+  - platform: dallas_temp #ng
     address: 0x5E01145529F7AA28
     name: ${device_name}_cold_temp
     id: cold_temp
@@ -68,10 +64,8 @@ sensor:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
-          send_every: 3
-          send_first_at: 3
 
-  - platform: dallas #ng
+  - platform: dallas_temp #ng
     address: 0xEC011454E099AA28
     name: ${device_name}_ambient_temp
     id: ambient_temp
@@ -80,8 +74,6 @@ sensor:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
-          send_every: 3
-          send_first_at: 3
 
 # https://esphome.io/components/climate
 climate:
@@ -147,7 +139,7 @@ interval:
           - logger.log: "RecircTimer : BangBang is not Off."
           # Disable BangBang before modifying underlying relay state
           - logger.log: "RecircTimer : Setting BangBang to Off."
-          - climate.control: 
+          - climate.control:
               id: bangbang
               mode: 'off'
           # Turn relay on
@@ -162,7 +154,7 @@ interval:
           - switch.turn_off: relay_0
           # Turn BangBang back on for normal operation
           - logger.log: "RecircTimer : Setting BangBang to Heat."
-          - climate.control: 
+          - climate.control:
               id: bangbang
               mode: 'heat'
 

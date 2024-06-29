@@ -65,6 +65,7 @@ switch:
 status_led:
   pin: GPIO13
 
-# https://esphome.io/components/sensor/dallas.html
-dallas:
-  - pin: GPIO14
+# https://esphome.io/components/one_wire
+one_wire:
+  - platform: gpio
+    pin: GPIO14

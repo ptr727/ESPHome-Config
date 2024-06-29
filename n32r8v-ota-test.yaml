@@ -20,7 +20,7 @@ esphome:
           blue: 0%
           brightness: 25%
           effect: none
-  
+
   # Modify default esp32-s3-devkitc-1 (8MB Flash, no PSRAM) board configuration for ESP32-S3-DevKitC-1-N32R8V (32MB Flash, 8MB PSRAM)
   platformio_options:
     # TODO: Are any Arduino options used when using ESP-IDF?
@@ -43,7 +43,7 @@ esphome:
     board_name: "Espressif ESP32-S3-DevKitC-1-N32R8V (32MB OT Flash, 8MB OT PSRAM)"
     # TODO: Error when setting flash size in board config?
     # "Please specify flash_size within esp32 configuration only.""
-    #board_upload.flash_size: 32MB 
+    #board_upload.flash_size: 32MB
     # 32MB
     board_upload.maximum_size: 33554432
 
@@ -78,7 +78,6 @@ ota:
   password: !secret ota_password
 
 debug:
-  update_interval: 60s
 
 light:
   - platform: esp32_rmt_led_strip
