@@ -16,7 +16,8 @@ sensor:
     address: 0x4E3C01D075B62428
     name: ${device_name}_temp
     id: temp
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    update_interval: 15s
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
       - filter_out: nan
       - sliding_window_moving_average:

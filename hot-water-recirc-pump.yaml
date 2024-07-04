@@ -29,7 +29,8 @@ sensor:
     address: 0x05011455296AAA28
     name: ${device_name}_recirc_temp
     id: recirc_temp
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    update_interval: 15s
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
@@ -38,6 +39,7 @@ sensor:
     address: 0x54011455087FAA28
     name: ${device_name}_hot_temp
     id: hot_temp
+    update_interval: 15s
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
@@ -46,6 +48,7 @@ sensor:
     address: 0x5E01145529F7AA28
     name: ${device_name}_cold_temp
     id: cold_temp
+    update_interval: 15s
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
@@ -54,6 +57,7 @@ sensor:
     address: 0xEC011454E099AA28
     name: ${device_name}_ambient_temp
     id: ambient_temp
+    update_interval: 15s
     filters:
       - filter_out: nan
       - sliding_window_moving_average:

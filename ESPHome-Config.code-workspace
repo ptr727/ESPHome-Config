@@ -42,6 +42,7 @@
 			"homeassistant",
 			"Iiot",
 			"insanegenius",
+			"isnan",
 			"JTAG",
 			"kincony",
 			"leds",
@@ -62,6 +63,7 @@
 			"Octa",
 			"OLED",
 			"Oper",
+			"pcnt",
 			"piolibs",
 			"platformio",
 			"PSRAM",
@@ -79,6 +81,7 @@
 			"ssieb",
 			"strftime",
 			"Tasmota",
+			"tempp",
 			"tubeszb",
 			"Tuya",
 			"UART",
@@ -106,7 +109,8 @@
 			"platformio.platformio-ide",
 			"esphome.esphome-vscode",
 			"ms-vscode.vscode-serial-monitor",
-			"davidanson.vscode-markdownlint"
+			"davidanson.vscode-markdownlint",
+			"eamodio.gitlens"
 		]
 	}
 }

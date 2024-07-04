@@ -7,6 +7,32 @@ substitutions:
 packages:
   norvi: !include templates/norvi-enet-ae06-r.yaml
 
+# https://github.com/nrandell/dallasng
+# https://github.com/pstolarz/OneWireNg
+# external_components:
+#   - source: github://nrandell/dallasng
+
+# https://esphome.io/components/one_wire
+one_wire:
+  # Use expansion port Pin6 GPIO15 for 1-wire protocol
+  - platform: gpio
+    pin: GPIO15
+
+# https://esphome.io/components/sensor/
+sensor:
+
+  # https://esphome.io/components/sensor/dallas_temp.html
+  - platform: dallas_temp
+    address: 0x1500000DC56AFC28
+    name: ${device_name}_temp
+    id: temp
+    update_interval: 5s
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 3
+
 # https://esphome.io/components/binary_sensor/
 binary_sensor:
 
@@ -14,48 +40,48 @@ binary_sensor:
   - platform: gpio
     name: ${device_name}_input_1
     id: input_1
-    pin: 
+    pin:
       number: GPIO21
       inverted: true
   - platform: gpio
     name: ${device_name}_input_2
     id: input_2
-    pin: 
+    pin:
       number: GPIO14
       inverted: true
   - platform: gpio
     name: ${device_name}_input_3
     id: input_3
-    pin: 
+    pin:
       number: GPIO33
       inverted: true
   - platform: gpio
     name: ${device_name}_input_4
     id: input_4
-    pin: 
+    pin:
       number: GPIO34
       inverted: true
   - platform: gpio
     name: ${device_name}_input_5
     id: input_5
-    pin: 
+    pin:
       number: GPIO35
       inverted: true
   - platform: gpio
     name: ${device_name}_input_6
     id: input_6
-    pin: 
+    pin:
       number: GPIO25
       inverted: true
   - platform: gpio
     name: ${device_name}_input_7
     id: input_7
-    pin: 
+    pin:
       number: GPIO32
       inverted: true
   - platform: gpio
     name: ${device_name}_input_8
     id: input_8
-    pin: 
+    pin:
       number: GPIO22
       inverted: true

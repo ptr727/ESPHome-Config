@@ -1,34 +1,36 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: recirc-pump-door-fan
+  device_name: norvi-ae06r-2
   device_comment: "Norvi IIOT-AE06-R Recirculation Pump and Garage Door Fan Controller"
   recirc_interval: 30min
   recirc_duration: 2min
-  recirc_temperature_low: '35.0' # ~95F
-  recirc_temperature_high: '45.0' # ~113F
+  recirc_temperature_low: "35.0" # ~95F
+  recirc_temperature_high: "45.0" # ~113F
   fan_temperature_high: "28.0" # ~80F
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
   norvi: !include templates/norvi-enet-ae06-r.yaml
 
-# Use expansion slot Pin6 GPIO15 for 1-wire protocol
-# TODO: Investigate why we get occasional scratchpad errors when using the default dallas component?
-# https://github.com/esphome/issues/issues?q=is%3Aissue+is%3Aopen+Scratch+pad+checksum+invalid
-# Use the alternative dallasng component instead of the built in dallas component
-# https://github.com/nrandell/dallasng
-# https://github.com/pstolarz/OneWireNg
-# external_components:
-#   - source: github://nrandell/dallasng
+# https://esphome.io/components/esphome
+esphome:
+  on_boot:
+    - priority: 600
+      then:
+        - climate.control:
+            id: bangbang
+            mode: heat
+        - climate.control:
+            id: thermo
+            mode: cool
 
 # https://esphome.io/components/one_wire
 one_wire:
-  # TODO: How to add ignore_strapping_warning: true
-  # https://github.com/esphome/feature-requests/issues/2499
-  # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
-  # Use GPIO15 from the expansion port for 1-wire
+  # Use expansion port Pin6 GPIO15 for 1-wire protocol
   - platform: gpio
     pin: GPIO15
+    # TODO: WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
+    # ignore_strapping_warning: true
 
 # https://esphome.io/components/sensor
 sensor:
@@ -38,38 +40,38 @@ sensor:
     address: 0x05011455296AAA28
     name: ${device_name}_recirc_temp
     id: recirc_temp
-    resolution: 12
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    update_interval: 15s
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
 
-  - platform: dallas_temp #ng
+  - platform: dallas_temp
     address: 0x54011455087FAA28
     name: ${device_name}_hot_temp
     id: hot_temp
-    resolution: 12
+    update_interval: 15s
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
 
-  - platform: dallas_temp #ng
+  - platform: dallas_temp
     address: 0x5E01145529F7AA28
     name: ${device_name}_cold_temp
     id: cold_temp
-    resolution: 12
+    update_interval: 15s
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
 
-  - platform: dallas_temp #ng
+  - platform: dallas_temp
     address: 0xEC011454E099AA28
     name: ${device_name}_ambient_temp
     id: ambient_temp
-    resolution: 12
+    update_interval: 15s
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
@@ -132,7 +134,7 @@ interval:
       if:
         # Only run if BangBang is not off
         condition:
-          lambda: 'return id(bangbang).mode == CLIMATE_MODE_OFF;'
+          lambda: return id(bangbang).mode == CLIMATE_MODE_OFF;
         then:
           - logger.log: "RecircTimer : BangBang is Off."
         else:
@@ -141,7 +143,7 @@ interval:
           - logger.log: "RecircTimer : Setting BangBang to Off."
           - climate.control:
               id: bangbang
-              mode: 'off'
+              mode: off
           # Turn relay on
           - logger.log: "RecircTimer : Turning Relay On."
           - switch.turn_on: relay_0
@@ -156,7 +158,7 @@ interval:
           - logger.log: "RecircTimer : Setting BangBang to Heat."
           - climate.control:
               id: bangbang
-              mode: 'heat'
+              mode: heat
 
 # https://esphome.io/components/display/ssd1306.html
 display:
