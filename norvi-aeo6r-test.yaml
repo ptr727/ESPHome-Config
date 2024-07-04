@@ -13,25 +13,30 @@ packages:
 #   - source: github://nrandell/dallasng
 
 # https://esphome.io/components/one_wire
-one_wire:
-  # Use expansion port Pin6 GPIO15 for 1-wire protocol
-  - platform: gpio
-    pin: GPIO15
+# one_wire:
+#   # Use expansion port Pin6 GPIO15 for 1-wire protocol
+#   - platform: gpio
+#     pin: GPIO15
 
-# https://esphome.io/components/sensor/
-sensor:
+# # https://github.com/nrandell/dallasng
+# dallasng:
+#   - pin: GPIO15
+#     update_interval: 5s
 
-  # https://esphome.io/components/sensor/dallas_temp.html
-  - platform: dallas_temp
-    address: 0x1500000DC56AFC28
-    name: ${device_name}_temp
-    id: temp
-    update_interval: 5s
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
-    filters:
-      - filter_out: nan
-      - sliding_window_moving_average:
-          window_size: 3
+# # https://esphome.io/components/sensor/
+# sensor:
+
+#   # https://esphome.io/components/sensor/dallas_temp.html
+#   - platform: dallasng # dallas_temp
+#     address: 0x1500000DC56AFC28
+#     name: ${device_name}_temp
+#     id: temp
+#     # update_interval: 5s
+#     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+#     filters:
+#       - filter_out: nan
+#       - sliding_window_moving_average:
+#           window_size: 3
 
 # https://esphome.io/components/binary_sensor/
 binary_sensor:
@@ -85,3 +90,15 @@ binary_sensor:
     pin:
       number: GPIO22
       inverted: true
+
+# https://esphome.io/components/switch
+switch:
+
+  # TODO: GPIO15 affects input LED state?
+
+  # https://esphome.io/components/switch/gpio.html
+  - platform: gpio
+    name: ${device_name}_test
+    pin:
+      number: GPIO15
+    restore_mode: ALWAYS_OFF

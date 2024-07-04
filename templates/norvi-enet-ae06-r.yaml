@@ -31,41 +31,15 @@
 ##     GPIO39 ADC appears to be grounded, ADC on GPIO39 measures ~0.09V/~0.14V.
 ##     GPIO36 button ADC, appears to remain stable at ~0.07V/~0.14V, up~=0.42V/~0.43V, down~=0.75V/~0.77V, enter~=1.61V/~1.66V, within safe ADC range.
 ##     ADC is fixed.
+## July 2024, updated to using one_wire and dallas_temp in ESPHome 2024.6
+##   Input LED's flicker during every temp read cycle, while using dallasng or older dallas component no LED flicker.
+##   New 1-wire implementation drives GPIO high during bus read.
+##   Confirmed by using GPIO15 as a an output switch, and driving GPIO15 turns all the input state LED's on or off, and interferes with input read state.
+##   This Contact Norvi for an explanation.
 
-# PSU problems (TODO: Verify with May 2024 units):
-## The device seems to be very sensitive to the type of PSU used.
-## E.g. XP Power DIN 24V PSU, WiFi works, ADC drift.
-## E.g. Meanwell DIN 24V PSU, WiFi works, ADC drift.
-## E.g. USB powered, WiFi works, ADC drift.
-## E.g. Rigol linear bench PSU, no WiFi, ADC drift.
-## E.g. Wanptek switching bench PSU, PSU fails to sync, no WiFi, ADC drift.
-
-# ADC problems (Corrected in May 2024 Norvi units, SensOper unit not corrected):
-## Three buttons are connected with a resistor network to the internal ADC on GPIO36.
-## The ADC measurements are unstable and drift.
-##   The Espressif design calls for a low impedance input and a 100nF decoupling capacitor to prevent noise and drift.
-##   With no buttons pressed (47K to GND) the voltage drifts from 0.6V on power on to 1.7V+ after running for several hours.
-## The ESP32 specs for 11dB attenuation calls for an input voltage range of 150mV to 2450mV.
-##   The resistor network voltage range goes to 2.88V with all three buttons pressed, and 2.72V with the S3 button pressed, out of range of the ADC.
-## The values of the resistor network does not support multiple button press states.
-##   The voltage delta between S3+S2 and S3+S2+S1 is 0.042V, and the absolute is 2.88V, that is outside the 2.45V usable range of the ADC.
-## Reference Utils.h for numeric calculations
-
-# WiFi problems (TODO: Verify with May 2024 units):
-## WiFi is unstable and frequently disconnects when running from 24VDC from my programmable linear PSU or a 24V switching PSU when on my workbench.
-## The same unit on the same workbench runs stable when powered from USB using the micro-USB programming plug.
-## Move the unit to a DIN enclosure with a DIN switching 24V PSU and WiFi is stable.
-
-# GPIO pin choice:
-## ESP32 has strapping pins on GPIO0, GPIO2, GPIO5, GPIO12, and GPIO15.
-## GPIO15 is used on the expansion port.
-## Using strapping pins on external peripherals is potentially problematic, as an external device may pull GPIO15 low on boot changing SDIO slave timing.
-## It may be possible to instead use GPIO12 that is used as output only, instead of GPIO15.
-
-# Inconsistent behavior:
-## My April 2023 SensOper unit had ADC and WiFi problems from day 1.
-## My December 2023 Norvi supplied unit had ADC and WiFi problems from day 1.
-## My December 2023 CarTFT supplied Norvi unit had stable ADC and stable WiFi on the bench, but after being in operation for about two weeks the ADC is now drifting.
+# TODO:
+# - Norvi to send replacement SensOper device with GPIO39 grounded.
+# - Norvi to advise on use of GPIO15 affecting input LED signal state.
 
 
 # Norvi NORVI-ENET-AE06-R
@@ -226,10 +200,6 @@ external_components:
   - source: github://ssieb/esphome_components
     components: [ analog_keypad ]
 
-  # https://github.com/esphome/esphome/pull/6985
-  - source: github://pr#6985
-    components: [ ds1307 ]
-
 # https://esphome.io/components/i2c
 i2c:
   sda: GPIO16
@@ -263,7 +233,7 @@ font:
       type: gfonts
       family: Open+Sans
     id: fonnt # font as id is reserved
-    size: 13
+    size: 14
 
 # https://esphome.io/components/display/ssd1306.html
 display:
@@ -276,19 +246,16 @@ display:
     lambda: |-
       static const auto color = Color(255, 255, 255);
       static const auto font = id(fonnt);
-      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 4);
+      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
       const auto time = id(homeassistant_time).now();
       const auto ip = id(wifi_ip).state.c_str();
       const auto adc = id(adc_buttons).state;
-      const auto adcn = id(adc_vn).state;
       int line = lineSpacing.nFirstLine;
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
       line += lineSpacing.nIncrement;
       it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
       line += lineSpacing.nIncrement;
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
-      line += lineSpacing.nIncrement;
-      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADCN: %.2fV", adcn);
       line += lineSpacing.nIncrement;
 
 # https://esphome.io/components/sensor/
@@ -300,18 +267,9 @@ sensor:
     name: ${device_name}_adc_buttons
     id: adc_buttons
     attenuation: 12db
-    update_interval: 5s #never
+    update_interval: never
     samples: 64
-    # internal: true
-
-  # Test ADC VN grounded
-  - platform: adc
-    pin: GPIO39
-    name: ${device_name}_adc_vn
-    id: adc_vn
-    attenuation: 12db
-    update_interval: 5s
-    samples: 64
+    internal: true
 
 # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
 analog_keypad:
@@ -359,7 +317,6 @@ switch:
 
 # https://esphome.io/components/binary_sensor/
 binary_sensor:
-
 
   # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
   - platform: analog_keypad
