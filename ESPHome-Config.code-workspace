@@ -28,6 +28,7 @@
 			"DEVKITC",
 			"displayy",
 			"dout",
+			"eamodio",
 			"EFUN",
 			"ENET",
 			"esphome",
@@ -101,7 +102,17 @@
 		"[markdown]": {
 			"files.trimTrailingWhitespace": false
 		},
-		"terminal.integrated.defaultProfile.linux": "bash"
+		"terminal.integrated.defaultProfile.linux": "bash",
+		"yaml.customTags": [
+			"!secret scalar",
+			"!lambda scalar",
+			"!extend scalar",
+			"!remove scalar",
+			"!include_dir_named scalar",
+			"!include_dir_list scalar",
+			"!include_dir_merge_list scalar",
+			"!include_dir_merge_named scalar"
+		]
 	},
 	"extensions": {
 		"recommendations": [

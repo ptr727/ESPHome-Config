@@ -34,8 +34,8 @@
 ## July 2024, updated to using one_wire and dallas_temp in ESPHome 2024.6
 ##   Input LED's flicker during every temp read cycle, while using dallasng or older dallas component no LED flicker.
 ##   New 1-wire implementation drives GPIO high during bus read.
-##   Confirmed by using GPIO15 as a an output switch, and driving GPIO15 turns all the input state LED's on or off, and interferes with input read state.
-##   This Contact Norvi for an explanation.
+##   Confirmed by using GPIO15 as an output switch, and driving GPIO15 turns all the input state LED's on or off, and interferes with input read state.
+##   Waiting on Norvi support for an explanation.
 
 # TODO:
 # - Norvi to send replacement SensOper device with GPIO39 grounded.

@@ -143,7 +143,7 @@ interval:
           - logger.log: "RecircTimer : Setting BangBang to Off."
           - climate.control:
               id: bangbang
-              mode: off
+              mode: "off"
           # Turn relay on
           - logger.log: "RecircTimer : Turning Relay On."
           - switch.turn_on: relay_0
