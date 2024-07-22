@@ -1,14 +1,6 @@
 # Required substitutions:
 # device_name
 
-# https://esphome.io/components/external_components.html
-external_components:
-
-  # TODO: Add MAC address to ethernet_info
-  # https://github.com/esphome/esphome/pull/6835
-  - source: github://pr#6835
-    components: [ ethernet, ethernet_info ]
-
 # https://esphome.io/components/text_sensor
 text_sensor:
 

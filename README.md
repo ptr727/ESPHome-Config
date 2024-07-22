@@ -221,4 +221,5 @@ Some templates are customized based on other people's work, see YML files for so
 
 ## TODO
 
-- Norvi testing.
+- Norvi issue testing.
+- Add `pio system prune` to docker startup.

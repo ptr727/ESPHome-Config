@@ -32,9 +32,9 @@
 ##     GPIO36 button ADC, appears to remain stable at ~0.07V/~0.14V, up~=0.42V/~0.43V, down~=0.75V/~0.77V, enter~=1.61V/~1.66V, within safe ADC range.
 ##     ADC is fixed.
 ## July 2024, updated to using one_wire and dallas_temp in ESPHome 2024.6
-##   Input LED's flicker during every temp read cycle, while using dallasng or older dallas component no LED flicker.
-##   New 1-wire implementation drives GPIO high during bus read.
-##   Confirmed by using GPIO15 as an output switch, and driving GPIO15 turns all the input state LED's on or off, and interferes with input read state.
+##   Discovered that new 1-wire implementation drives GPIO high before bus read, and observed that all input status LEDs briefly turns on.
+##   Confirmed that when configuring GPIO15 as input and output, and turning GPIO15 on, all input status LEDs light up.
+##   See https://gist.github.com/ptr727/66d9972591fde997dd904ecea1597130 for simple repro using ESP-IDF.
 ##   Waiting on Norvi support for an explanation.
 
 # TODO:
