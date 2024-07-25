@@ -3,7 +3,6 @@
 
 # https://esphome.io/components/debug
 debug:
-  update_interval: 60s
 
 # https://esphome.io/components/text_sensor
 text_sensor:

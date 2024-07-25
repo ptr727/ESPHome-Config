@@ -9,7 +9,7 @@ substitutions:
   device_name: utility-pulse-counter
   device_comment: "ESP-WROOM-32UE Utility Meter Pulse Counter"
 
-# https://esphome.io/components/esphome.html  
+# https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
   comment: ${device_comment}
@@ -37,10 +37,9 @@ sensor:
   - platform: pulse_counter
     pin:
       number: GPIO32
-      mode: 
+      mode:
         input: true
         pullup: true
-    update_interval: 60s
     use_pcnt: false
     count_mode:
       rising_edge: DISABLE
@@ -66,10 +65,9 @@ sensor:
   - platform: pulse_counter
     pin:
       number: GPIO33
-      mode: 
+      mode:
         input: true
         pullup: true
-    update_interval: 60s
     use_pcnt: false
     count_mode:
       rising_edge: DISABLE
@@ -100,7 +98,7 @@ sensor:
     state_class: 'total_increasing'
     accuracy_decimals: 3
     unit_of_measurement: 'm³'
-    # Convert gal to m³ 
+    # Convert gal to m³
     lambda: |-
       return id(water_total).state / 264.2;
 

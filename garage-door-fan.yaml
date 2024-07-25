@@ -11,17 +11,17 @@ packages:
 # https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/dallas.html
-  - platform: dallas
+  # https://esphome.io/components/sensor/dallas_temp.html
+  - platform: dallas_temp
     address: 0x4E3C01D075B62428
     name: ${device_name}_temp
     id: temp
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average-exponential-moving-average
+    update_interval: 15s
+    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
     filters:
+      - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
-          send_every: 3
-          send_first_at: 3
 
 # https://esphome.io/components/climate
 climate:
@@ -31,7 +31,7 @@ climate:
     name: ${device_name}_thermostat
     id: thermo
     sensor: temp
-    min_cooling_off_time: 60s 
+    min_cooling_off_time: 60s
     min_cooling_run_time: 60s
     min_idle_time: 60s
     cool_action:

@@ -7,6 +7,7 @@
 	"settings": {
 		"cSpell.words": [
 			"adafruit",
+			"adcn",
 			"appdata",
 			"astra",
 			"autoremove",
@@ -27,6 +28,7 @@
 			"DEVKITC",
 			"displayy",
 			"dout",
+			"eamodio",
 			"EFUN",
 			"ENET",
 			"esphome",
@@ -41,6 +43,7 @@
 			"homeassistant",
 			"Iiot",
 			"insanegenius",
+			"isnan",
 			"JTAG",
 			"kincony",
 			"leds",
@@ -61,10 +64,12 @@
 			"Octa",
 			"OLED",
 			"Oper",
+			"pcnt",
 			"piolibs",
 			"platformio",
 			"PSRAM",
 			"PULLUP",
+			"Rbutton",
 			"recirc",
 			"Rigol",
 			"RMII",
@@ -74,13 +79,16 @@
 			"Sengled",
 			"setuptools",
 			"Sonoff",
+			"ssieb",
 			"strftime",
 			"Tasmota",
+			"tempp",
 			"tubeszb",
 			"Tuya",
 			"UART",
 			"USBIPD",
 			"usbutils",
+			"Vbutton",
 			"venv",
 			"Wanptek",
 			"WEMOS",
@@ -94,15 +102,28 @@
 		"[markdown]": {
 			"files.trimTrailingWhitespace": false
 		},
-		"terminal.integrated.defaultProfile.linux": "bash"
+		"terminal.integrated.defaultProfile.linux": "bash",
+		"yaml.customTags": [
+			"!secret scalar",
+			"!lambda scalar",
+			"!extend scalar",
+			"!remove scalar",
+			"!include_dir_named scalar",
+			"!include_dir_list scalar",
+			"!include_dir_merge_list scalar",
+			"!include_dir_merge_named scalar"
+		]
 	},
 	"extensions": {
 		"recommendations": [
-			"streetsidesoftware.code-spell-checker",
-			"platformio.platformio-ide",
+			"davidanson.vscode-markdownlint",
+			"eamodio.gitlens",
 			"esphome.esphome-vscode",
+			"ms-azuretools.vscode-docker",
+			"ms-vscode-remote.vscode-remote-extensionpack",
 			"ms-vscode.vscode-serial-monitor",
-			"davidanson.vscode-markdownlint"
+			"platformio.platformio-ide",
+			"streetsidesoftware.code-spell-checker"
 		]
 	}
 }
