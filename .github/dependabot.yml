@@ -6,13 +6,14 @@ updates:
 
   # main
   - package-ecosystem: "devcontainers"
+    target-branch: "main"
     directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
 
   # develop
   - package-ecosystem: "devcontainers"
     target-branch: "develop"
     directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"

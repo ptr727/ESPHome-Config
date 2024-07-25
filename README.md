@@ -120,28 +120,6 @@ Some templates are customized based on other people's work, see YML files for so
 - Not all [templates](./templates/) are documented here.
 - I deployed Zigbee in my home using [Z2M](https://www.zigbee2mqtt.io/) and [TubesZB](https://tubeszb.com/) Zigbee Ethernet coordinator, and no longer use ESPHome flashed smart plugs. For US smart plugs I highly recommend the [Sengled](https://www.amazon.com/gp/product/B092DBFFBY/) Zigbee power monitoring smart plugs.
 
-### Renaming a Device in Home Assistant
-
-- Rename HA entities:
-  - Stop HA container using `docker stop home-assistant`.
-  - Reset config permissions:
-    - `sudo chown -R nobody:users /data/appdata/home-assistant/config`
-    - `sudo chmod -R ugo=rwx /data/appdata/home-assistant/config`
-  - Edit `core.config_entries` and rename `title` and `host`.
-  - Edit `core.device_registry` and rename `name`.
-  - Edit `core.entity_registry` and rename `unique_id` and `original_name`.
-- Set new ESPHome device name:
-  - Set `use_address` in `wifi` config, see [notes](https://esphome.io/components/esphome.html#changing-esphome-node-name).
-  - Update firmware.
-  - Delete or uncomment `use_address`.
-  - Update firmware.
-- Restart HA container using `docker start home-assistant`.
-- Troubleshooting:
-  - Look at ESPHome integration entities, fix incorrect entries.
-  - E.g. search for entities named `foo_2`, delete `foo`, and rename `foo_2` to `foo`.
-  - E.g. replace short entity names with fully qualified names.
-- Note: ESPHome + HA v2024+ made improvements in device and entity naming changes and conflicts, and the listed steps may no longer be required.
-
 ### Espressif32 and Framework Versions
 
 - PlatformIO version is determined by the ESPHome release, it cannot be updated independently.
@@ -218,8 +196,3 @@ Some templates are customized based on other people's work, see YML files for so
 - PlatformIO will open a new instance of VSCode for that project.
 - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
 - PlatformIO Core will be installed in the virtual environment and use the environment Python.
-
-## TODO
-
-- Norvi issue testing.
-- Add `pio system prune` to docker startup.

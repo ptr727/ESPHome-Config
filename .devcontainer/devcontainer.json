@@ -3,7 +3,7 @@
 // https://containers.dev/guide/dockerfile
 // https://aka.ms/dev-containers-non-root
 {
-	"name": "ESPHome-NonRoot Container",
+	"name": "ESPHome-NonRoot Dev Container",
 	"image": "ptr727/esphome-nonroot:latest",
 	// Mount /config as workspace
 	"workspaceMount": "source=${localWorkspaceFolder},target=/config,type=bind",
@@ -12,14 +12,16 @@
 		6052
 	],
 	"containerEnv": {
-		"ESPHOME_VERBOSE": "true"
+		"ESPHOME_VERBOSE": "true",
+		"ESPHOME_DASHBOARD_USE_PING": "1",
+		"TZ": "Americas/Los_Angeles"
 	},
 	// Let container entrypoint run to launch dashboard
 	"overrideCommand": false,
 	// Run as nonroot:users
 	"containerUser": "1001:100",
 	"updateRemoteUserUID": false,
-	// Mount /cache, /cache and /config in same parent directory
+	// Mount /cache and /config in same parent directory
 	"mounts": [
 		"source=${localWorkspaceFolder}/../cache,target=/cache,type=bind,consistency=cached"
 	]
