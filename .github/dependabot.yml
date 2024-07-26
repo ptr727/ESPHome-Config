@@ -4,16 +4,24 @@
 version: 2
 updates:
 
-  # main
-  - package-ecosystem: "devcontainers"
-    target-branch: "main"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+# main
+- package-ecosystem: "devcontainers"
+  target-branch: "main"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  groups:
+    devcon-deps:
+      patterns:
+        - "*"
 
-  # develop
-  - package-ecosystem: "devcontainers"
-    target-branch: "develop"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+# develop
+- package-ecosystem: "devcontainers"
+  target-branch: "develop"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  groups:
+    devcon-deps:
+      patterns:
+        - "*"

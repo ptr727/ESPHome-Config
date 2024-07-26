@@ -73,30 +73,24 @@ status_led:
   pin:
     number: GPIO13
 
-# https://esphome.io/components/uart
-uart:
-  rx_pin: RX
-  baud_rate: 4800
-
 # https://esphome.io/components/sensor/index.html
 sensor:
 
   # https://esphome.io/components/sensor/cse7766.html
   - platform: cse7766
-    update_interval: 15s
     current:
       name: ${device_name}_current
       filters:
-        - throttle_average: 60s
+        - throttle_average: 15s
     voltage:
       name: ${device_name}_voltage
       filters:
-        - throttle_average: 60s
+        - throttle_average: 15s
     power:
       id: wattage
       name: ${device_name}_power
       filters:
-        - throttle_average: 60s
+        - throttle_average: 15s
 
   # https://esphome.io/components/sensor/total_daily_energy.html
   - platform: total_daily_energy
