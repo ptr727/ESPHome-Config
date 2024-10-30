@@ -1,4 +1,4 @@
 # https://esphome.io/components/api
 api:
   id: api_server
-  reboot_timeout: 5min
+  reboot_timeout: 15min

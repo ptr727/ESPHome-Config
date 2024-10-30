@@ -19,7 +19,7 @@ esphome:
         # Set to default heat mode on startup
         - climate.control:
             id: bangbang
-            mode: 'heat'
+            mode: HEAT
 
 # https://esphome.io/components/sensor
 sensor:
@@ -106,7 +106,7 @@ interval:
           - logger.log: "RecircTimer : Setting Thermostat to Off."
           - climate.control:
               id: bangbang
-              mode: 'off'
+              mode: "OFF"
           # Turn relay on
           - logger.log: "RecircTimer : Turning Relay On."
           - switch.turn_on: relay
@@ -121,4 +121,4 @@ interval:
           - logger.log: "RecircTimer : Setting Thermostat to Heat."
           - climate.control:
               id: bangbang
-              mode: 'heat'
+              mode: HEAT
