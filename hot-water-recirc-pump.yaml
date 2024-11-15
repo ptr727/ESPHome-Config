@@ -14,9 +14,10 @@ packages:
 # https://esphome.io/components/esphome
 esphome:
   on_boot:
-    - priority: 600
+    # TODO: After firmware upgrade, or HA unavailable, mode turns to off, and needs to be manually set to heat in HA?
+    # Set to heat mode on startup
+    - priority: -100
       then:
-        # Set to default heat mode on startup
         - climate.control:
             id: bangbang
             mode: HEAT
