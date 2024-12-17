@@ -1,10 +1,15 @@
 # ESPHome-Config
 
-[ESPHome](https://esphome.io/index.html) configuration, templates, and projects.
+[ESPHome](https://esphome.io) configuration, templates, and projects.
+
+## Support
+
+For ESPHome support visit [Discord `#general-support`](https://discord.gg/dbwxp5R3).  
+Only file an [issue](https://github.com/ptr727/ESPHome-Config/issues) if you believe there is a bug in a [template](/templates/) or one of my projects.  
 
 ## Templates
 
-A [collection](./templates/) of utility and device specific configuration templates.
+A [collection](./templates/) of utility and device specific configuration templates.  
 Some templates are customized based on other people's work, see YML files for source references.
 
 ### Device Templates
@@ -106,7 +111,7 @@ Some templates are customized based on other people's work, see YML files for so
 - Deploy the [ESPHome-NonRoot](https://github.com/ptr727/ESPHome-NonRoot) container for non-root operation.
 - Set directory permissions:
   - `sudo chown -R nonroot:users /data/appdata/esphome`
-  - `sudo chmod -R ugo=rwx /data/appdata/esphome`
+  - `sudo chmod -R ug=rwx,o=rx /data/appdata/esphome`
 - Clone Git repository in ESPHome config folder.
   - `cd /data/appdata/esphome/config`
   - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
