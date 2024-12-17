@@ -11,7 +11,7 @@ packages:
 # https://esphome.io/components/esphome
 esphome:
   on_boot:
-    - priority: 600
+    - priority: -100
       then:
         - climate.control:
             id: thermo
