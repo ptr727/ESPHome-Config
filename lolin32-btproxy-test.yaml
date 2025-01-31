@@ -1,6 +1,6 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: lolin32-btproxy-1
+  device_name: lolin32-btproxy-test
   device_comment: "WEMOS LOLIN32 Lite Bluetooth Proxy"
 
 # https://esphome.io/guides/configuration-types.html#packages

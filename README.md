@@ -48,8 +48,8 @@ Some templates are customized based on other people's work, see YML files for so
 - Note:
   - Norvi devices are sold under the [SensOper Controls](https://sensoper.com/) brand in the US and available at the [SensOper store](https://sensoper.com/shop).
   - Norvi branded devices can be shipped to the US from the Sri Lanka based [Norvi store](https://shop.norvi.lk), or the Germany based [CarTFT store](https://www.cartft.com).
-  - I am experiencing issues with PSU and ADC stability on several devices, see the [notes](./templates/norvi-enet-ae06-r.yaml) section in YML for details.
-  - Norvi addressed the issues through a design change (May 2024 date code) and sent me replacement devices, that I still need to test and verify.
+  - Norvi addressed PSU interference and drifting ADC issues through a design change (May 2024 date code), see the [notes](./templates/norvi-enet-ae06-r.yaml) section in YML for details.
+  - There is an ongoing issue where enabling output on GPIO15 turns the status LED's on and could interfere with input sensors, see the [notes](./templates/norvi-enet-ae06-r.yaml) section in YML for details.
 
 #### RocketController ASTRA DIN Controller
 
@@ -66,6 +66,11 @@ Some templates are customized based on other people's work, see YML files for so
 - [Template](./templates/gls10-bluetooth-proxy.yaml) to use the [GL-S10 IoT Gateway](https://www.gl-inet.com/products/gl-s10/) as a Bluetooth proxy.
 - Follow the Blakadder [guide](https://blakadder.com/gl-s10/) for flashing instructions.
 - Warning: Do not connect USB power and POE power at the same time.
+
+#### Konnected blaQ Smart Garage Door Controller
+
+- [Template](./templates/konnected-blaq.yaml) for the [Konnected blaQ Smart Garage Door Controller](https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative).
+- This is a Home Assistant friendly alternative to the Chamberlain myQ that [cut off HA access](https://www.home-assistant.io/blog/2023/11/06/removal-of-myq-integration/).
 
 ### Utility Templates
 
@@ -95,11 +100,6 @@ Some templates are customized based on other people's work, see YML files for so
 
 - Project [`zigbee-coordinator.yaml`](./zigbee-coordinator.yaml) is used as my Zigbee Coordinator.
 - Customized version of the [TubesZB Ethernet Zigbee Coordinator](https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-eth_usb/firmware/esphome/tubezb-cc2652p2-ethusb-2022.yaml).
-
-### RatGDO LiftMaster Garage Door Controller
-
-- Project [`garage-door-controller.yaml`](./garage-door-controller.yaml) is used as to control my LiftMaster garage door opener.
-- Customized version of the [RatGDO Garage Door Controller](https://github.com/ratgdo/esphome-ratgdo/blob/main/static/v25board_esp8266_d1_mini_lite.yaml).
 
 ### Garage Fan Thermostat and Utility Gas and Water Meter Pulse Counter
 

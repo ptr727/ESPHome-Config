@@ -1,0 +1,51 @@
+# Konnected blaQ Garage Door Controller
+# https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
+# https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
+
+# Required substitutions:
+# device_name
+# device_comment
+
+substitutions:
+  # Used by garage-door-GDOv2-Q.yaml
+  name: ${device_name}
+  # https://community.konnected.io/t/use-of-friendly-name-overrides-default-device-name-in-entity-naming/39062
+  friendly_name: ${device_name}
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  comment: ${device_comment}
+  name_add_mac_suffix: false
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml@master
+  api: !include api.yaml
+  logger: !include logger.yaml
+  ota: !include ota.yaml
+  time: !include time.yaml
+  wifi: !include wifi.yaml
+
+# Remove unwanted items from gdov2q package
+esp32_improv: !remove
+dashboard_import: !remove
+web_server: !remove
+improv_serial: !remove
+captive_portal: !remove
+wifi:
+  # Remove AP fallback
+  ap: !remove
+# ERROR Error while reading config: The local log level VERBOSE for esp-idf must be less severe than the global log level DEBUG
+logger:
+  # Inherit from default logger level
+  logs: !remove
+
+# Remove device_class: signal_strength from wifi_signal_pct, set device_class: ""
+# https://github.com/konnected-io/konnected-esphome/issues/76
+sensor:
+  - id: !extend wifi_signal_pct
+    device_class: ""
+
+# TODO:
+# WARNING Found and merged multiple configurations for ota platform esphome port(s) [3232]
