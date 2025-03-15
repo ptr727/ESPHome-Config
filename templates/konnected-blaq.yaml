@@ -9,6 +9,7 @@
 substitutions:
   # Used by garage-door-GDOv2-Q.yaml
   name: ${device_name}
+  # Set friendly_name to device_name
   # https://community.konnected.io/t/use-of-friendly-name-overrides-default-device-name-in-entity-naming/39062
   friendly_name: ${device_name}
 
