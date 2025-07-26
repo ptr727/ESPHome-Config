@@ -1,10 +1,19 @@
 # Konnected blaQ Garage Door Controller
 # https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
 # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
+# https://github.com/konnected-io/konnected-esphome/tree/master/components/secplus_gdo
 
 # Required substitutions:
 # device_name
 # device_comment
+
+# WARNING Using `cover.COVER_SCHEMA` is deprecated and will be removed in ESPHome 2025.11.0.
+# Please use `cover.cover_schema(...)` instead.
+# WARNING Using `lock.LOCK_SCHEMA` is deprecated and will be removed in ESPHome 2025.11.0.
+# Please use `lock.lock_schema(...)` instead.
+# If you are seeing this, report an issue to the external_component author and ask them to update it.
+# https://developers.esphome.io/blog/2025/05/14/_schema-deprecations/.
+# Component using this schema: secplus_gdo
 
 substitutions:
   # Used by garage-door-GDOv2-Q.yaml
@@ -50,3 +59,9 @@ sensor:
 
 # TODO:
 # WARNING Found and merged multiple configurations for ota platform esphome port(s) [3232]
+
+# TODO: https://github.com/konnected-io/konnected-esphome/issues/84
+#/cache/data/packages/8735b6a9/packages/mdns.yaml: In lambda function:
+#/cache/data/packages/8735b6a9/packages/mdns.yaml:14:14: error: 'USE_WEBSERVER_PORT' was not declared in this scope
+#   14 |       txt:
+#      |              ^
