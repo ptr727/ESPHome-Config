@@ -3,4 +3,4 @@ substitutions:
   device_comment: "GL-S10 Bluetooth Proxy"
 
 packages:
-  feather: !include templates/gls10-bluetooth-proxy.yaml
+  gls10: !include templates/gls10-bluetooth-proxy.yaml

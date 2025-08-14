@@ -1,0 +1,8 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: blaq-garage-controller
+  device_comment: "Konnected blaQ Garage Door Controller"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  blaq: !include templates/konnected-blaq.yaml
