@@ -26,6 +26,7 @@
 # https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
+  friendly_name: ${device_name}
   comment: ${device_comment}
 
 # https://esphome.io/components/esp8266

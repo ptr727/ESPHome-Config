@@ -21,6 +21,7 @@ text_sensor:
   # https://esphome.io/components/text_sensor/version
   - platform: version
     name: ${device_name}_version
+    hide_timestamp: true
 
 # https://esphome.io/components/sensor
 sensor:

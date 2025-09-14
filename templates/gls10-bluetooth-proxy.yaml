@@ -34,6 +34,7 @@
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
+  friendly_name: ${device_name}
   comment: ${device_comment}
   on_boot:
     then:

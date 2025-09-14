@@ -41,6 +41,7 @@
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
+  friendly_name: ${device_name}
   comment: ${device_comment}
   on_boot:
     - priority: 600
@@ -108,14 +109,14 @@ switch:
   - platform: gpio
     name: ${device_name}_relay_1
     id: relay_1
-    pin: 
+    pin:
       number: GPIO5
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
 
 # https://esphome.io/components/light/
 light:
-  
+
   # https://esphome.io/components/light/
   - platform: binary
     name: ${device_name}_led_0

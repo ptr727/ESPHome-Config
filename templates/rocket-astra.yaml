@@ -94,6 +94,7 @@
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
+  friendly_name: ${device_name}
   comment: ${device_comment}
   on_boot:
     priority: -100
@@ -156,7 +157,7 @@ switch:
 # Input handling to be defined in the device config as gpio, pulse counters, etc.
 # https://esphome.io/components/binary_sensor/gpio.html
 # - platform: gpio
-#   pin: 
+#   pin:
 #     number: GPIO34
 #     inverted: true
 #

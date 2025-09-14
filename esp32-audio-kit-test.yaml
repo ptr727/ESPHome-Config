@@ -12,6 +12,7 @@ substitutions:
 
 esphome:
   name: ${device_name}
+  friendly_name: ${device_name}
   comment: ${device_comment}
 
 esp32:
@@ -61,7 +62,7 @@ switch:
 
 voice_assistant:
   microphone: mic1
-    
+
 binary_sensor:
   - platform: gpio
     pin:
@@ -94,7 +95,7 @@ binary_sensor:
     name: "Key 3"
     filters:
       - delayed_off: 10ms
-      
+
   - platform: gpio
     pin:
       number: GPIO023
@@ -105,7 +106,7 @@ binary_sensor:
     name: "Key 4"
     filters:
       - delayed_off: 10ms
-      
+
   - platform: gpio
     pin:
       number: GPIO018
@@ -116,9 +117,9 @@ binary_sensor:
     name: "Key 5"
     filters:
       - delayed_off: 10ms
-      
+
   - platform: gpio
-    pin: 
+    pin:
       number: GPIO005
       inverted: true
       mode:
@@ -133,13 +134,13 @@ binary_sensor:
     on_release:
       - voice_assistant.stop:
     on_click:
-      - media_player.toggle: AudioKit  
+      - media_player.toggle: AudioKit
 
 light:
   - platform: binary
     name: "Test LED 1"
     output: light_output_1
- 
+
 output:
   - id: light_output_1
     platform: gpio
