@@ -4,12 +4,12 @@
 # Substitutions used by templates
 substitutions:
   device_name: zigbee-coordinator
-  device_comment: "TubesZB CC2652P2 Ethernet Zigbee Coordinator"
+  device_friendly_name: "Zigbee Coordinator"
 
 # https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 # https://esphome.io/components/esp32
 esp32:

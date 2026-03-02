@@ -1,6 +1,6 @@
 # Required substitutions:
 # device_name
-# device_comment
+# device_friendly_name
 
 # https://esphome.io/devices/sonoff.html#sonoff-th10-th16
 # https://templates.blakadder.com/sonoff_TH.html
@@ -26,8 +26,7 @@
 # https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
-  friendly_name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 # https://esphome.io/components/esp8266
 esp8266:
@@ -42,7 +41,7 @@ binary_sensor:
 
   # https://esphome.io/components/binary_sensor/gpio.html
   - platform: gpio
-    name: ${device_name}_button
+    name: "Button"
     device_class: power
     # https://esphome.io/guides/configuration-types.html#config-pin-schema
     pin:
@@ -57,7 +56,7 @@ switch:
 
   # https://esphome.io/components/switch/gpio.html
   - platform: gpio
-    name: ${device_name}_relay
+    name: "Relay"
     id: relay
     pin: GPIO12
     restore_mode: ALWAYS_OFF

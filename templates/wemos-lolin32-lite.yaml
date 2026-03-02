@@ -1,3 +1,7 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # WEMOS LOLIN32 Lite
 # https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite
 # https://web.archive.org/web/20190902005100/https://wiki.wemos.cc/_media/products:lolin32:sch_lolin32_lite_v1.0.0.pdf
@@ -9,15 +13,10 @@
 # ESP32-D0WDQ6-V3, 520KB SRAM, 4MB Flash
 # GPIO22: Blue LED
 
-# Required substitutions:
-# device_name
-# device_comment
-
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  friendly_name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 # https://esphome.io/components/esp32
 esp32:

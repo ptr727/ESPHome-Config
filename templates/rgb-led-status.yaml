@@ -15,7 +15,7 @@ light:
 
   # https://esphome.io/components/light/esp32_rmt_led_strip
   - platform: esp32_rmt_led_strip
-    name: ${device_name}_rgb_led
+    name: "RGB LED"
     id: rgb_led
     disabled_by_default: true
     entity_category: config
@@ -24,7 +24,7 @@ light:
     num_leds: 1
     rmt_channel: 0
     chipset: WS2812
-    
+
     # https://esphome.io/components/light/#light-effects
     effects:
       - pulse:

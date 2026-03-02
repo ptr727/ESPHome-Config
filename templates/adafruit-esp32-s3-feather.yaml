@@ -1,13 +1,13 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # Adafruit ESP32-S3 Feather
 # Adafruit ESP32-S3 8MB Flash 5323, 5885 w.FL
 # Adafruit ESP32-S3 4MB Flash 2MB PSRAM 5477
 
 # https://www.adafruit.com/product/5323#technical-details
 # https://learn.adafruit.com/adafruit-esp32-s3-feather/pinouts
-
-# Required substitutions:
-# device_name
-# device_comment
 
 # RGB LED Power : GPIO21
 # RGB LED : GPIO33
@@ -29,8 +29,7 @@ substitutions:
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  friendly_name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 # https://esphome.io/components/esp32
 esp32:
@@ -72,11 +71,11 @@ sensor:
   # I2C 0x36
   - platform: max17048
     battery_voltage:
-      name: ${device_name}_battery_voltage
+      name: "Battery Voltage"
     battery_level:
-      name: ${device_name}_battery_level
+      name: "Battery Level"
     rate:
-      name: ${device_name}_battery_discharge_rate
+      name: "Battery Discharge Rate"
 
 # https://esphome.io/components/switch/
 switch:
@@ -84,6 +83,6 @@ switch:
   # https://esphome.io/components/switch/gpio
   - platform: gpio
     pin: GPIO21
-    name: ${device_name}_rgb_led_power"
+    name: "RGB LED Power"
     restore_mode: ALWAYS_ON
     internal: true

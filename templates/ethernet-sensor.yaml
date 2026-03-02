@@ -7,6 +7,6 @@ text_sensor:
   # https://esphome.io/components/text_sensor/ethernet_info
   - platform: ethernet_info
     ip_address:
-      name: ${device_name}_ethernet_ip
+      name: "IP Address"
     mac_address:
-      name: ${device_name}_ethernet_mac
+      name: "MAC Address"

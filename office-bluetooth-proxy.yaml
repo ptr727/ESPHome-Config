@@ -1,0 +1,7 @@
+substitutions:
+  device_name: office-bluetooth-proxy
+  device_friendly_name: "Office Bluetooth Proxy"
+
+packages:
+  gls10: !include templates/gls10-bluetooth-proxy.yaml
+

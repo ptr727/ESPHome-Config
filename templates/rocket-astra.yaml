@@ -1,3 +1,7 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # RocketController / RobotDyn ASTRA
 # https://rocketcontroller.com/product-category/controllers/
 # https://www.aliexpress.com/store/1101158421/pages/all-items.html?productGroupId=10000003463819
@@ -87,15 +91,10 @@
 # SPI-5: SPI-Clk
 # SPI-6: SPI-Cso
 
-# Required substitutions:
-# device_name
-# device_comment
-
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  friendly_name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   on_boot:
     priority: -100
     then:
@@ -134,23 +133,23 @@ switch:
 
   # https://esphome.io/components/switch/gpio.html
   - platform: gpio
-    name: ${device_name}_relay_0
-    id: relay_0
+    name: "Relay 1"
+    id: relay_1
     pin: GPIO25
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_1
-    id: relay_1
+    name: "Relay 2"
+    id: relay_2
     pin: GPIO26
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_2
-    id: relay_2
+    name: "Relay 3"
+    id: relay_3
     pin: GPIO33
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_3
-    id: relay_3
+    name: "Relay 4"
+    id: relay_4
     pin: GPIO32
     restore_mode: ALWAYS_OFF
 

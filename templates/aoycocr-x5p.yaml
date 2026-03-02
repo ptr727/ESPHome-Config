@@ -1,6 +1,6 @@
 # Required substitutions:
 # device_name
-# device_comment
+# device_frendly_name
 
 # https://templates.blakadder.com/aoycocr_X5P.html
 # https://www.esphome-devices.com/devices/Aoycocr-X10S-Plug/
@@ -13,8 +13,7 @@
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  friendly_name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 # https://esphome.io/components/esp8266
 esp8266:
@@ -29,7 +28,7 @@ binary_sensor:
 
   # https://esphome.io/components/binary_sensor/gpio.html
   - platform: gpio
-    name: ${device_name}_button
+    name: "Button"
     device_class: power
     pin:
       number: GPIO13
@@ -43,7 +42,7 @@ switch:
 
   # https://esphome.io/components/switch/gpio.html
   - platform: gpio
-    name: ${device_name}_relay
+    name: "Relay"
     id: relay
     pin: GPIO15
     # Off on power-on
@@ -56,7 +55,7 @@ switch:
       - switch.turn_off: red_led
 
   - platform: gpio
-    name: ${device_name}_red_led
+    name: "Red LED"
     id: red_led
     pin:
       number: GPIO0
@@ -66,6 +65,5 @@ switch:
 
 # https://esphome.io/components/status_led.html
 status_led:
-  pin:
-    # Blue LED
-    number: GPIO2
+  # Blue LED
+  pin: GPIO2

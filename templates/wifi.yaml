@@ -20,16 +20,16 @@ text_sensor:
   # https://esphome.io/components/text_sensor/wifi_info.html
   - platform: wifi_info
     ip_address:
-      name: ${device_name}_wifi_ip
+      name: "IP Address"
       id: wifi_ip
     ssid:
-      name: ${device_name}_wifi_ssid
+      name: "WiFi SSID"
     bssid:
-      name: ${device_name}_wifi_bssid
+      name: "WiFi BSSID"
 
 # https://esphome.io/components/sensor
 sensor:
 
   # https://esphome.io/components/sensor/wifi_signal.html
   - platform: wifi_signal
-    name: ${device_name}_wifi_signal
+    name: "WiFi Signal"

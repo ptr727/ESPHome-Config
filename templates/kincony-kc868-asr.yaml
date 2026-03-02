@@ -1,3 +1,7 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # Kincony KC868-ASR
 
 # https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
@@ -34,15 +38,10 @@
 # GPIO4: DAT1
 # GPIO21: WP
 
-# Required substitutions:
-# device_name
-# device_comment
-
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  friendly_name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   on_boot:
     - priority: 600
       then:
@@ -95,21 +94,23 @@ status_led:
 
 # https://esphome.io/components/rtttl
 rtttl:
-  output: rtttl_out
+  output: buzzer
 
 # https://esphome.io/components/switch
 switch:
 
   # https://esphome.io/components/switch/gpio.html
   - platform: gpio
-    name: ${device_name}_relay_0
-    id: relay_0
+    name: "Relay 1"
+    id: relay_1
+    # Relay-1
     pin: GPIO19
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_1
-    id: relay_1
+    name: "Relay 2"
+    id: relay_2
     pin:
+      # Relay-2
       number: GPIO5
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
@@ -119,20 +120,21 @@ light:
 
   # https://esphome.io/components/light/
   - platform: binary
-    name: ${device_name}_led_0
-    output: led_0
+    name: "LED"
+    output: led
 
 # https://esphome.io/components/output
 output:
 
   # https://esphome.io/components/output/ledc
   - platform: ledc
-    id: rtttl_out
+    id: buzzer
+    # Buzzer
     pin: GPIO18
 
   # https://esphome.io/components/output/gpio
   - platform: gpio
-    id: led_0
+    id: led
     # LED-1
     pin: GPIO23
     inverted: true

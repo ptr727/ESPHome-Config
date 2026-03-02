@@ -1,7 +1,7 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: norvi-ae06r-1
-  device_comment: "Norvi IIOT-AE06-R Utility Pulse Counter and Garage Gate Fan Controller"
+  device_name: garage-gate-fan-controller
+  device_friendly_name: "Garage Gate Fan Controller"
   fan_temperature_high: "28.0" # ~80F
 
 # https://esphome.io/guides/configuration-types.html#packages
@@ -31,7 +31,7 @@ sensor:
   # https://esphome.io/components/sensor/dallas_temp.html
   - platform: dallas_temp
     address: 0x1500000DC56AFC28
-    name: ${device_name}_temp
+    name: Temperature
     id: temp
     update_interval: 15s
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
@@ -56,14 +56,14 @@ sensor:
       falling_edge: INCREMENT
     internal_filter: 100ms
     unit_of_measurement: gal/min
-    name: ${device_name}_water_meter
+    name: "Water Meter"
     icon: mdi:water
     device_class: volume_flow_rate
     state_class: measurement
     filters:
       - multiply: 10
     total:
-      name: ${device_name}_water_meter_total
+      name: "Water Meter Total"
       icon: mdi:water
       device_class: water
       state_class: total_increasing
@@ -83,14 +83,14 @@ sensor:
       falling_edge: INCREMENT
     internal_filter: 100ms
     unit_of_measurement: ft³/min
-    name: ${device_name}_gas_meter
+    name: "Gas Meter"
     icon: mdi:fire
     device_class: volume_flow_rate
     state_class: measurement
     filters:
       - multiply: 10
     total:
-      name: ${device_name}_gas_meter_total
+      name: "Gas Meter Total"
       icon: mdi:fire
       device_class: gas
       state_class: total_increasing
@@ -101,7 +101,7 @@ sensor:
 
   # https://esphome.io/components/sensor/template.html
   - platform: template
-    name: ${device_name}_water_meter_total_m3
+    name: "Water Meter Total (m³)"
     icon: mdi:water
     device_class: water
     state_class: total_increasing
@@ -112,7 +112,7 @@ sensor:
       return id(water_total).state / 264.2;
 
   - platform: template
-    name: ${device_name}_gas_meter_total_m3
+    name: "Gas Meter Total (m³)"
     icon: mdi:fire
     device_class: gas
     state_class: total_increasing
@@ -127,7 +127,7 @@ climate:
 
   # https://esphome.io/components/climate/thermostat.html
   - platform: thermostat
-    name: ${device_name}_thermostat
+    name: "Thermostat Controller"
     id: thermo
     sensor: temp
     min_cooling_off_time: 60s
@@ -135,10 +135,10 @@ climate:
     min_idle_time: 60s
     cool_action:
       - logger.log: "Thermostat : Cool Action, Turning Relay On."
-      - switch.turn_on: relay_0
+      - switch.turn_on: relay_1
     idle_action:
       - logger.log: "Thermostat : Idle Action, Turning Relay Off."
-      - switch.turn_off: relay_0
+      - switch.turn_off: relay_1
     default_preset: Default
     preset:
       - name: Default
