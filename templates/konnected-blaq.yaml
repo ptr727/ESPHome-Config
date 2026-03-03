@@ -62,3 +62,8 @@ sensor:
     unit_of_measurement: min
     filters:
       - lambda: return x / 60.0;
+
+# Change version sensor name
+text_sensor:
+  - id: !extend esphome_version
+    name: "Version"
