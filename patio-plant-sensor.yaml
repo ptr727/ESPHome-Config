@@ -1,0 +1,8 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: patio-plant-sensor
+  device_friendly_name: "Patio Plant Sensor"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  plt1b: !include templates/apollo-plt-1b.yaml

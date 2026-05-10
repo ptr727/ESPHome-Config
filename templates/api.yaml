@@ -2,4 +2,5 @@
 api:
   id: api_server
   reboot_timeout: 15min
-  # TODO: Add encryption key
+  encryption:
+    key: !secret api_encryption_key

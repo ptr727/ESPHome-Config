@@ -67,3 +67,8 @@ sensor:
 text_sensor:
   - id: !extend esphome_version
     name: "Version"
+
+# Add status sensor
+binary_sensor:
+  - platform: status
+    name: "Status"

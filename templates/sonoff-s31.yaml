@@ -52,7 +52,9 @@ binary_sensor:
     pin:
       number: GPIO0
       inverted: true
-      mode: INPUT_PULLUP
+      mode:
+        input: true
+        pullup: true
     # Toggle relay state on button press
     on_press:
       - switch.toggle: relay

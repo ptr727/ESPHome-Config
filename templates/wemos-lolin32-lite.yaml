@@ -28,7 +28,7 @@ esp32:
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  api: !include common.yaml
+  common: !include common.yaml
 
 # https://esphome.io/components/status_led.html
 status_led:

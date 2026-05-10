@@ -2,97 +2,49 @@
 # device_name
 # rgb_led_pin, e.g. GPIO38
 
-# https://esphome.io/components/external_components.html
-external_components:
+# Optional substitutions:
+# system_status_led_brightness (default "50%")
+# blink_on_off_time            (default "200ms")
 
-  # TODO: Add RGB LED for status_indicator
-  # https://github.com/esphome/esphome/pull/5814
-  - source: github://pr#5814
-    components: [ status_indicator, wifi ]
+# RGB status LED driven by Flo-R1der's prioritized status package.
+# Package handles boot/wifi/API state colors automatically; consumers can also
+# call `script.execute: led_working_status_<color>` / `led_feedback_blink_<color>`
+# from their own configs. See package README for full color/effect catalog.
+# https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  flo_r1der_status_led: github://Flo-R1der/ESPHome_RGB-Status-LED_Package/status_led_package.yaml@main
 
 # https://esphome.io/components/light/
 light:
 
   # https://esphome.io/components/light/esp32_rmt_led_strip
   - platform: esp32_rmt_led_strip
-    name: "RGB LED"
-    id: rgb_led
-    disabled_by_default: true
-    entity_category: config
-    rgb_order: GRB
+    id: system_status_led  # required name for Flo-R1der package
+    name: "Status LED"
     pin: ${rgb_led_pin}
+    rgb_order: GRB
     num_leds: 1
-    rmt_channel: 0
     chipset: WS2812
+    disabled_by_default: true
+    default_transition_length: 200ms
+    restore_mode: ALWAYS_OFF
+    icon: mdi:led-outline
+    entity_category: diagnostic
 
     # https://esphome.io/components/light/#light-effects
+    # Effect names match what the Flo-R1der package expects (case-sensitive).
     effects:
       - pulse:
-          name: slow_pulse
-          transition_length: 250ms
-          update_interval: 250ms
-          min_brightness: 25%
-          max_brightness: 50%
+          name: "Fast Pulse"
+          update_interval: 400ms
+          max_brightness: ${system_status_led_brightness}
       - pulse:
-          name: fast_pulse
-          transition_length: 100ms
-          update_interval: 100ms
-          min_brightness: 25%
-          max_brightness: 50%
-
-# https://github.com/esphome/esphome/pull/5814
-status_indicator:
-  on_turn_off:
-    then:
-    - light.turn_on:
-        id: rgb_led
-        red: 0%
-        green: 100%
-        blue: 0%
-        brightness: 25%
-        effect: none
-  on_app_error:
-    then:
-    - light.turn_on:
-        id: rgb_led
-        red: 100%
-        green: 0%
-        blue: 0%
-        brightness: 50%
-        effect: none
-  on_app_warning:
-    then:
-    - light.turn_on:
-        id: rgb_led
-        red: 100%
-        green: 0%
-        blue: 0%
-        brightness: 50%
-        effect: slow_pulse
-  on_wifi_ap_enabled:
-    then:
-    - light.turn_on:
-        id: rgb_led
-        red: 100%
-        green: 100%
-        blue: 50%
-        brightness: 50%
-        effect: none
-  on_network_disconnected:
-    then:
-    - light.turn_on:
-        id: rgb_led
-        red: 100%
-        green: 0%
-        blue: 0%
-        brightness: 50%
-        effect: fast_pulse
-  on_api_disconnected:
-    then:
-    - light.turn_on:
-        id: rgb_led
-        red: 100%
-        green: 100%
-        blue: 0%
-        brightness: 50%
-        effect: fast_pulse
+          name: "Slow Pulse"
+          update_interval: 1s
+          max_brightness: ${system_status_led_brightness}
+      - pulse:
+          name: "Breath"
+          update_interval: 2.5s
+          max_brightness: ${system_status_led_brightness}

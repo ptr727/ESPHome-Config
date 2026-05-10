@@ -9,7 +9,7 @@
 
 esphome:
   name: n32r8v-ota-test
-  comment: "ESP32-S3-DevKitC-1-N32R8V Test Device"
+  friendly_name: "ESP32-S3-DevKitC-1-N32R8V Test Device"
   on_boot:
     then:
       # Change boot up LED colors to test if firmware changed

@@ -72,10 +72,12 @@ sensor:
   - platform: max17048
     battery_voltage:
       name: "Battery Voltage"
+      device_class: voltage
     battery_level:
       name: "Battery Level"
     rate:
       name: "Battery Discharge Rate"
+      device_class: ""
 
 # https://esphome.io/components/switch/
 switch:

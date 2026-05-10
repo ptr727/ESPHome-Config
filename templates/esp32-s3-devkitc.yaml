@@ -40,14 +40,10 @@ esp32:
 
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
-    # TODO: Need to use the latest version of IDF framework else we get boot crash loops
     type: esp-idf
-    # TODO: "latest" for platform_version is not supported, need an exact version number
-    # https://registry.platformio.org/platforms/platformio/espressif32/versions
-    platform_version: 6.7.0
-    # TODO: "latest" for version does not use the latest version, it uses the version matching the platform_release version
-    # https://registry.platformio.org/tools/platformio/framework-espidf
-    version: 5.2.1
+    # No platform_version / version pin: prefer "latest" per repo policy. If next
+    # ESPHome upgrade reintroduces the boot crash loops we hit on platform_version
+    # < 6.7.0 / esp-idf < 5.2.1, pin again here.
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
