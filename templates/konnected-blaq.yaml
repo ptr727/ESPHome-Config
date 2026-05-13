@@ -19,6 +19,9 @@ substitutions:
   # Used by garage-door-GDOv2-Q.yaml
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  # Per-device override; 0s disables wifi-loss reboot loops on the
+  # Sec+ garage controller (boot-window UART glitch hazard).
+  wifi_reboot_timeout: 15min
 
 # https://esphome.io/components/esphome
 esphome:
@@ -29,7 +32,20 @@ esphome:
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
   # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
-  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml@master
+  #
+  # PINNED to commit 501c37e (2026-05-07, gdolib v1.0.0). Do NOT move back to
+  # @master until the gdolib v1.1.0 spurious-trigger regression is fixed
+  # upstream. Tracking:
+  #   - https://github.com/ptr727/ESPHome-Config/issues/29
+  #     (door opened by itself; mechanism analysis)
+  #   - https://github.com/konnected-io/konnected-esphome/issues/93
+  #     (independent corroboration: random reboots + spurious openings)
+  #   - https://github.com/konnected-io/konnected-esphome/commit/536e2dd
+  #     (the upstream commit that bumped gdolib v1.0.0 -> v1.1.0 and
+  #     rewrote gdo_door_move_to_target to route through gdo_door_open /
+  #     gdo_door_close — meaning a "set position" call can issue a direct
+  #     OPEN/CLOSE on the Sec+ wire at runtime)
+  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml@501c37e
   api: !include api.yaml
   logger: !include logger.yaml
   ota: !include ota.yaml
@@ -49,7 +65,7 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   domain: !secret wifi_domain
-  reboot_timeout: 15min
+  reboot_timeout: ${wifi_reboot_timeout}
   min_auth_mode: WPA2
 logger:
   level: !remove

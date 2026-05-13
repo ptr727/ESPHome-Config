@@ -1,6 +1,11 @@
 # https://esphome.io/components/api
+substitutions:
+  # Default for shared devices; override per-device when a reboot loop is
+  # more dangerous than a stale HA connection (e.g. Sec+ garage controller).
+  api_reboot_timeout: 15min
+
 api:
   id: api_server
-  reboot_timeout: 15min
+  reboot_timeout: ${api_reboot_timeout}
   encryption:
     key: !secret api_encryption_key
