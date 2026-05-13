@@ -1,10 +1,10 @@
 substitutions:
   device_name: esp32-nodemcu-test
-  device_comment: "ESP-WROOM-32 NodeMCU Test Device"
+  device_friendly_name: "ESP32 NodeMCU Test"
 
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   platform: ESP32
   board: nodemcu-32s
 

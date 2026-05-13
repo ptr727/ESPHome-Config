@@ -1,3 +1,7 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # Notes:
 
 # Timeline:
@@ -165,14 +169,11 @@
 ## microSD card IO is not yet supported
 ## https://github.com/esphome/feature-requests/issues/513
 
-# Required substitutions:
-# device_name
-# device_comment
 
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   on_boot:
     - priority: 600
       then:
@@ -264,7 +265,7 @@ sensor:
   # https://esphome.io/components/sensor/adc.html
   - platform: adc
     pin: GPIO36
-    name: ${device_name}_adc_buttons
+    name: "ADC Buttons"
     id: adc_buttons
     attenuation: 12db
     update_interval: never
@@ -291,27 +292,27 @@ switch:
 
   # https://esphome.io/components/switch/gpio.html
   - platform: gpio
-    name: ${device_name}_relay_0
-    id: relay_0
+    name: "Relay 1"
+    id: relay_1
     pin:
       number: GPIO2
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_1
-    id: relay_1
+    name: "Relay 2"
+    id: relay_2
     pin: GPIO4
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_2
-    id: relay_2
+    name: "Relay 3"
+    id: relay_3
     pin:
       number: GPIO12
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
   - platform: gpio
-    name: ${device_name}_relay_3
-    id: relay_3
+    name: "Relay 4"
+    id: relay_4
     pin: GPIO13
     restore_mode: ALWAYS_OFF
 
@@ -320,15 +321,15 @@ binary_sensor:
 
   # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
   - platform: analog_keypad
-    name: ${device_name}_button_up
+    name: "Button Up"
     id: button_up
     key: U
   - platform: analog_keypad
-    name: ${device_name}_button_down
+    name: "Button Down"
     id: button_down
     key: D
   - platform: analog_keypad
-    name: ${device_name}_button_enter
+    name: "Button Enter"
     id: button_enter
     key: E
 

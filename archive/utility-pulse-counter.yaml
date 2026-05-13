@@ -7,12 +7,12 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
   device_name: utility-pulse-counter
-  device_comment: "ESP-WROOM-32UE Utility Meter Pulse Counter"
+  device_friendly_name: "Utility Pulse Counter"
 
 # https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   platform: ESP32
   board: nodemcu-32s
 
@@ -46,14 +46,14 @@ sensor:
       falling_edge: INCREMENT
     internal_filter: 100ms
     unit_of_measurement: 'gal/min'
-    name: ${device_name}_water_meter
+    name: "Water Meter"
     icon: 'mdi:water'
     # device_class: 'water'
     # state_class: 'measurement'
     filters:
       - multiply: 10
     total:
-      name: ${device_name}_water_meter_total
+      name: "Water Meter Total"
       icon: 'mdi:water'
       device_class: 'water'
       state_class: 'total_increasing'
@@ -74,14 +74,14 @@ sensor:
       falling_edge: INCREMENT
     internal_filter: 100ms
     unit_of_measurement: 'ft³/min'
-    name: ${device_name}_gas_meter
+    name: "Gas Meter"
     icon: 'mdi:fire'
     # device_class: 'gas'
     # state_class: 'measurement'
     filters:
       - multiply: 10
     total:
-      name: ${device_name}_gas_meter_total
+      name: "Gas Meter Total"
       icon: 'mdi:fire'
       device_class: 'gas'
       state_class: 'total_increasing'
@@ -92,7 +92,7 @@ sensor:
 
   # https://esphome.io/components/sensor/template.html
   - platform: template
-    name: ${device_name}_water_meter_total_m3
+    name: "Water Meter Total (m³)"
     icon: 'mdi:water'
     device_class: 'water'
     state_class: 'total_increasing'
@@ -103,7 +103,7 @@ sensor:
       return id(water_total).state / 264.2;
 
   - platform: template
-    name: ${device_name}_gas_meter_total_m3
+    name: "Gas Meter Total (m³)"
     icon: 'mdi:fire'
     device_class: 'gas'
     state_class: 'total_increasing'
