@@ -1,11 +1,11 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: hot-water-recirc-pump
-  device_comment: "Sonoff TH10 Hot Water Recirculation Pump Controller"
+  device_name: recirculation-pump-controller
+  device_friendly_name: "Recirculation Pump Controller"
   recirc_interval: 30min
   recirc_duration: 2min
-  target_temperature_low: '35.0' # ~95F
-  target_temperature_high: '45.0' # ~113F
+  target_temperature_low: "35.0" # ~95F
+  target_temperature_high: "45.0" # ~113F
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
@@ -14,8 +14,6 @@ packages:
 # https://esphome.io/components/esphome
 esphome:
   on_boot:
-    # TODO: After firmware upgrade, or HA unavailable, mode turns to off, and needs to be manually set to heat in HA?
-    # Set to heat mode on startup
     - priority: -100
       then:
         - climate.control:
@@ -28,7 +26,7 @@ sensor:
   # https://esphome.io/components/sensor/dallas_temp.html
   - platform: dallas_temp
     address: 0x05011455296AAA28
-    name: ${device_name}_recirc_temp
+    name: "Recirculation Temperature"
     id: recirc_temp
     update_interval: 15s
     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
@@ -38,7 +36,7 @@ sensor:
           window_size: 3
   - platform: dallas_temp
     address: 0x54011455087FAA28
-    name: ${device_name}_hot_temp
+    name: "Hot Water Temperature"
     id: hot_temp
     update_interval: 15s
     filters:
@@ -47,7 +45,7 @@ sensor:
           window_size: 3
   - platform: dallas_temp
     address: 0x5E01145529F7AA28
-    name: ${device_name}_cold_temp
+    name: "Cold Water Temperature"
     id: cold_temp
     update_interval: 15s
     filters:
@@ -56,7 +54,7 @@ sensor:
           window_size: 3
   - platform: dallas_temp
     address: 0xEC011454E099AA28
-    name: ${device_name}_ambient_temp
+    name: "Ambient Temperature"
     id: ambient_temp
     update_interval: 15s
     filters:
@@ -69,7 +67,7 @@ climate:
 
   # https://esphome.io/components/climate/bang_bang.html
   - platform: bang_bang
-    name: ${device_name}_bangbang
+    name: "Bang Bang Controller"
     id: bangbang
     sensor: recirc_temp
     # https://github.com/esphome/issues/issues/2270

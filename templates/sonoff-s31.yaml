@@ -1,6 +1,6 @@
 # Required substitutions:
 # device_name
-# device_comment
+# device_friendly_name
 
 # https://tasmota.github.io/docs/devices/Sonoff-S31/
 # https://templates.blakadder.com/sonoff_S31.html
@@ -15,7 +15,7 @@
 # https://esphome.io/components/esphome.html
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 # https://esphome.io/components/esp8266
 esp8266:
@@ -46,13 +46,15 @@ binary_sensor:
 
   # https://esphome.io/components/binary_sensor/gpio.html
   - platform: gpio
-    name: ${device_name}_button
+    name: "Button"
     device_class: power
     # https://esphome.io/guides/configuration-types.html#config-pin-schema
     pin:
       number: GPIO0
       inverted: true
-      mode: INPUT_PULLUP
+      mode:
+        input: true
+        pullup: true
     # Toggle relay state on button press
     on_press:
       - switch.toggle: relay
@@ -62,7 +64,7 @@ switch:
 
   # https://esphome.io/components/switch/gpio.html
   - platform: gpio
-    name: ${device_name}_relay
+    name: "Relay"
     id: relay
     pin: GPIO12
     # Off on power-on
@@ -79,20 +81,20 @@ sensor:
   # https://esphome.io/components/sensor/cse7766.html
   - platform: cse7766
     current:
-      name: ${device_name}_current
+      name: "Current"
       filters:
         - throttle_average: 15s
     voltage:
-      name: ${device_name}_voltage
+      name: "Voltage"
       filters:
         - throttle_average: 15s
     power:
       id: wattage
-      name: ${device_name}_power
+      name: "Power"
       filters:
         - throttle_average: 15s
 
   # https://esphome.io/components/sensor/total_daily_energy.html
   - platform: total_daily_energy
-    name: ${device_name}_total_daily_energy
+    name: "Total Daily Energy"
     power_id: wattage

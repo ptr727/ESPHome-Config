@@ -1,11 +1,11 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # Konnected blaQ Garage Door Controller
 # https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
 # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
 # https://github.com/konnected-io/konnected-esphome/tree/master/components/secplus_gdo
-
-# Required substitutions:
-# device_name
-# device_comment
 
 # WARNING Using `cover.COVER_SCHEMA` is deprecated and will be removed in ESPHome 2025.11.0.
 # Please use `cover.cover_schema(...)` instead.
@@ -18,50 +18,73 @@
 substitutions:
   # Used by garage-door-GDOv2-Q.yaml
   name: ${device_name}
-  # Set friendly_name to device_name
-  # https://community.konnected.io/t/use-of-friendly-name-overrides-default-device-name-in-entity-naming/39062
-  friendly_name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  # Per-device override; 0s disables wifi-loss reboot loops on the
+  # Sec+ garage controller (boot-window UART glitch hazard).
+  wifi_reboot_timeout: 15min
 
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   name_add_mac_suffix: false
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
-  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml@master
+  # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
+  #
+  # PINNED to commit 501c37e (2026-05-07, gdolib v1.0.0). Do NOT move back to
+  # @master until the gdolib v1.1.0 spurious-trigger regression is fixed
+  # upstream. Tracking:
+  #   - https://github.com/ptr727/ESPHome-Config/issues/29
+  #     (door opened by itself; mechanism analysis)
+  #   - https://github.com/konnected-io/konnected-esphome/issues/93
+  #     (independent corroboration: random reboots + spurious openings)
+  #   - https://github.com/konnected-io/konnected-esphome/commit/536e2dd
+  #     (the upstream commit that bumped gdolib v1.0.0 -> v1.1.0 and
+  #     rewrote gdo_door_move_to_target to route through gdo_door_open /
+  #     gdo_door_close — meaning a "set position" call can issue a direct
+  #     OPEN/CLOSE on the Sec+ wire at runtime)
+  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml@501c37e
   api: !include api.yaml
   logger: !include logger.yaml
   ota: !include ota.yaml
   time: !include time.yaml
-  wifi: !include wifi.yaml
+  # TODO: Is there a way to include packages again after removing some items?
+  # wifi: !include wifi.yaml
 
-# Remove unwanted items from gdov2q package
+# Remove unwanted items included by gdov2q package
 esp32_improv: !remove
 dashboard_import: !remove
 web_server: !remove
 improv_serial: !remove
 captive_portal: !remove
 wifi:
-  # Remove AP fallback
   ap: !remove
-# ERROR Error while reading config: The local log level VERBOSE for esp-idf must be less severe than the global log level DEBUG
+  # Add wifi configuration back after removing AP mode
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+  reboot_timeout: ${wifi_reboot_timeout}
+  min_auth_mode: WPA2
 logger:
-  # Inherit from default logger level
+  level: !remove
   logs: !remove
 
-# Remove device_class: signal_strength from wifi_signal_pct, set device_class: ""
-# https://github.com/konnected-io/konnected-esphome/issues/76
+# Change uptime sensor to minutes
 sensor:
-  - id: !extend wifi_signal_pct
-    device_class: ""
+  - id: !extend uptime_sensor
+    name: "Uptime"
+    unit_of_measurement: min
+    filters:
+      - lambda: return x / 60.0;
 
-# TODO:
-# WARNING Found and merged multiple configurations for ota platform esphome port(s) [3232]
+# Change version sensor name
+text_sensor:
+  - id: !extend esphome_version
+    name: "Version"
 
-# TODO: https://github.com/konnected-io/konnected-esphome/issues/84
-#/cache/data/packages/8735b6a9/packages/mdns.yaml: In lambda function:
-#/cache/data/packages/8735b6a9/packages/mdns.yaml:14:14: error: 'USE_WEBSERVER_PORT' was not declared in this scope
-#   14 |       txt:
-#      |              ^
+# Add status sensor
+binary_sensor:
+  - platform: status
+    name: "Status"

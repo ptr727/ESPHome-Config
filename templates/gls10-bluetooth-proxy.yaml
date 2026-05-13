@@ -1,3 +1,7 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
 # https://www.gl-inet.com/products/gl-s10/
 # https://static.gl-inet.com/www/images/products/datasheet/s10_datasheet_20230602.pdf
 # https://blakadder.com/gl-s10/
@@ -7,10 +11,6 @@
 # Warning: Do not connect USB power and POE power at the same time!
 
 # Board Tested: GL-S10-v2.1 / 2022-05-05
-
-# Required substitutions:
-# device_name
-# device_comment
 
 # ESP32-D0WD, 4MB Flash, 8MB PSRAM
 # TODO: No PSRAM detected
@@ -34,7 +34,7 @@
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
   on_boot:
     then:
       - output.turn_on: power_led

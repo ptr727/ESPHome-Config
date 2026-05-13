@@ -1,0 +1,29 @@
+# STATUS (2026-05-13): Controller is physically powered off. Do not re-energize
+# or re-flash until the upstream gdolib v1.1.0 spurious-trigger regression is
+# resolved. See:
+#   - https://github.com/ptr727/ESPHome-Config/issues/29
+#   - https://github.com/konnected-io/konnected-esphome/issues/93
+#   - templates/konnected-blaq.yaml (pin comment)
+# Two distinct hazards stack here:
+#   1. Boot-window: GPIO1 (Sec+ UART TX) is uncontrolled between esp_restart()
+#      and secplus_gdo::setup(). The upstream component clamps it inside the
+#      panic handler only, not on clean reboots — so every reboot is a chance
+#      for a spurious wall-button press to be decoded by the opener.
+#   2. Runtime (gdolib v1.1.0): the new gdo_door_move_to_target() routes
+#      through gdo_door_open/close, which can issue a direct OPEN or CLOSE
+#      command on the Sec+ wire at runtime. Pin in konnected-blaq.yaml
+#      reverts gdolib to v1.0.0, but before re-flashing the Sec+ wire MUST
+#      be physically disconnected from the opener terminals to avoid (1).
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: garage-door-controller
+  device_friendly_name: "Garage Door Controller"
+  # See top-of-file STATUS block. The reboot_timeout 0s settings remove the
+  # ~96 reboots/day boot-window hazard whenever HA is unreachable.
+  api_reboot_timeout: "0s"
+  wifi_reboot_timeout: "0s"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  blaq: !include templates/konnected-blaq.yaml

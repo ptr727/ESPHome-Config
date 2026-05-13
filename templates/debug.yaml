@@ -10,9 +10,9 @@ text_sensor:
   # https://esphome.io/components/debug
   - platform: debug
     device:
-      name: ${device_name}_device_info
+      name: "Device Info"
     reset_reason:
-      name: ${device_name}_reset_reason
+      name: "Reset Reason"
 
 # https://esphome.io/components/sensor
 sensor:
@@ -20,4 +20,4 @@ sensor:
   # https://esphome.io/components/debug
   - platform: debug
     free:
-      name: ${device_name}_heap_free
+      name: "Heap Free"

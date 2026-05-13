@@ -1,10 +1,10 @@
 substitutions:
   device_name: m5stack-core-test
-  device_comment: "M5Stack Test Device"
+  device_friendly_name: "M5Stack Test Device"
 
 esphome:
   name: ${device_name}
-  comment: ${device_comment}
+  friendly_name: ${device_friendly_name}
 
 esp32:
   board: m5stack-core-esp32
