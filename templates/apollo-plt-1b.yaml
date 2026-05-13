@@ -13,6 +13,13 @@ substitutions:
   # Apollo's PLT-1B.yaml expects these for esphome.name / friendly_name
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  # Apollo's Core.yaml defines `version: "26.3.2.1"` and PLT-1B.yaml threads
+  # it into both `esphome.project.version` (removed below) and the
+  # `apollo_firmware_version` text_sensor state. Override to a static local
+  # value so the ESPHome Update Manager (EUM) has nothing to compare
+  # against and the firmware version sensor reports a fork-owned string.
+  # See: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
+  version: "0.0.0"
 
 # https://esphome.io/components/esphome
 esphome:
@@ -21,6 +28,14 @@ esphome:
   name_add_mac_suffix: false
   # Apollo's PLT-1B.yaml hardcodes `comment: Apollo PLT-1B`; drop it.
   comment: !remove
+  # Remove Apollo's `project:` block (name=ApolloAutomation.PLT-1B,
+  # version=${version}) so EUM cannot see an upstream project identity to
+  # force-install updates against. Safe here because Apollo's upstream
+  # never references ESPHOME_PROJECT_NAME / ESPHOME_PROJECT_VERSION macros
+  # (verified: no hits across Integrations/ESPHome/). The konnected-blaq
+  # template can't do the same because Konnected's core-esp32-s3.yaml and
+  # mdns.yaml reference those macros in lambdas.
+  project: !remove
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
