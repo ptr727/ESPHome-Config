@@ -7,27 +7,16 @@
 # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
 # https://github.com/konnected-io/konnected-esphome/tree/master/components/secplus_gdo
 
-# WARNING Using `cover.COVER_SCHEMA` is deprecated and will be removed in ESPHome 2025.11.0.
-# Please use `cover.cover_schema(...)` instead.
-# WARNING Using `lock.LOCK_SCHEMA` is deprecated and will be removed in ESPHome 2025.11.0.
-# Please use `lock.lock_schema(...)` instead.
-# If you are seeing this, report an issue to the external_component author and ask them to update it.
-# https://developers.esphome.io/blog/2025/05/14/_schema-deprecations/.
-# Component using this schema: secplus_gdo
+# Imports Konneckted's full firmware package and surgically strips stock-provisioning concerns.
 
 substitutions:
   # Used by garage-door-GDOv2-Q.yaml
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-  # Per-device override; 0s disables wifi-loss reboot loops on the
-  # Sec+ garage controller (boot-window UART glitch hazard).
+  # Per-device override; 0s disables reboot loop that can result in sec1+ UART glitch opening the door.
   wifi_reboot_timeout: 15min
-  # Override upstream's project_name / project_version so the ESPHome
-  # Update Manager (EUM) has no upstream-controlled version to compare
-  # against. Defense in depth alongside the @501c37e pin below: even if
-  # the pin is moved or removed, EUM's force-install path cannot fire
-  # for this device because yaml_v will never exceed device_v. See:
-  #   https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
+  # Remove project versions so ESPHome Update Manager does not auto update
+  # TODO: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
   #
   # NOTE: we cannot `!remove` the entire `esphome.project:` block here the
   # way templates/apollo-plt-1b.yaml does. Konnected's upstream packages
@@ -63,8 +52,8 @@ packages:
   # Konnected maintainer's reply at konnected-io/konnected-esphome#112
   # narrows the field of candidate causes:
   #   - The "GPIO1 boot-window UART glitch" theory applies only to
-  #     Security+ 1.0 openers. This is a Sec+ 2.0 (LiftMaster 8500,
-  #     yellow learn button), so that mechanism is ruled out here.
+  #     Security+ 1.0 openers. This is a Sec+ 1.0 (LiftMaster 8500,
+  #     square learn button).
   #   - gdolib v1.1.0's only changes are inside gdo_door_move_to_target;
   #     it cannot misbehave unless that function is called. Incident 1
   #     had HA disconnected (no caller possible) and Incident 2 had no
@@ -84,8 +73,6 @@ packages:
   logger: !include logger.yaml
   ota: !include ota.yaml
   time: !include time.yaml
-  # TODO: Is there a way to include packages again after removing some items?
-  # wifi: !include wifi.yaml
 
 # Remove unwanted items included by gdov2q package
 esp32_improv: !remove

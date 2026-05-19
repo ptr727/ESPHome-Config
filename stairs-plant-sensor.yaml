@@ -1,7 +1,7 @@
 # https://esphome.io/guides/configuration-types.html#substitutions
 substitutions:
-  device_name: patio-plant-sensor
-  device_friendly_name: "Patio Plant Sensor"
+  device_name: stairs-plant-sensor
+  device_friendly_name: "Stairs Plant Sensor"
   sleep_duration_hours: "1"
   prevent_sleep_default: "ON"
 
