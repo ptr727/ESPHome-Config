@@ -3,24 +3,32 @@
 # device_friendly_name
 
 # Apollo PLT-1B Plant Sensor
-# Imports Apollo's full firmware package and surgically strips stock-provisioning
-# concerns. Mirrors the pattern in templates/konnected-blaq.yaml.
 # https://apolloautomation.com/products/plt-1
 # https://github.com/ApolloAutomation/PLT-1
 # https://wiki.apolloautomation.com/products/plt1b/introduction/
+# https://wiki.apolloautomation.com/products/plt1/examples/flower-card/
+
+# Imports Apollo's full firmware package and surgically strips stock-provisioning concerns.
 
 substitutions:
   # Apollo's PLT-1B.yaml expects these for esphome.name / friendly_name
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  # Remove project versions so ESPHome Update Manager does not auto update
+  # TODO: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
+  version: "0.0.0"
+  # Default sleep duration and prevent sleep state if not already set in NVS, else HA owns runtime config.
+  sleep_duration_hours: "12"
+  prevent_sleep_default: "ON"
 
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   name_add_mac_suffix: false
-  # Apollo's PLT-1B.yaml hardcodes `comment: Apollo PLT-1B`; drop it.
   comment: !remove
+  # Remove Apollo's `project:` block
+  project: !remove
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
@@ -28,11 +36,6 @@ packages:
   time: !include time.yaml
 
 # Strip stock-firmware provisioning + the HA-side update entity.
-# We do NOT !remove `http_request:` or the `ota:` block as a whole because
-# Apollo's `ota:` includes a `platform: http_request` entry (id: ota_managed)
-# that requires `http_request:` to compile. Removing `update:` is enough to
-# kill the misleading "update available" HA entity that pointed at Apollo's
-# stock-firmware manifest.
 dashboard_import: !remove
 improv_serial:    !remove
 esp32_improv:     !remove
@@ -51,20 +54,26 @@ wifi:
   min_auth_mode: WPA2
 
 # Extend Apollo's existing esphome OTA entry (id: ota_esphome) to add our password.
-# Apollo's other OTA platform (http_request, id: ota_managed) sits inert without `update:`.
 ota:
   - id: !extend ota_esphome
     password: !secret ota_password
 
-# Extend Apollo's api: with encryption (merges with their reboot_timeout,
-# on_client_connected handler, and play_buzzer action)
+# Extend Apollo's api: with encryption
 api:
   encryption:
     key: !secret api_encryption_key
 
+# Seed Apollo's HA-exposed "Sleep Duration" number with our default first-boot value.
+number:
+  - id: !extend deep_sleep_sleep_duration
+    initial_value: ${sleep_duration_hours}
+
+# Seed Apollo's HA-exposed "Prevent Sleep" switch with our default first-boot state.
+switch:
+  - id: !extend prevent_sleep
+    restore_mode: RESTORE_DEFAULT_${prevent_sleep_default}
+
 # Match templates/basic.yaml convention for the Apollo-supplied uptime + status sensors.
-# Apollo's text_sensor.version and button.restart have no upstream id so they keep
-# their names "ESPHome Version" / "ESP Reboot".
 sensor:
   - id: !extend sys_uptime
     name: "Uptime"
