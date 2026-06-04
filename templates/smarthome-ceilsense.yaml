@@ -1,0 +1,130 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
+# SmartHomeShop CeilSense v1 Complete (WiFi, LD2412 + SCD4x)
+# https://ceilsense.nl/en/
+# https://docs.smarthomeshop.io/en/ceilsense/ceilsense-index-en
+# https://github.com/smarthomeshop/ceilsense
+# https://github.com/smarthomeshop/ceilsense/tree/main/ceilsense-v1
+
+# Imports SmartHomeShop's firmware sub-packages and surgically strips the
+# cloud-app / project-based-OTA / stock-provisioning concerns.
+#
+# We assemble the device from base.yaml + the ld2412 + scd4x packages directly
+# instead of importing the vendor's `ceilsense-complete-wifi-ld2412.yaml` entry
+# point. That entry point also pulls in `wifi.yaml`, whose on_boot calls the
+# `ble.disable` action and pulls in the Improv/BLE provisioning stack. on_boot
+# entries are an un-id'd list, so a single one can't be `!remove`d; importing the
+# sub-packages and supplying our own `wifi:` + boot phase lets us drop Bluetooth
+# entirely (no esp32_ble, no Improv, no captive portal) rather than disabling it
+# after boot. base.yaml + the two sensor packages contain no BLE references.
+
+substitutions:
+  # base.yaml expects these for esphome.name / friendly_name
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  name_add_mac_suffix: false
+  # Remove SmartHomeShop's `project:` block so ESPHome Update Manager does not
+  # auto update. Safe here: nothing in base/ld2412/scd4x references the
+  # ESPHOME_PROJECT_NAME/VERSION compile-time macros (the Software Version text
+  # sensor uses the `${project_version}` substitution, not the macro), unlike
+  # templates/konnected-blaq.yaml which must keep the block and override the
+  # version substitution instead.
+  # TODO: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
+  project: !remove
+  # Replacement for wifi.yaml's boot phase 1 (which we no longer import), minus
+  # the BLE bits: start the status-LED loading animation and wait for WiFi. The
+  # remaining self-test phases (LD2412 / SCD4x / BH1750 / BMP3xx) come from the
+  # sub-packages' own on_boot entries.
+  on_boot:
+    - priority: 600
+      then:
+        - lambda: 'id(startup_phase) = 1;'
+        - light.turn_on:
+            id: status_led
+            brightness: 80%
+            effect: "Circular Loading Effect"
+        - wait_until:
+            condition:
+              wifi.connected:
+            timeout: 30s
+
+# https://esphome.io/guides/configuration-types.html#packages
+# The vendor's complete-wifi-ld2412 variant is just base.yaml + these two sensor
+# packages + wifi.yaml; we take all but wifi.yaml (see header) and add our own.
+packages:
+  base:   github://smarthomeshop/ceilsense/ceilsense-v1/base.yaml@main
+  ld2412: github://smarthomeshop/ceilsense/ceilsense-v1/packages/ld2412.yaml@main
+  scd4x:  github://smarthomeshop/ceilsense/ceilsense-v1/packages/scd4x.yaml@main
+  time: !include time.yaml
+
+# Strip the web UI + the HA-side http_request firmware-update entity (whole-key
+# removals from base.yaml).
+web_server:   !remove
+update:       !remove   # http_request firmware-update entity (id: firmware_update)
+http_request: !remove   # only consumed by `update` + the ota_http_request platform, both removed
+
+# Extend base.yaml's esphome OTA entry (id: ota_esphome) to add our password,
+# and drop the http_request OTA platform (depends on the removed http_request).
+ota:
+  - id: !extend ota_esphome
+    password: !secret ota_password
+  - id: !remove ota_http_request
+
+# Extend base.yaml's bare api: with encryption.
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Remove the cloud/local "Firmware Variant" selector. Removed by id, not as a
+# whole key, because packages/ld2412.yaml adds its own selects to this list.
+select:
+  - id: !remove firmware_selector
+
+# Remove the "CeilSense Firmware Update" button. Removed by id so the restart /
+# factory-reset / LD2412 / SCD4x buttons in the same list stay.
+button:
+  - id: !remove update_firmware
+
+# Remove the glue script that drives the firmware selector/update (references
+# firmware_selector + firmware_update, both removed above).
+script:
+  - id: !remove sync_selected_firmware_source
+
+# Remove base.yaml's "Disable Bluetooth after boot" switch - it only gated
+# wifi.yaml's now-absent ble.disable call, and we run no Bluetooth at all. The
+# "LD2412 Debug Mode" switch in the same list stays.
+switch:
+  - id: !remove ble_disable_after_boot
+
+# Local-environment WiFi (base.yaml supplies no wifi: of its own).
+wifi:
+  ssid:     !secret wifi_ssid
+  password: !secret wifi_password
+  domain:   !secret wifi_domain
+  reboot_timeout: 15min
+  min_auth_mode: WPA2
+
+# Match templates/basic.yaml convention: Uptime in minutes + API-connected
+# Status, plus the WiFi Signal diagnostic that wifi.yaml used to provide.
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    unit_of_measurement: min
+    filters:
+      - lambda: return x / 60.0;
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    entity_category: diagnostic
+    disabled_by_default: true
+
+binary_sensor:
+  - platform: status
+    name: "Status"
