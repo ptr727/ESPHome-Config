@@ -1,23 +1,18 @@
 # ESPHome-Config
 
-[ESPHome](https://esphome.io) configuration, templates, and projects.
+[ESPHome](https://esphome.io) configuration, templates, and home automation projects.
 
-## Support
+## About
 
-For ESPHome support visit [Discord `#general-support`](https://discord.gg/dbwxp5R3).  
-Only file an [issue](https://github.com/ptr727/ESPHome-Config/issues) if you believe there is a bug in a [template](/templates/) or one of my projects.  
+A collection of ESPHome hardware templates and projects I use in my home automation setup.
 
 ## Templates
 
-A [collection](./templates/) of utility and device specific configuration templates.  
-Some templates are customized based on other people's work, see YML files for source references.
+A [collection](./templates/) of utility and device-specific configuration templates.
+
+Note that for devices with native ESPHome factory firmware, I opt to strip out the generic project and [Improv](https://www.improv-wifi.com/) configuration in favor of a custom configuration specific to my environment. This also cuts down on resource utilization by removing unused features.
 
 ### Device Templates
-
-#### TuyaConvert
-
-- Generic bootstrap [template](./tuya-convert.yaml) used when converting Tuya devices to ESPHome using TuyaConvert.
-- See blog [post](https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/) for firmware conversion details.
 
 #### Ayococr X5P WiFi Plug
 
@@ -32,7 +27,7 @@ Some templates are customized based on other people's work, see YML files for so
 
 #### Sonoff TH10/TH16 WiFi Relay
 
-- [Template](/templates/sonoff-th10.yaml) for the [Sonoff TH10](https://www.amazon.com/Sonoff-Temperature-Monitoring-Assistant-DS18B20/dp/B08DFQ2NP3) and [Sonoff TH16](https://www.amazon.com/Sonoff-Temperature-Humidity-Monitoring-Assistant/dp/B07TF5SYGL) WiFi relay.
+- [Template](./templates/sonoff-th10.yaml) for the [Sonoff TH10](https://www.amazon.com/Sonoff-Temperature-Monitoring-Assistant-DS18B20/dp/B08DFQ2NP3) and [Sonoff TH16](https://www.amazon.com/Sonoff-Temperature-Humidity-Monitoring-Assistant/dp/B07TF5SYGL) WiFi relay.
 - Follow the Tasmota [guide](https://tasmota.github.io/docs/devices/Sonoff-TH/) for flashing instructions.
 - Note: Sonoff TH10 and TH16 have been replaced by the [SONOFF TH Origin](https://itead.cc/product/sonoff-th/), see the [Tasmota Templates](https://templates.blakadder.com/sonoff_THR316.html) for pin layouts.
 
@@ -53,8 +48,8 @@ Some templates are customized based on other people's work, see YML files for so
 
 #### RocketController ASTRA DIN Controller
 
-- [Template](./templates/rocket-astra.yaml) for the [RocketController / RocketDyn ASTRA](https://rocketcontroller.com/product-category/controllers/) ESP32 DIN form factor controllers.
-- Follow the RocketController [guide](https://rocketcontroller.com/programming-astra-module-with-uart-serial-interface-for-arduino-ide-micropython-and-any-programming-language/) for flashing instructions.
+- [Template](./templates/rocket-astra.yaml) for the [RocketController / RocketDyn ASTRA](https://www.rocketcontroller.com) ESP32 DIN form factor controllers.
+- Follow the RocketController [guide](https://www.rocketcontroller.com/docs/esphome) for flashing instructions.
 
 #### Kincony KC868-ASR DIN Controller
 
@@ -69,61 +64,92 @@ Some templates are customized based on other people's work, see YML files for so
 
 #### Konnected blaQ Smart Garage Door Controller
 
-- [Template](./templates/konnected-blaq.yaml) for the [Konnected blaQ Smart Garage Door Controller](https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative).
+- [Template](./templates/konnected-blaq.yaml) for the [Konnected blaQ](https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative) smart garage door controller.
 - This is a Home Assistant friendly alternative to the Chamberlain myQ that [cut off HA access](https://www.home-assistant.io/blog/2023/11/06/removal-of-myq-integration/).
+- Imports Konnected's upstream [firmware package](https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml) and surgically strips stock provisioning, see the [template](./templates/konnected-blaq.yaml) for details.
+
+#### Apollo PLT-1B Plant Sensor
+
+- [Template](./templates/apollo-plt-1b.yaml) for the [Apollo PLT-1B](https://apolloautomation.com/products/plt-1) plant soil sensor.
+- Imports Apollo's upstream [firmware package](https://github.com/ApolloAutomation/PLT-1/blob/main/Integrations/ESPHome/PLT-1B.yaml) and surgically strips the stock provisioning, see the [template](./templates/apollo-plt-1b.yaml) for details.
+
+#### SmartHomeShop CeilSense Presence and Air Sensor
+
+- [Template](./templates/smarthome-ceilsense.yaml) for the [SmartHomeShop CeilSense v1 Complete](https://ceilsense.nl/en/) presence sensor.
+- Imports SmartHomeShop's upstream [firmware package](https://github.com/smarthomeshop/ceilsense/blob/main/ceilsense-v1/ceilsense-complete-wifi-ld2412.yaml) and surgically strips the stock provisioning, see the [template](./templates/smarthome-ceilsense.yaml) for details.
 
 ### Utility Templates
 
+Shared building-block includes, composed via `packages:` by the device templates and per-device configs:
+
+- [`api.yaml`](./templates/api.yaml) - API with encryption and a configurable `api_reboot_timeout`.
+- [`ota.yaml`](./templates/ota.yaml) - ESPHome OTA with password.
+- [`logger.yaml`](./templates/logger.yaml) - logger configuration.
+- [`time.yaml`](./templates/time.yaml) - Home Assistant time source.
+- [`wifi.yaml`](./templates/wifi.yaml) - managed WiFi credentials from secrets.
+- [`basic.yaml`](./templates/basic.yaml) - restart button plus status, uptime, and version sensors.
+- [`common.yaml`](./templates/common.yaml) - bundles the api / ota / logger / time / wifi / basic includes for a typical device.
+- [`debug.yaml`](./templates/debug.yaml) - debug component and debug text sensors.
+- [`temperature.yaml`](./templates/temperature.yaml) - on-chip internal temperature sensor.
+- [`ethernet-sensor.yaml`](./templates/ethernet-sensor.yaml) - Ethernet IP / MAC info text sensors.
+- [`secrets.yaml`](./templates/secrets.yaml) - re-exports the root `secrets.yaml` so templates can resolve secrets.
+
+Board and component helpers:
+
 - [RGB LED Status](./templates/rgb-led-status.yaml) component. Useful for boards with only a RGB LED to use as [Status LED](https://esphome.io/components/status_led.html) component equivalent.
-- [ESP32-S3-DevKitC](/templates//esp32-s3-devkitc.yaml) devkit template, and [ESP32-S3-WROOM-2-N32R8V](./templates//esp32-s3-wroom-2-n32r8v.yaml) and [ESP32-S3-WROOM-2-N16R8V](./templates/esp32-s3-wroom-2-n16r8v.yaml) board definitions for the [ESP32-S3-DevKitC](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html) boards. The default [`esp32-s3-devkit-c-1`](https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html) board only supports the `ESP32-S3-WROOM-1-N8` with 8MB Quad Flash and no PSRAM, any other board requires some customization, especially for the Octal memory boards. Includes the on-chip temperature sensor and RGB LED as status LED.
-- [WEMOS LOLIN32 Lite](./templates//wemos-lolin32-lite.yaml) devkit template for [WEMOS LOLIN32 Lite](https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite) and clone boards. Includes the LED as status LED.
-- [Adafruit ESP32-S3 Feather](./templates//adafruit-esp32-s3-feather.yaml) devkit template for the [Adafruit ESP32-S3 Feather](https://www.adafruit.com/product/5323) board. Includes the on-chip temperature sensor, RGB LED as status LED, and [MAX17048](https://www.analog.com/en/products/max17048.html) I2C battery charge monitor.
+- [ESP32-S3-DevKitC](./templates/esp32-s3-devkitc.yaml) devkit template, and [ESP32-S3-WROOM-2-N32R8V](./templates/esp32-s3-wroom-2-n32r8v.yaml) and [ESP32-S3-WROOM-2-N16R8V](./templates/esp32-s3-wroom-2-n16r8v.yaml) board definitions for the [ESP32-S3-DevKitC](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html) boards. The default [`esp32-s3-devkit-c-1`](https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html) board only supports the `ESP32-S3-WROOM-1-N8` with 8MB Quad Flash and no PSRAM, any other board requires some customization, especially for the Octal memory boards. Includes the on-chip temperature sensor and RGB LED as status LED.
+- [WEMOS LOLIN32 Lite](./templates/wemos-lolin32-lite.yaml) devkit template for [WEMOS LOLIN32 Lite](https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite) and clone boards. Includes the LED as status LED.
+- [Adafruit ESP32-S3 Feather](./templates/adafruit-esp32-s3-feather.yaml) devkit template for the [Adafruit ESP32-S3 Feather](https://www.adafruit.com/product/5323) board. Includes the on-chip temperature sensor, RGB LED as status LED, and [MAX17048](https://www.analog.com/en/products/max17048.html) I2C battery charge monitor.
 
 ## Projects
 
-### Garage Fan Thermostat
+Per-device configs live in the repository root. Each sets `substitutions:` (device name, friendly name, and any per-device overrides) and pulls in a template via `packages:`.
 
-- Project [`garage-gate-fan.yaml`](./garage-gate-fan.yaml) and [`garage-door-fan.yaml`](./garage-door-fan.yaml) configs are used to control Sonoff TH10's as thermostats for cool air ventilation in my garage.
+### Plant Sensors (Apollo PLT-1B)
+
+- [`music-room-plant-sensor.yaml`](./music-room-plant-sensor.yaml), [`patio-plant-sensor.yaml`](./patio-plant-sensor.yaml), [`stairs-plant-sensor.yaml`](./stairs-plant-sensor.yaml), and [`upstairs-hallway-plant-sensor.yaml`](./upstairs-hallway-plant-sensor.yaml) use the [Apollo PLT-1B template](./templates/apollo-plt-1b.yaml).
+
+### Garage Presence and Air Sensor (CeilSense)
+
+- [`garage-presence-sensor.yaml`](./garage-presence-sensor.yaml) uses the [SmartHomeShop CeilSense template](./templates/smarthome-ceilsense.yaml) for presence, CO2, temperature, humidity, lux, and pressure in the garage.
+
+### Garage Door Controller (Konnected blaQ)
+
+- [`garage-door-controller.yaml`](./garage-door-controller.yaml) uses the [Konnected blaQ template](./templates/konnected-blaq.yaml).
+- Note: currently powered off pending an upstream investigation into self-opening incidents, see the status block in the config and [issue #29](https://github.com/ptr727/ESPHome-Config/issues/29).
+
+### Bluetooth Proxies (GL-S10)
+
+- [`office-bluetooth-proxy.yaml`](./office-bluetooth-proxy.yaml) and [`pantry-bluetooth-proxy.yaml`](./pantry-bluetooth-proxy.yaml) use the [GL-S10 Bluetooth Proxy template](./templates/gls10-bluetooth-proxy.yaml).
+
+### Garage Fan Thermostats
+
+- [`garage-door-fan-controller.yaml`](./garage-door-fan-controller.yaml) (Sonoff TH10) and [`garage-gate-fan-controller.yaml`](./garage-gate-fan-controller.yaml) (Norvi) control cool air ventilation fans in the garage based on temperature.
 - See blog [post](https://blog.insanegenius.com/2021/08/11/trying-to-keep-my-garage-cool/) for project details.
-
-### Utility Gas and Water Meter Pulse Counter
-
-- Project [`utility-pulse-counter.yaml`](./utility-pulse-counter.yaml) config is used to measure water and gas consumption from my utility meter pulse counters.
-- See blog [post](https://blog.insanegenius.com/2021/08/09/esp32-water-and-gas-utility-meter/) for project details.
 
 ### Hot Water Recirculation Pump
 
-- Project [`hot-water-recirc-pump.yaml`](./hot-water-recirc-pump.yaml) config is used to control my whole home hot water recirculation pump using a Sonoff TH10 and several temperature probes.
+- [`recirculation-pump-controller.yaml`](./recirculation-pump-controller.yaml) (Sonoff TH10) controls the whole home hot water recirculation pump using temperature probes on an interval / duration schedule.
 - See blog [post](https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/) for project details.
 
-### TubesZB Ethernet Zigbee Coordinator
+## Usage
 
-- Project [`zigbee-coordinator.yaml`](./zigbee-coordinator.yaml) is used as my Zigbee Coordinator.
-- Customized version of the [TubesZB Ethernet Zigbee Coordinator](https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-eth_usb/firmware/esphome/tubezb-cc2652p2-ethusb-2022.yaml).
-
-### Garage Fan Thermostat and Utility Gas and Water Meter Pulse Counter
-
-- Project [`utility-counter-gate-fan.yaml`](./utility-counter-gate-fan.yaml) is used as thermostat for cool air ventilation in my garage, and to measure water and gas consumption from my utility meter pulse counters.
-
-## Docker Deployment
-
-- The standard [ESPHome](https://hub.docker.com/r/esphome/esphome) container does not support running as non-root.
-- Deploy the [ESPHome-NonRoot](https://github.com/ptr727/ESPHome-NonRoot) container for non-root operation.
+- The standard [ESPHome](https://hub.docker.com/r/esphome/esphome) container does not support running as non-root. Deploy the [ESPHome-NonRoot](https://github.com/ptr727/ESPHome-NonRoot) container for non-root operation if desired.
 - Set directory permissions:
   - `sudo chown -R nonroot:users /data/appdata/esphome`
   - `sudo chmod -R ug=rwx,o=rx /data/appdata/esphome`
-- Clone Git repository in ESPHome config folder.
+- Clone Git repository in ESPHome config folder, or copy files.
   - `cd /data/appdata/esphome/config`
   - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
-- Deploy `secrets.yaml`, use `secrets._yaml` as template.
-- In VSCode open remote SSH workspace on docker host, and open workspace from config directory.
+- Deploy `secrets.yaml`, use `secrets._yaml` as a template for required secrets.
+- In VSCode open remote SSH workspace on the docker host, and open the workspace from config directory.
 
 ## Notes
 
-### General
+### Issues
 
-- Not all [templates](./templates/) are documented here.
-- I deployed Zigbee in my home using [Z2M](https://www.zigbee2mqtt.io/) and [TubesZB](https://tubeszb.com/) Zigbee Ethernet coordinator, and no longer use ESPHome flashed smart plugs. For US smart plugs I highly recommend the [Sengled](https://www.amazon.com/gp/product/B092DBFFBY/) Zigbee power monitoring smart plugs.
+- For general ESPHome support visit the [ESPHome Discord `#general-support`](https://discord.gg/dbwxp5R3).
+- Only file an [issue](https://github.com/ptr727/ESPHome-Config/issues) if you believe there is a bug in a [template](./templates/) or one of my projects.
 
 ### Espressif32 and Framework Versions
 
