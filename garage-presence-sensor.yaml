@@ -1,0 +1,6 @@
+substitutions:
+  device_name: garage-presence-sensor
+  device_friendly_name: "Garage Presence Sensor"
+
+packages:
+  ceilsense: !include templates/smarthome-ceilsense.yaml
