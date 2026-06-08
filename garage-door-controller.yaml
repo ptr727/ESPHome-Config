@@ -1,50 +1,44 @@
-# STATUS (2026-05-13): Controller is physically powered off. Root cause for
-# the two observed self-opening incidents is NOT confirmed. Do not re-energize
-# or re-flash until upstream investigation closes. See:
-#   - https://github.com/ptr727/ESPHome-Config/issues/29        (incident report)
+# STATUS (2026-06-08): Controller remains physically POWERED OFF, intentionally.
+# Root cause CONFIRMED: the two self-opening incidents were caused by the
+# boot-window GPIO1 UART glitch (Hazard A below), not by any Konnected/gdolib
+# code change. This opener is a Security+ 1.0 unit, which is exactly the type
+# susceptible to that glitch. The reboot_timeout=0s settings mitigate the reboot
+# loop that exposed it, but a single unexpected reset can still trigger the
+# glitch on a Sec+ 1.0 opener, so the residual risk is not zero. We are keeping
+# the controller off and plan to replace the opener with a newer Security+ unit
+# that is not susceptible to this reboot glitch; this config will be re-enabled
+# against that new opener. The upstream YAML is now back on latest (no commit
+# pin). See:
+#   - https://github.com/ptr727/ESPHome-Config/issues/29           (incident report)
 #   - https://github.com/konnected-io/konnected-esphome/issues/112 (filed upstream)
 #   - https://github.com/konnected-io/konnected-esphome/issues/93  (similar pattern, older)
-#   - templates/konnected-blaq.yaml (pin comment)
 #
-# Initial theories, with corrections from Konnected maintainer
-# (heythisisnate, konnected-io/konnected-esphome#112):
+# Confirmed cause:
 #
-#   Hazard A — Boot-window GPIO1 UART glitch
-#     Theory: GPIO1 (Sec+ UART TX) is uncontrolled between esp_restart() and
-#     secplus_gdo::setup(); a stray pulse could be decoded as a wall-button
-#     press.
-#     Maintainer correction: this mechanism only triggers on Security+ 1.0
-#     openers (those latch on momentary low pulses). This is a Sec+ 2.0
-#     opener (LiftMaster 8500, yellow learn button), which does NOT trigger
-#     on a momentary pull to low or contact closure. So this theory does
-#     not explain either incident on this device.
+#   Hazard A: Boot-window GPIO1 UART glitch  (THIS IS THE CAUSE)
+#     GPIO1 (Sec+ UART TX) is uncontrolled between esp_restart() and
+#     secplus_gdo::setup(); a stray pulse on that line is decoded as a
+#     wall-button press. Per the Konnected maintainer (heythisisnate,
+#     konnected-io/konnected-esphome#112), this mechanism triggers on
+#     Security+ 1.0 openers, which latch on momentary low pulses. This
+#     device IS a Sec+ 1.0 opener, so the glitch fully explains both
+#     incidents: each spurious opening correlated with a reboot/OTA, and
+#     the 15-min reboot loop gave the boot window ~96 chances/day to fire
+#     whenever HA was unreachable.
 #
-#   Hazard B — gdolib v1.1.0 gdo_door_move_to_target() rewrite
-#     Theory: the new routing through gdo_door_open/close could send a
-#     direct OPEN/CLOSE on the Sec+ wire.
-#     Maintainer correction: gdolib v1.1.0's only changes are inside
-#     gdo_door_move_to_target. If nothing called that function (e.g. no HA
-#     "set position to X%" command), it cannot have been the cause.
-#     Incident 1 happened while HA was disconnected, so move_to_target
-#     could not have been invoked. Incident 2 happened during/after an OTA
-#     with no manual set-position command. So this theory is also
-#     unconfirmed.
+#   Hazard B: gdolib v1.1.0 gdo_door_move_to_target() rewrite  (RULED OUT)
+#     Earlier theory: the v1.1.0 routing through gdo_door_open/close could
+#     send a direct OPEN/CLOSE on the Sec+ wire. This is now ruled out.
+#     gdolib v1.1.0's only changes are inside gdo_door_move_to_target, which
+#     is reached only via an explicit "set position to X%" command. Incident
+#     1 happened while HA was disconnected (no caller possible) and Incident
+#     2 had no manual set-position command, so the gdolib change was never
+#     in the path. This is why the commit pin has been removed and we now
+#     sync the latest upstream YAML.
 #
-# What we actually know:
-#   - Two spurious openings correlated in time with reboots/OTAs.
-#   - Powering the blaQ off during Incident 2 immediately stopped the
-#     opener's diagnostic flashing and beeping — evidence the controller
-#     was actively driving the Sec+ wire in steady state, not just
-#     glitching once at boot.
-#   - The mechanism for a Sec+ 2.0 opener to be driven this way during
-#     boot/reboot remains unexplained.
-#
-# Mitigations applied here are defense-in-depth and remain reasonable
-# regardless of which theory turns out correct:
-#   - api.reboot_timeout / wifi.reboot_timeout = 0s: stops the 15-min
-#     reboot loop that exposed Incident 1's many reboot cycles to chance.
-#   - Pin upstream YAML to @501c37e (gdolib v1.0.0): reverts the v1.1.0
-#     code path even though it's not confirmed to be the cause.
+# Mitigations applied here:
+#   - api.reboot_timeout / wifi.reboot_timeout = 0s: stops the 15-min reboot
+#     loop that exposed the boot-window UART glitch. This is the actual fix.
 #   - project_name / project_version override in konnected-blaq.yaml:
 #     blocks the ESPHome Update Manager from force-flashing.
 
