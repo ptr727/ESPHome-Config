@@ -15,9 +15,6 @@ substitutions:
   friendly_name: ${device_friendly_name}
   # Per-device override; 0s disables reboot loop that can result in sec1+ UART glitch opening the door.
   wifi_reboot_timeout: 15min
-  # Remove project versions so ESPHome Update Manager does not auto update
-  # TODO: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
-  #
   # NOTE: we cannot `!remove` the entire `esphome.project:` block here the
   # way templates/apollo-plt-1b.yaml does. Konnected's upstream packages
   # reference the compile-time macros `ESPHOME_PROJECT_NAME` and
@@ -32,6 +29,7 @@ substitutions:
   # we can't easily patch. Apollo's PLT-1B.yaml references neither macro,
   # which is why a `!remove` is safe there.
   project_name: "ptr727.${device_name}"
+  # Remove project version
   project_version: "0.0.0"
 
 # https://esphome.io/components/esphome
@@ -43,32 +41,7 @@ esphome:
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:
   # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
-  #
-  # PINNED to commit 501c37e (2026-05-07, gdolib v1.0.0). This pin is
-  # defense-in-depth, not a confirmed fix: the root cause of the two
-  # self-opening incidents on 2026-05-13 is NOT established. See the
-  # STATUS block at the top of garage-door-controller.yaml.
-  #
-  # Konnected maintainer's reply at konnected-io/konnected-esphome#112
-  # narrows the field of candidate causes:
-  #   - The "GPIO1 boot-window UART glitch" theory applies only to
-  #     Security+ 1.0 openers. This is a Sec+ 1.0 (LiftMaster 8500,
-  #     square learn button).
-  #   - gdolib v1.1.0's only changes are inside gdo_door_move_to_target;
-  #     it cannot misbehave unless that function is called. Incident 1
-  #     had HA disconnected (no caller possible) and Incident 2 had no
-  #     manual set-position command, so this is unconfirmed too.
-  # Tracking:
-  #   - https://github.com/ptr727/ESPHome-Config/issues/29           (incident report)
-  #   - https://github.com/konnected-io/konnected-esphome/issues/112 (filed upstream)
-  #   - https://github.com/konnected-io/konnected-esphome/issues/93  (similar pattern, older)
-  #   - https://github.com/konnected-io/konnected-esphome/commit/536e2dd
-  #     (the commit that bumped gdolib v1.0.0 -> v1.1.0)
-  # The pin reverts gdolib to v1.0.0 in case the maintainer's audit of the
-  # move_to_target rewrite finds a path that fires without an explicit
-  # caller. Cheap to keep, easy to undo once the upstream investigation
-  # closes.
-  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml@501c37e
+  gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml
   api: !include api.yaml
   logger: !include logger.yaml
   ota: !include ota.yaml
