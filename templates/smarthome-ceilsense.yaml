@@ -36,7 +36,6 @@ esphome:
   # sensor uses the `${project_version}` substitution, not the macro), unlike
   # templates/konnected-blaq.yaml which must keep the block and override the
   # version substitution instead.
-  # TODO: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
   project: !remove
   # Replacement for wifi.yaml's boot phase 1 (which we no longer import), minus
   # the BLE bits: start the status-LED loading animation and wait for WiFi. The

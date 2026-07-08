@@ -14,8 +14,7 @@ substitutions:
   # Apollo's PLT-1B.yaml expects these for esphome.name / friendly_name
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-  # Remove project versions so ESPHome Update Manager does not auto update
-  # TODO: https://github.com/KriVaTri/ESPHome-Update-Manager/issues/20
+  # Remove project version
   version: "0.0.0"
   # Default sleep duration and prevent sleep state if not already set in NVS, else HA owns runtime config.
   sleep_duration_hours: "12"

@@ -1,0 +1,5 @@
+# Leave line endings alone; .editorconfig + CI (editorconfig-checker) enforce LF.
+# git config --global core.autocrlf false
+# git add --renormalize .
+# git ls-files --eol
+* -text

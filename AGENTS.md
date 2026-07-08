@@ -62,9 +62,11 @@ have been to grep the component first.
 upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main`
 package and surgically strips stock-provisioning. The upstream package is
 cached at `/data/appdata/esphome/cache/data/packages/8bc80dd7/Integrations/ESPHome/`
+
 - read those files when answering "where does Apollo set X" questions.
 
 Substitutions exposed for per-plant override:
+
 - `sleep_duration_hours` - first-boot value of HA "Sleep Duration" number.
   After first boot, HA owns the value via NVS (`restore_value: true`). Changing
   the substitution does **not** move an already-deployed device.
