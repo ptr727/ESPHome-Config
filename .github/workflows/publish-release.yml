@@ -1,0 +1,75 @@
+name: Publish project release action
+
+on:
+  workflow_dispatch:
+
+# A publish is a deliberate dispatch, so runs serialize on one group and queue rather than cancel, so a run is
+# never left with a half-created GitHub release.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+
+  # Publish the dispatched branch (main => release, develop => prerelease): NBGV computes the tag from the ref, then
+  # a GitHub release is created (tag + auto source archive + README + LICENSE). Source-only repo - no build targets.
+  publish:
+    name: Publish project release job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Assert dispatch ref step
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_name }}" != "main" ] && [ "${{ github.ref_name }}" != "develop" ]; then
+            echo "::error::Dispatch publish-release from main (release) or develop (prerelease); got ${{ github.ref_name }}."
+            exit 1
+          fi
+
+      - name: Setup .NET SDK step
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          dotnet-version: 10.x
+
+      # Full history so NBGV can compute the git height for the branch.
+      - name: Checkout code step
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      # NBGV versions the dispatched ref: main is the public-release ref (clean X.Y.Z), develop a prerelease.
+      - name: Compute version step
+        id: nbgv
+        uses: dotnet/nbgv@master
+
+      # Skip create on an existing tag (no-op republish). A re-dispatch refreshes it.
+      - name: Check for existing release step
+        id: release-exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.nbgv.outputs.SemVer2 }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # target_commitish pins the tag to the exact built commit (GitCommitId), not the default branch. The release is
+      # the tag plus GitHub's auto source archive, README, and LICENSE - no build assets (source-only).
+      - name: Create GitHub release step
+        if: ${{ steps.release-exists.outputs.exists == 'false' || github.event_name == 'workflow_dispatch' }}
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          generate_release_notes: true
+          tag_name: ${{ steps.nbgv.outputs.SemVer2 }}
+          target_commitish: ${{ steps.nbgv.outputs.GitCommitId }}
+          prerelease: ${{ github.ref_name != 'main' }}
+          files: |
+            LICENSE
+            README.md
