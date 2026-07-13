@@ -1,11 +1,15 @@
 name: Test pull request action
 
-# Lint gate for a configuration/community-health repository (no build or tests). check-workflow-status is the
-# ruleset-bound required check - do NOT rename it independently of the branch ruleset.
+# Lint gate for an operational (live-config) repository: CI is lint/validation only, no build or unit tests.
+# Operational model - develop takes direct signed commits (push runs advisory CI), main is the promoted snapshot
+# (the develop -> main promotion PR runs the enforced gate). check-workflow-status is the ruleset-bound required
+# check - rename it and the branch ruleset context together.
 
 on:
+  push:
+    branches: [ develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
@@ -14,8 +18,8 @@ concurrency:
 
 jobs:
 
-  # Source lint: markdownlint (docs), actionlint (workflows), and editorconfig-checker (line endings only - other
-  # checks are disabled in .editorconfig-checker.json), all digest-pinned. cspell is a deliberate follow-up.
+  # Source lint with the same configs the editor extensions and CLI use (linter parity): markdown, spelling, and
+  # workflow YAML run as pinned action wrappers; editorconfig-checker's action is install-only, so it runs via Docker.
   lint:
     name: Lint sources job
     runs-on: ubuntu-latest
@@ -28,18 +32,26 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Lint Markdown step
-        run: docker run --rm -v "$PWD":/workdir --workdir /workdir davidanson/markdownlint-cli2@sha256:0ed9a5f4c77ef447da2a2ac6e67caf74b214a7f80288819565e8b7d2ac148fe5 "**/*.md" # markdownlint-cli2 v0.22.1
+        uses: DavidAnson/markdownlint-cli2-action@8de2aa07cae85fd17c0b35642db70cf5495f1d25 # v24.0.0
+        with:
+          globs: '**/*.md'
+
+      - name: Spell check step
+        uses: streetsidesoftware/cspell-action@de2a73e963e7443969755b648a1008f77033c5b2 # v8.4.0
+        with:
+          files: '**/*.md'
+          incremental_files_only: false
 
       - name: Lint workflows step
-        run: docker run --rm -v "$PWD":/repo --workdir /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color # actionlint v1.7.12
+        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
 
-      - name: Check line endings step
-        run: docker run --rm -v "$PWD":/check --workdir /check mstruebing/editorconfig-checker@sha256:67b9e9b16a674e36f7c05919da789f03a01d343ca8423eb8797179399af07c00 # editorconfig-checker v3.4.0
+      - name: Check EditorConfig step
+        run: docker run --rm -v "$PWD":/check --workdir /check mstruebing/editorconfig-checker:latest
 
-  # GitHub Actions cannot put a required status check on a conditional job, so a single always-run aggregator gates
-  # the merge. Its name is the ruleset-bound required status-check context - rename it and the ruleset together.
+  # GitHub Actions does not support required status checks on conditional jobs, so a single always-run aggregator gates
+  # the merge. Its name is the ruleset-bound required status-check context - rename it and the ruleset context together.
   check-workflow-status:
-    name: Check pull request workflow status
+    name: Check pull request workflow status job
     runs-on: ubuntu-latest
     needs: [ lint ]
     if: always()
