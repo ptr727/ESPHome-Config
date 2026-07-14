@@ -14,6 +14,32 @@ before editing ESPHome configs.
 - All ESPHome CLI invocations must run **inside the container** and use
   `/config/<file>.yaml` as the path argument.
 
+## Branching Model
+
+This is an **operational** repo (see the fleet
+[`workflowModel`](https://github.com/ptr727/ProjectTemplate/blob/main/registry/repos.json)):
+configuration is committed **directly to `develop`** with signed commits - there
+is no feature branch, because this tracks the live controller state. A
+`develop -> main` pull request occasionally promotes a known-good snapshot to
+`main`. `develop` takes direct pushes (advisory CI); the promotion PR runs the
+enforced lint check. Both branches are protected; never force-push or delete
+either - fix mistakes with follow-up commits.
+
+## Git and Commit Rules
+
+- **Signing.** Every commit on both `develop` and `main` must be
+  cryptographically signed (SSH or GPG); branch protection rejects unsigned
+  commits. If signing is not configured in the environment, do not commit -
+  stop at `git add` and tell the developer/maintainer that signing is
+  unconfigured so they can set it up; do not proceed with the commit.
+- **Author identity.** Commit as the repository owner's GitHub `noreply`
+  identity (the same identity whose key signs) - never a private, personal, or
+  invented/bot address. Verify `git config --get user.email` before committing.
+- **Default to staging.** Stage changes with `git add` and leave `git commit`
+  to the developer, unless the current task explicitly authorizes committing.
+- **No history rewrites.** Never force-push or delete `develop` or `main`; fix
+  mistakes with follow-up commits.
+
 ## Required validation before declaring a change "done"
 
 Whenever a device YAML or a template that's included by a device YAML is
