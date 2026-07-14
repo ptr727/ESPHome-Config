@@ -1,0 +1,10 @@
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  device_name: living-room-plant-sensor
+  device_friendly_name: "Living Room Plant Sensor"
+  sleep_duration_hours: "1"
+  prevent_sleep_default: "ON"
+
+# https://esphome.io/guides/configuration-types.html#packages
+packages:
+  plt1b: !include templates/apollo-plt-1b.yaml
