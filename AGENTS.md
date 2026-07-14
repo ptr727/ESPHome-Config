@@ -30,7 +30,8 @@ either - fix mistakes with follow-up commits.
 - **Signing.** Every commit on both `develop` and `main` must be
   cryptographically signed (SSH or GPG); branch protection rejects unsigned
   commits. If signing is not configured in the environment, do not commit -
-  surface it and stop at `git add`.
+  stop at `git add` and tell the developer/maintainer that signing is
+  unconfigured so they can set it up; do not proceed with the commit.
 - **Author identity.** Commit as the repository owner's GitHub `noreply`
   identity (the same identity whose key signs) - never a private, personal, or
   invented/bot address. Verify `git config --get user.email` before committing.
