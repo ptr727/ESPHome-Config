@@ -7,7 +7,7 @@
 # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
 # https://github.com/konnected-io/konnected-esphome/tree/master/components/secplus_gdo
 
-# Imports Konneckted's full firmware package and surgically strips stock-provisioning concerns.
+# Imports Konnected's full firmware package and surgically strips stock-provisioning concerns.
 
 substitutions:
   # Used by garage-door-GDOv2-Q.yaml
