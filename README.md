@@ -1,6 +1,6 @@
 # ESPHome-Config
 
-[ESPHome](https://esphome.io) configuration, templates, and home automation projects.
+ESPHome configuration templates and projects.
 
 ## About
 
