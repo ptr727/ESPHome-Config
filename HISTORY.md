@@ -1,6 +1,6 @@
 # ESPHome-Config
 
-ESPHome device configuration, templates, and firmware for the household.
+ESPHome configuration templates and projects.
 
 ## Release History
 
