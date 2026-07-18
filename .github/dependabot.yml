@@ -15,6 +15,16 @@ updates:
       patterns:
         - "*"
 
+- package-ecosystem: "github-actions"
+  target-branch: "main"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  groups:
+    actions-deps:
+      patterns:
+        - "*"
+
 # develop
 - package-ecosystem: "devcontainers"
   target-branch: "develop"
@@ -23,5 +33,15 @@ updates:
     interval: "weekly"
   groups:
     devcon-deps:
+      patterns:
+        - "*"
+
+- package-ecosystem: "github-actions"
+  target-branch: "develop"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  groups:
+    actions-deps:
       patterns:
         - "*"
