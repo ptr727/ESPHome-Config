@@ -30,7 +30,7 @@ jobs:
           fi
 
       - name: Setup .NET SDK step
-        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.x
 
@@ -64,7 +64,7 @@ jobs:
       # the tag plus GitHub's auto source archive, README, and LICENSE - no build assets (source-only).
       - name: Create GitHub release step
         if: ${{ steps.release-exists.outputs.exists == 'false' || github.event_name == 'workflow_dispatch' }}
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           generate_release_notes: true
           tag_name: ${{ steps.nbgv.outputs.SemVer2 }}
