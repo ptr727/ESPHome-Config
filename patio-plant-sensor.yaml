@@ -2,8 +2,6 @@
 substitutions:
   device_name: patio-plant-sensor
   device_friendly_name: "Patio Plant Sensor"
-  sleep_duration_hours: "1"
-  prevent_sleep_default: "ON"
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
