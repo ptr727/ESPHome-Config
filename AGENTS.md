@@ -39,6 +39,29 @@ either - fix mistakes with follow-up commits.
   to the developer, unless the current task explicitly authorizes committing.
 - **No history rewrites.** Never force-push or delete `develop` or `main`; fix
   mistakes with follow-up commits.
+- **ESPHome Device Builder auto-commits (disabled - keep it that way).** This
+  directory is the `/config` mount of the running `esphome` container. Device
+  Builder's version history feature polls the tree for changes
+  (`controllers/_device_scanner.py`, stat-based on `(inode, dev, mtime, size)`,
+  not inotify) and commits every changed YAML as `Edit <file>.yaml`, authored
+  `ESPHome Device Builder <device-builder@esphome.io>` and unsigned. It shells
+  out to `git -c user.email=... -c commit.gpgsign=false commit --no-verify`, and
+  command-line `-c` outranks the host gitconfig, so neither the host signing
+  policy nor a hook can stop it. It hit this repo twice: 2026-07-14 (amended
+  away) and 2026-07-18 (five commits, reset and re-committed as `08678ad`).
+  - Turned off via "Save version history" in the Device Builder UI. Persisted in
+    `.device-builder-preferences.json` as `version_history_enabled: false`. That
+    store is RAM-canonical with a debounced write plus a shutdown flush, so
+    patch the file only while the container is stopped; otherwise use the
+    `config/set_preferences` API, which applies live.
+  - If it is ever re-enabled, a clean `git status` no longer proves nothing was
+    committed. After editing files here, run
+    `git log --format='%h %G? %an <%ae>' origin/develop..HEAD` and confirm every
+    commit is signed (`G`) and authored `ptr727@users.noreply.github.com`.
+  - Never push commits failing that check, and never attribute them to yourself
+    or to the maintainer. Check `%an`/`%ae` before claiming or denying
+    authorship. Such commits are unpushed, so correcting them locally is not a
+    history rewrite.
 
 ## Required validation before declaring a change "done"
 
