@@ -38,7 +38,10 @@ try:
     # editor's environment, so pyright cannot resolve it standalone.
     from bleak import BleakClient, BleakScanner  # pyright: ignore[reportMissingImports]
 except ImportError:
-    sys.exit("bleak is required: pip install bleak")
+    sys.exit(
+        "bleak is required: run with 'uv run easystart_monitor.py' (installs it via the "
+        "PEP 723 inline metadata), or 'pip install bleak' if not using uv"
+    )
 
 SERVICE_UUID = "d973f2e0-b19e-11e2-9e96-0800200c9a66"
 # Confirmed via nRF Connect: e1 = NOTIFY, e2 = WRITE/WRITE-NO-RESPONSE.

@@ -71,7 +71,6 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
   void set_learned_starts_sensor(sensor::Sensor *s) { this->learned_starts_sensor_ = s; }
   void set_running_sensor(binary_sensor::BinarySensor *s) { this->running_sensor_ = s; }
   void set_state_text_sensor(text_sensor::TextSensor *s) { this->state_text_sensor_ = s; }
-  void set_current_threshold(float a) { this->current_threshold_ = a; }
 
   void update() override {
     // Poll: clear the receive buffer and request a fresh live frame.
@@ -257,7 +256,6 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
   binary_sensor::BinarySensor *running_sensor_{nullptr};
   text_sensor::TextSensor *state_text_sensor_{nullptr};
 
-  float current_threshold_{0.5f};
   bool parsed_this_poll_{false};
   uint16_t write_handle_{0};
   uint16_t notify_handle_{0};

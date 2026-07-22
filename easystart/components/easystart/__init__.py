@@ -44,7 +44,6 @@ CONF_SYSTEM_STATE = "system_state"
 CONF_TOTAL_STARTS = "total_starts"
 CONF_TOTAL_FAULTS = "total_faults"
 CONF_LEARNED_STARTS = "learned_starts"
-CONF_CURRENT_THRESHOLD = "current_threshold"
 
 easystart_ns = cg.esphome_ns.namespace("easystart")
 EasyStart = easystart_ns.class_(
@@ -55,7 +54,6 @@ _INSTANCE_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(EasyStart),
-            cv.Optional(CONF_CURRENT_THRESHOLD, default=0.5): cv.positive_float,
             # Estimated-power inputs: the module reports single-leg current only, so power is
             # current * line_voltage * power_factor (defaults: US 240 V split-phase, PF 1.0).
             cv.Optional(CONF_LINE_VOLTAGE, default=240.0): cv.positive_float,
@@ -129,7 +127,6 @@ async def _instance_to_code(config):
     await cg.register_component(var, config)
     await ble_client.register_ble_node(var, config)
 
-    cg.add(var.set_current_threshold(config[CONF_CURRENT_THRESHOLD]))
     cg.add(var.set_line_voltage(config[CONF_LINE_VOLTAGE]))
     cg.add(var.set_power_factor(config[CONF_POWER_FACTOR]))
 
