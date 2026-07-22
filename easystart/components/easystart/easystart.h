@@ -16,11 +16,13 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
+#include "esphome/core/helpers.h"  // format_hex_pretty
 #include "esphome/components/ble_client/ble_client.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 
+#include <cmath>  // NAN
 #include <vector>
 #include <cstring>
 
@@ -227,7 +229,10 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
       this->state_text_sensor_->publish_state(state_str);
   }
 
-  // Compressor off / module radio down: report not-running and blank the live telemetry.
+  // Compressor off / module radio down: report not-running and blank the live measurements
+  // (current, power, frequency, peak) plus the state text. The cumulative counters (starts,
+  // faults, learned) and the short-cycle delay keep their last value, since they are not live
+  // readings and there is nothing fresher to show while disconnected.
   void publish_offline_() {
     if (this->running_sensor_ != nullptr)
       this->running_sensor_->publish_state(false);

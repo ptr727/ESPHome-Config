@@ -26,7 +26,7 @@ clean() { tr -d '\r' | sed 's/^package://'; }
 }
 
 # Resolve the package name (exact, or first substring match).
-matches=$(adb shell pm list packages | clean | grep -i "$QUERY" || true)
+matches=$(adb shell pm list packages | clean | grep -iF -- "$QUERY" || true)
 [ -n "$matches" ] || { echo "no installed package matching '$QUERY'" >&2; exit 1; }
 count=$(printf '%s\n' "$matches" | grep -c .)
 PKG=$(printf '%s\n' "$matches" | head -1)
