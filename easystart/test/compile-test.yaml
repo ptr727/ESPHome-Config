@@ -1,0 +1,47 @@
+# CI compile-test: proves the easystart external component (C++ + codegen) builds. Uses a dummy
+# MAC and no secrets, so it compiles standalone in CI. See .github/workflows/test-pull-request.yml.
+
+esphome:
+  name: easystart-compile-test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+
+# https://esphome.io/components/external_components
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [easystart]
+
+ble_client:
+  - id: easystart_test
+    mac_address: "AA:BB:CC:DD:EE:01"
+    auto_connect: true
+
+easystart:
+  - ble_client_id: easystart_test
+    running:
+      name: "Test Running"
+    current:
+      name: "Test Current"
+    power:
+      name: "Test Power"
+    frequency:
+      name: "Test Line Frequency"
+    last_start_peak:
+      name: "Test Last Start Peak"
+    scpt_delay:
+      name: "Test Short-Cycle Delay"
+    system_state:
+      name: "Test System State"
+    total_starts:
+      name: "Test Total Starts"
+    total_faults:
+      name: "Test Total Faults"
+    learned_starts:
+      name: "Test Learned Starts"
