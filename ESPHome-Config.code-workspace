@@ -11,12 +11,17 @@
 		"[markdown]": {
 			"files.trimTrailingWhitespace": false
 		},
+		"[python]": {
+			"editor.defaultFormatter": "charliermarsh.ruff"
+		},
 		"terminal.integrated.defaultProfile.linux": "bash",
 		"yaml.customTags": [
 			"!secret scalar",
 			"!lambda scalar",
 			"!extend scalar",
 			"!remove scalar",
+			"!include scalar",
+			"!include mapping",
 			"!include_dir_named scalar",
 			"!include_dir_list scalar",
 			"!include_dir_merge_list scalar",
@@ -26,12 +31,16 @@
 	},
 	"extensions": {
 		"recommendations": [
+			"charliermarsh.ruff",
 			"davidanson.vscode-markdownlint",
 			"eamodio.gitlens",
 			"esphome.esphome-vscode",
 			"ms-azuretools.vscode-docker",
+			"ms-python.python",
+			"ms-python.vscode-pylance",
 			"ms-vscode-remote.vscode-remote-extensionpack",
 			"ms-vscode.vscode-serial-monitor",
+			"redhat.vscode-yaml",
 			"streetsidesoftware.code-spell-checker"
 		]
 	}

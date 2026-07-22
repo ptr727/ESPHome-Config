@@ -78,6 +78,12 @@ Note that for devices with native ESPHome factory firmware, I opt to strip out t
 - [Template](./templates/smarthome-ceilsense.yaml) for the [SmartHomeShop CeilSense v1 Complete](https://ceilsense.nl/en/) presence sensor.
 - Imports SmartHomeShop's upstream [firmware package](https://github.com/smarthomeshop/ceilsense/blob/main/ceilsense-v1/ceilsense-complete-wifi-ld2412.yaml) and surgically strips the stock provisioning, see the [template](./templates/smarthome-ceilsense.yaml) for details.
 
+#### Micro-Air EasyStart Soft-Starter
+
+- [Template](./templates/easystart.yaml) to attach a [Micro-Air EasyStart](https://www.microair.net) AC compressor soft-starter to a Bluetooth proxy as a `ble_client`, exposing live current, estimated power, line frequency, last-start peak, short-cycle delay, system state, running state, and start / fault / learned-start counters in Home Assistant.
+- Used by [`office-bluetooth-proxy.yaml`](./office-bluetooth-proxy.yaml), which sits near the HVAC units and attaches both compressors.
+- The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/](./easystart/), see [easystart/README.md](./easystart/README.md) for details.
+
 ### Utility Templates
 
 Shared building-block includes, composed via `packages:` by the device templates and per-device configs:

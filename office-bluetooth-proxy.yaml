@@ -4,4 +4,31 @@ substitutions:
 
 packages:
   gls10: !include templates/gls10-bluetooth-proxy.yaml
+  # Module MACs are personal identifiers, keep them in secrets.yaml (git-ignored), not here.
+  # secrets.yaml:
+  #   easystart_hvac1_mac: "AA:BB:CC:DD:EE:01"
+  #   easystart_hvac2_mac: "AA:BB:CC:DD:EE:02"
+  easystart_hvac1: !include
+    file: templates/easystart.yaml
+    vars:
+      easystart_id: easystart_hvac1
+      easystart_mac: !secret easystart_hvac1_mac
+      easystart_label: "HVAC 1 Compressor"
+  easystart_hvac2: !include
+    file: templates/easystart.yaml
+    vars:
+      easystart_id: easystart_hvac2
+      easystart_mac: !secret easystart_hvac2_mac
+      easystart_label: "HVAC 2 Compressor"
 
+# https://esphome.io/components/external_components
+external_components:
+  - source:
+      type: local
+      path: easystart/components
+    components: [easystart]
+
+# https://esphome.io/components/esp32_ble
+# Must be at least 3 (bluetooth_proxy default connections) plus one per ble_client.
+esp32_ble:
+  max_connections: 5

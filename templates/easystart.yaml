@@ -1,0 +1,70 @@
+# Required substitutions (passed as vars via the !include):
+# easystart_id
+# easystart_mac
+# easystart_label
+# Optional substitutions (default):
+# easystart_voltage (240)
+# easystart_power_factor (1.0)
+# easystart_update_interval (5s)
+
+# https://www.microair.net/products/easystart-flex-home-ac-soft-starter
+# https://esphome.io/components/ble_client
+# ../easystart/ for the reverse-engineered protocol and write-up
+
+# Parameterized package exposing a Micro-Air EasyStart soft-starter as a ble_client. Add to any
+# Bluetooth-proxy device in BLE range of the module, once per module, keeping the module MAC in
+# secrets.yaml (git-ignored) and passing it in with !secret:
+#   packages:
+#     easystart_1: !include
+#       file: templates/easystart.yaml
+#       vars:
+#         easystart_id: easystart_1
+#         easystart_mac: !secret easystart_1_mac
+#         easystart_label: "Compressor 1"
+# The including device must also register the external component, and give esp32_ble enough
+# connection slots: at least 3 (the bluetooth_proxy active default) plus one per ble_client
+# (so a proxy with two modules needs 5). Changing max_connections requires a clean rebuild.
+#   external_components:
+#     - source: { type: local, path: easystart/components }
+#       components: [easystart]
+#   esp32_ble:
+#     max_connections: 5
+
+substitutions:
+  easystart_voltage: "240"
+  easystart_power_factor: "1.0"
+  easystart_update_interval: "5s"
+
+# https://esphome.io/components/ble_client
+ble_client:
+  - id: ${easystart_id}
+    mac_address: ${easystart_mac}
+    auto_connect: true
+
+# Local external component, see ../easystart/PROTOCOL.md
+easystart:
+  - ble_client_id: ${easystart_id}
+    update_interval: ${easystart_update_interval}
+    line_voltage: ${easystart_voltage}
+    power_factor: ${easystart_power_factor}
+    running:
+      name: "${easystart_label} Running"
+    current:
+      name: "${easystart_label} Current"
+    power:
+      name: "${easystart_label} Power"
+      id: ${easystart_id}_power
+    frequency:
+      name: "${easystart_label} Line Frequency"
+    last_start_peak:
+      name: "${easystart_label} Last Start Peak"
+    scpt_delay:
+      name: "${easystart_label} Short-Cycle Delay"
+    system_state:
+      name: "${easystart_label} System State"
+    total_starts:
+      name: "${easystart_label} Total Starts"
+    total_faults:
+      name: "${easystart_label} Total Faults"
+    learned_starts:
+      name: "${easystart_label} Learned Starts"
