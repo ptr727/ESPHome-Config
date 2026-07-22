@@ -4,3 +4,8 @@
 __pycache__/
 *.pyc
 .ruff_cache/
+
+# ESPHome build artifacts (e.g. from compiling easystart/test/compile-test.yaml locally);
+# ESPHome also auto-writes a boilerplate .gitignore into any config dir it compiles.
+.esphome/
+easystart/test/.gitignore
