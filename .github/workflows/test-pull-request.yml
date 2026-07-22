@@ -1,9 +1,13 @@
 name: Test pull request action
 
-# Lint gate for an operational (live-config) repository: CI is lint/validation only, no build or unit tests.
-# Operational model - develop takes direct signed commits (push runs advisory CI), main is the promoted snapshot
-# (the develop -> main promotion PR runs the enforced gate). check-workflow-status is the ruleset-bound required
-# check - rename it and the branch ruleset context together.
+# Source lint plus a change-gated compile test for the one piece of first-party code in the repo.
+# Everything else is YAML over upstream ESPHome components (tested upstream); the easystart external
+# component is C++ + codegen that can only be caught at compile time, so it is compiled on the same
+# ptr727/esphome-nonroot image the repo deploys. The compile test costs several minutes of esp-idf
+# build, so it runs only when the component or its test config moves.
+# Operational model - develop takes direct signed commits (push runs advisory CI), main is the promoted
+# snapshot (the develop -> main promotion PR runs the enforced gate). check-workflow-status is the
+# ruleset-bound required check - rename it and the branch ruleset context together.
 
 on:
   push:
@@ -40,7 +44,7 @@ jobs:
         uses: streetsidesoftware/cspell-action@de2a73e963e7443969755b648a1008f77033c5b2 # v8.4.0
         with:
           files: |
-            README.md
+            **/README.md
             HISTORY.md
           incremental_files_only: false
 
@@ -50,12 +54,100 @@ jobs:
       - name: Check EditorConfig step
         run: docker run --rm -v "$PWD":/check --workdir /check mstruebing/editorconfig-checker:latest
 
+      - name: Setup uv step
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+
+      # Lint the standalone Python utility (easystart BLE monitor) with ruff, matching the ptr727
+      # fleet convention (uvx, pinned tool version; pyright stays editor-only via Pylance).
+      - name: Lint Python step
+        working-directory: easystart/python
+        run: |
+          set -euo pipefail
+          uvx ruff@0.15.22 check .
+          uvx ruff@0.15.22 format --check .
+
+  # Change gate for the compile test: a full esp-idf build costs several minutes, so run it only when the
+  # easystart component, its CI test config, or this workflow changes. Anything undeterminable defaults to running.
+  changes:
+    name: Detect easystart changes job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      compile-test: ${{ steps.filter.outputs.compile-test }}
+
+    steps:
+
+      - name: Checkout code step
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Filter changed paths step
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # No diff to reason about (manual run) - compile-test rather than guess.
+          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+            echo "compile-test=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FROM="$BEFORE"
+          [[ "$EVENT" == "pull_request" ]] && FROM="$BASE_SHA"
+          # A new branch (all-zeros before) or an unreachable base - compile-test everything.
+          if [[ -z "$FROM" || "$FROM" =~ ^0+$ ]] || ! DIFF=$(git diff --name-only "$FROM" "$AFTER" 2>/dev/null); then
+            echo "compile-test=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if grep -qE '^(easystart/components/|easystart/test/|\.github/workflows/test-pull-request\.yml$)' <<<"$DIFF"; then
+            echo "compile-test=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "compile-test=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Compile the easystart component in the deployment image (ptr727/esphome-nonroot). The build tree and HOME
+  # live under the world-writable /cache mount that the image's cache.sh initializes; /config is the repo, so the
+  # test config's `path: ../components` resolves to the real component source.
+  compile-test:
+    name: Compile test job
+    runs-on: ubuntu-latest
+    needs: [ changes ]
+    if: ${{ needs.changes.outputs.compile-test == 'true' }}
+    permissions:
+      contents: read
+
+    steps:
+
+      - name: Checkout code step
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compile easystart test config step
+        run: |
+          set -euo pipefail
+          cache="$(mktemp -d)"
+          chmod -R 0777 "$cache" .
+          docker run --rm --user 1000:1000 \
+            --volume "$PWD":/config \
+            --volume "$cache":/cache \
+            ptr727/esphome-nonroot:latest \
+            bash -c '
+              set -euo pipefail
+              /entrypoint/cache.sh
+              esphome config /config/easystart/test/compile-test.yaml > /dev/null
+              esphome compile /config/easystart/test/compile-test.yaml
+            '
+
   # GitHub Actions does not support required status checks on conditional jobs, so a single always-run aggregator gates
   # the merge. Its name is the ruleset-bound required status-check context - rename it and the ruleset context together.
   check-workflow-status:
     name: Check pull request workflow status job
     runs-on: ubuntu-latest
-    needs: [ lint ]
+    needs: [ lint, changes, compile-test ]
     if: always()
     steps:
       - name: Check workflow results step
@@ -63,5 +155,14 @@ jobs:
           set -euo pipefail
           if [[ "${{ needs.lint.result }}" != "success" ]]; then
             echo "Job 'lint' did not succeed (${{ needs.lint.result }}); refusing to pass."
+            exit 1
+          fi
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "Job 'changes' did not succeed (${{ needs.changes.result }}); refusing to pass."
+            exit 1
+          fi
+          # compile-test is skipped when the gate says the component did not change; only a real failure blocks.
+          if [[ "${{ needs.compile-test.result }}" == "failure" ]]; then
+            echo "Job 'compile-test' failed; refusing to pass."
             exit 1
           fi

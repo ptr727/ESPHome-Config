@@ -1,0 +1,23 @@
+# Linter-only config for the standalone EasyStart BLE monitor utility.
+#
+# This is not a packaged project, there is no [project] or [build-system]. The script declares
+# its own runtime dependency (bleak) via PEP 723 inline metadata and runs with uv, no install:
+#   uv run easystart_monitor.py --discover
+#
+# ruff and pyright read their [tool.*] tables from here regardless. Lint without installing:
+#   uvx ruff check .
+#   uvx ruff format --check .
+
+[tool.ruff]
+# Match the ptr727 fleet standard (ProjectTemplate / PlexCleaner / Financial-Modeling).
+# The script itself stays portable via its PEP 723 requires-python = ">=3.9".
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = ["I"]  # import sorting (isort)
+
+[tool.pyright]
+# Editor-only (Pylance), matching the ptr727 fleet convention: CI gates on ruff, pyright runs
+# in the editor. Standard (not strict) mode suits a small utility that imports an untyped BLE lib.
+typeCheckingMode = "standard"
