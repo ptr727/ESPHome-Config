@@ -1,0 +1,7 @@
+# CI compile-test for templates/sonoff-th10.yaml
+substitutions:
+  device_name: sonoff-th10-test
+  device_friendly_name: "Sonoff TH10 Test"
+
+packages:
+  device: !include ../templates/sonoff-th10.yaml

@@ -30,6 +30,8 @@ logger:
 uart:
   rx_pin: RX
   baud_rate: 4800
+  # The CSE7766 transmits 8E1; ESPHome requires the parity to be declared to match.
+  parity: EVEN
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:

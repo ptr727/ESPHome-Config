@@ -59,6 +59,11 @@ esp32:
     # "Warning! Flash memory size mismatch detected. Expected 32MB, found 2MB!"
     sdkconfig_options:
       CONFIG_ESPTOOLPY_FLASHSIZE_32MB: "y"
+    # ESPHome rejects 32MB flash with OTA unless experimental IDF features are opted in.
+    # common.yaml always pulls OTA in, so the opt-in is required to build at all.
+    # This does not fix the OTA limitation in the TODO above, 16MB remains the safer choice.
+    advanced:
+      enable_idf_experimental_features: true
 
 # https://esphome.io/components/psram
 psram:

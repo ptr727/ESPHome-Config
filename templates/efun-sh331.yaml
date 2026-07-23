@@ -1,6 +1,6 @@
 # Required substitutions:
 # device_name
-# device_comment
+# device_friendly_name
 
 # https://community.home-assistant.io/t/efun-sh331w-smart-plug-esphome-configuration-file/161112
 # https://templates.blakadder.com/efun_SH331W.html

@@ -1,13 +1,13 @@
 name: Test pull request action
 
-# Source lint plus a change-gated compile test for the one piece of first-party code in the repo.
-# Everything else is YAML over upstream ESPHome components (tested upstream); the easystart external
-# component is C++ + codegen that can only be caught at compile time, so it is compiled on the same
-# ptr727/esphome-nonroot image the repo deploys. The compile test costs several minutes of esp-idf
-# build, so it runs only when the component or its test config moves.
-# Operational model - develop takes direct signed commits (push runs advisory CI), main is the promoted
-# snapshot (the develop -> main promotion PR runs the enforced gate). check-workflow-status is the
-# ruleset-bound required check - rename it and the branch ruleset context together.
+# Source lint plus change-gated compile tests, run on the ptr727/esphome-nonroot image the repo deploys.
+# - compile-test builds the easystart external component, whose C++ and codegen only fail at compile time.
+# - template-compile-test builds one example device per published template, so nothing ships that cannot build.
+# Both cost minutes of esp-idf build, so each runs only when what it covers moves.
+# Operational model.
+# - develop takes direct signed commits, where push runs advisory CI.
+# - main is the promoted snapshot, where the develop -> main promotion PR runs the enforced gate.
+# - check-workflow-status is the ruleset-bound required check, rename it and the ruleset context together.
 
 on:
   push:
@@ -22,8 +22,9 @@ concurrency:
 
 jobs:
 
-  # Source lint with the same configs the editor extensions and CLI use (linter parity): markdown, spelling, and
-  # workflow YAML run as pinned action wrappers; editorconfig-checker's action is install-only, so it runs via Docker.
+  # Source lint with the same configs the editor extensions and CLI use, for linter parity.
+  # Markdown, spelling, and workflow YAML run as pinned action wrappers.
+  # editorconfig-checker's action is install-only, so it runs via Docker.
   lint:
     name: Lint sources job
     runs-on: ubuntu-latest
@@ -57,8 +58,9 @@ jobs:
       - name: Setup uv step
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
-      # Lint the standalone Python utility (easystart BLE monitor) with ruff, matching the ptr727
-      # fleet convention (uvx, pinned tool version; pyright stays editor-only via Pylance).
+      # Lint the standalone Python utility, the easystart BLE monitor, with ruff.
+      # Matches the ptr727 fleet convention of uvx with a pinned tool version.
+      # pyright stays editor-only via Pylance.
       - name: Lint Python step
         working-directory: easystart/python
         run: |
@@ -66,15 +68,18 @@ jobs:
           uvx ruff@0.15.22 check .
           uvx ruff@0.15.22 format --check .
 
-  # Change gate for the compile test: a full esp-idf build costs several minutes, so run it only when the
-  # easystart component, its CI test config, or this workflow changes. Anything undeterminable defaults to running.
+  # Change gate for the compile tests, plus the template matrix definition.
+  # An esp-idf build costs minutes, so gate on what each test covers.
+  # An undeterminable diff runs everything.
   changes:
-    name: Detect easystart changes job
+    name: Detect build-affecting changes job
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
       compile-test: ${{ steps.filter.outputs.compile-test }}
+      template-test: ${{ steps.filter.outputs.template-test }}
+      template-configs: ${{ steps.configs.outputs.template-configs }}
 
     steps:
 
@@ -92,27 +97,58 @@ jobs:
           AFTER: ${{ github.sha }}
         run: |
           set -euo pipefail
-          # No diff to reason about (manual run) - compile-test rather than guess.
-          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+          run_all() {
             echo "compile-test=true" >> "$GITHUB_OUTPUT"
+            echo "template-test=true" >> "$GITHUB_OUTPUT"
             exit 0
-          fi
+          }
+          # A manual run has no diff, and is also how a full rebuild sweep is requested.
+          [[ "$EVENT" == "workflow_dispatch" ]] && run_all
           FROM="$BEFORE"
           [[ "$EVENT" == "pull_request" ]] && FROM="$BASE_SHA"
-          # A new branch (all-zeros before) or an unreachable base - compile-test everything.
+          # A new branch (all-zeros before) or an unreachable base - build everything.
           if [[ -z "$FROM" || "$FROM" =~ ^0+$ ]] || ! DIFF=$(git diff --name-only "$FROM" "$AFTER" 2>/dev/null); then
-            echo "compile-test=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            run_all
           fi
-          if grep -qE '^(easystart/components/|easystart/test/|\.github/workflows/test-pull-request\.yml$)' <<<"$DIFF"; then
+          WORKFLOW='\.github/workflows/test-pull-request\.yml$'
+          if grep -qE "^(easystart/components/|easystart/test/|$WORKFLOW)" <<<"$DIFF"; then
             echo "compile-test=true" >> "$GITHUB_OUTPUT"
           else
             echo "compile-test=false" >> "$GITHUB_OUTPUT"
           fi
+          # test/ hosts the example devices, and test/easystart.yaml compiles easystart/components.
+          if grep -qE "^(templates/|test/|easystart/components/|$WORKFLOW)" <<<"$DIFF"; then
+            echo "template-test=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "template-test=false" >> "$GITHUB_OUTPUT"
+          fi
 
-  # Compile the easystart component in the deployment image (ptr727/esphome-nonroot). The build tree and HOME
-  # live under the world-writable /cache mount that the image's cache.sh initializes; /config is the repo, so the
-  # test config's `path: ../components` resolves to the real component source.
+      # Build the template matrix from test/, so a new example device is picked up without editing the matrix.
+      # Every device template must have an example device, else a new template would go silently untested.
+      # Utility includes are pulled in transitively by the device templates and need no example device.
+      - name: List template test configs step
+        id: configs
+        env:
+          UTILITY: api basic common debug ethernet-sensor logger ota rgb-led-status secrets temperature time wifi
+        run: |
+          set -euo pipefail
+          missing=()
+          for path in templates/*.yaml; do
+            name="$(basename "$path" .yaml)"
+            case " $UTILITY " in *" $name "*) continue;; esac
+            [[ -f "test/$name.yaml" ]] || missing+=("$name")
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "Templates with no example device in test/: ${missing[*]}"
+            exit 1
+          fi
+          CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
+          echo "Template matrix: $CONFIGS"
+          echo "template-configs=$CONFIGS" >> "$GITHUB_OUTPUT"
+
+  # Compile the easystart component in the deployment image, ptr727/esphome-nonroot.
+  # The build tree and HOME live under the world-writable /cache mount that the image's cache.sh initializes.
+  # /config is the repo, so the test config's `path: ../components` resolves to the real component source.
   compile-test:
     name: Compile test job
     runs-on: ubuntu-latest
@@ -142,12 +178,59 @@ jobs:
               esphome compile /config/easystart/test/compile-test.yaml
             '
 
-  # GitHub Actions does not support required status checks on conditional jobs, so a single always-run aggregator gates
-  # the merge. Its name is the ruleset-bound required status-check context - rename it and the ruleset context together.
+  # Compile one example device per published template.
+  # test/ holds the configs, and the Device Builder scan is non-recursive, so they are not listed as devices.
+  # The matrix comes from the changes job, which also enforces that every template has an example device.
+  # fail-fast is off so one broken template does not mask the others.
+  template-compile-test:
+    name: Compile template ${{ matrix.config }} job
+    runs-on: ubuntu-latest
+    needs: [ changes ]
+    if: ${{ needs.changes.outputs.template-test == 'true' }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJSON(needs.changes.outputs.template-configs) }}
+
+    steps:
+
+      - name: Checkout code step
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Templates resolve !secret via templates/secrets.yaml, which re-exports the root secrets.yaml.
+      # secrets._yaml supplies the key names.
+      # The encryption key is generated here, so no usable key is committed.
+      - name: Create dummy secrets step
+        run: |
+          set -euo pipefail
+          cp secrets._yaml secrets.yaml
+          sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" secrets.yaml
+
+      - name: Compile template test config step
+        run: |
+          set -euo pipefail
+          cache="$(mktemp -d)"
+          chmod -R 0777 "$cache" .
+          docker run --rm --user 1000:1000 \
+            --volume "$PWD":/config \
+            --volume "$cache":/cache \
+            ptr727/esphome-nonroot:latest \
+            bash -c '
+              set -euo pipefail
+              /entrypoint/cache.sh
+              esphome config /config/test/${{ matrix.config }}.yaml > /dev/null
+              esphome compile /config/test/${{ matrix.config }}.yaml
+            '
+
+  # GitHub Actions does not support required status checks on conditional jobs.
+  # A single always-run aggregator gates the merge instead.
+  # Its name is the ruleset-bound required status-check context, rename it and the ruleset context together.
   check-workflow-status:
     name: Check pull request workflow status job
     runs-on: ubuntu-latest
-    needs: [ lint, changes, compile-test ]
+    needs: [ lint, changes, compile-test, template-compile-test ]
     if: always()
     steps:
       - name: Check workflow results step
@@ -161,8 +244,14 @@ jobs:
             echo "Job 'changes' did not succeed (${{ needs.changes.result }}); refusing to pass."
             exit 1
           fi
-          # compile-test is skipped when the gate says the component did not change; only a real failure blocks.
+          # The compile jobs are skipped when the change gate says nothing they cover moved.
+          # Only a real failure blocks, a skip must still pass.
+          # The matrix aggregates to a single result, failure if any leg failed.
           if [[ "${{ needs.compile-test.result }}" == "failure" ]]; then
             echo "Job 'compile-test' failed; refusing to pass."
+            exit 1
+          fi
+          if [[ "${{ needs.template-compile-test.result }}" == "failure" ]]; then
+            echo "Job 'template-compile-test' failed; refusing to pass."
             exit 1
           fi

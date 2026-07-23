@@ -1,0 +1,7 @@
+# CI compile-test for templates/apollo-plt-1b.yaml
+substitutions:
+  device_name: apollo-plt-1b-test
+  device_friendly_name: "Apollo PLT-1B Test"
+
+packages:
+  device: !include ../templates/apollo-plt-1b.yaml

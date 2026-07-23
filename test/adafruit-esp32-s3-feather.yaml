@@ -1,0 +1,7 @@
+# CI compile-test for templates/adafruit-esp32-s3-feather.yaml
+substitutions:
+  device_name: adafruit-esp32-s3-feather-test
+  device_friendly_name: "Adafruit ESP32-S3 Feather Test"
+
+packages:
+  device: !include ../templates/adafruit-esp32-s3-feather.yaml

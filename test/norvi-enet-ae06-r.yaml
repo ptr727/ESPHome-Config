@@ -1,0 +1,10 @@
+# CI compile-test for templates/norvi-enet-ae06-r.yaml
+# The template's `includes:` resolves against this config's directory, not the template's.
+# templates_dir points back at templates/ from here.
+substitutions:
+  device_name: norvi-enet-ae06-r-test
+  device_friendly_name: "Norvi ENET-AE06-R Test"
+  templates_dir: ../templates
+
+packages:
+  device: !include ../templates/norvi-enet-ae06-r.yaml
