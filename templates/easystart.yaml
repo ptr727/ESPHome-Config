@@ -73,8 +73,9 @@ easystart:
 
 # https://esphome.io/components/ble_client
 # Link health for this module's connection, read from the live BLE connection rather than from
-# advertisements (the module stops advertising once connected). Blank while disconnected, so it
-# separates "out of range" from "compressor off", and is the instrument for siting the proxy.
+# advertisements (the module stops advertising once connected). Blank while disconnected, so the
+# value to read is the link margin while connected: near -60 dBm is healthy, approaching -90 dBm is
+# barely viable. Use it to site the proxy.
 sensor:
   - platform: ble_client
     ble_client_id: ${easystart_id}
