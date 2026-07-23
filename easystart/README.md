@@ -153,9 +153,11 @@ defaults 240 V / 1.0), line frequency, last-start peak, short-cycle delay, syste
 Wire it into a Bluetooth proxy with the reusable template [`../templates/easystart.yaml`](../templates/easystart.yaml) (include once per module, with `vars` for the MAC + label).
 A complete two-module example is [`../office-bluetooth-proxy.yaml`](../office-bluetooth-proxy.yaml). The office proxy sits near the HVAC units and attaches both compressors. Place the proxy close to the units: EasyStart BLE is very short range, it would not connect from across the room and needed the proxy relocated near the modules; an external-antenna ESP32 helps if the signal is marginal.
 
+The template also adds a **signal-strength diagnostic** per module, using ESPHome's built-in [`ble_client` RSSI sensor](https://esphome.io/components/sensor/ble_client) (`type: rssi`, `entity_category: diagnostic`, default 60s). It reads the RSSI of the **live connection** (`esp_ble_gap_read_rssi`), not of advertisements, which matters because a module stops advertising once connected. It reads blank while disconnected, so it distinguishes "out of range" from "compressor off", and it is the instrument for siting a proxy: around -60 dBm is healthy, approaching -90 dBm is the marginal link that shows up as a module that never connects. Override the poll rate with the `easystart_rssi_update_interval` var when surveying a location.
+
 Two connection notes learned on hardware:
 
-- The active `bluetooth_proxy` reserves 3 connection slots, so a proxy hosting two modules needs `esp32_ble: max_connections: 5` (3 + 2). Changing it requires a clean rebuild.
+- The active `bluetooth_proxy` reserves 3 connection slots, so a proxy hosting two modules needs `esp32_ble: max_connections: 5` (3 + 2). Changing it requires a clean rebuild. The RSSI sensor attaches to an existing `ble_client` and does not consume an extra slot.
 - The device's `api:` accepts a limited number of clients (5 on ESP32). Home Assistant and the ESPHome dashboard each hold one, so avoid leaving extra `esphome logs` sessions open or new clients get rejected.
 
 The frame decode is logged at INFO (the `state=... current=...` line) and the raw hex frames at DEBUG. This repo's shared `logger.yaml` runs at DEBUG, so both are visible in `esphome logs` with no per-device override.

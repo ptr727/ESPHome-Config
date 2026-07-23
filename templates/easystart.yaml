@@ -6,6 +6,7 @@
 # easystart_voltage (240)
 # easystart_power_factor (1.0)
 # easystart_update_interval (5s)
+# easystart_rssi_update_interval (60s)
 
 # https://www.microair.net/products/easystart-flex-home-ac-soft-starter
 # https://esphome.io/components/ble_client
@@ -34,6 +35,7 @@ substitutions:
   easystart_voltage: "240"
   easystart_power_factor: "1.0"
   easystart_update_interval: "5s"
+  easystart_rssi_update_interval: "60s"
 
 # https://esphome.io/components/ble_client
 ble_client:
@@ -68,3 +70,15 @@ easystart:
       name: "${easystart_label} Total Faults"
     learned_starts:
       name: "${easystart_label} Learned Starts"
+
+# https://esphome.io/components/ble_client
+# Link health for this module's connection, read from the live BLE connection rather than from
+# advertisements (the module stops advertising once connected). Blank while disconnected, so it
+# separates "out of range" from "compressor off", and is the instrument for siting the proxy.
+sensor:
+  - platform: ble_client
+    ble_client_id: ${easystart_id}
+    type: rssi
+    name: "${easystart_label} Signal Strength"
+    entity_category: diagnostic
+    update_interval: ${easystart_rssi_update_interval}
