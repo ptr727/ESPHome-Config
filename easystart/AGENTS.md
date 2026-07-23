@@ -18,7 +18,10 @@ When editing docs/code/config, never paste real MACs or advertised names; use pl
   implementations. See `PROTOCOL.md`. Don't re-derive it.
 - **ESPHome component: feature-complete and hardware-validated** at `components/easystart/`
   (current, estimated power, frequency, peak, SCPT delay, system state, counters,
-  running-from-BLE-presence). The reusable package is `../templates/easystart.yaml`; the working
+  running-from-BLE-presence). The template additionally exposes a per-module BLE signal-strength
+  diagnostic via ESPHome's built-in `ble_client` `type: rssi` sensor (connection RSSI, not
+  advertisement RSSI); that needs no component code and consumes no extra connection slot. The
+  reusable package is `../templates/easystart.yaml`; the working
   two-module config is `../office-bluetooth-proxy.yaml`. Flashed on the office GL-S10 proxy and
   confirmed against both live modules: both `ble_client`s connect, every decoded field matches the
   frame math (e.g. HVAC 1 `6.7 A` / `59.82 Hz` / peak `23.7 A` / `1978` starts; HVAC 2 `6.4 A` /

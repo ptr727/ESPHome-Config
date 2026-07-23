@@ -45,3 +45,12 @@ easystart:
       name: "Test Total Faults"
     learned_starts:
       name: "Test Learned Starts"
+
+# https://esphome.io/components/ble_client
+# Built-in connection-RSSI diagnostic, compiled here alongside the component it ships with.
+sensor:
+  - platform: ble_client
+    ble_client_id: easystart_test
+    type: rssi
+    name: "Test Signal Strength"
+    entity_category: diagnostic

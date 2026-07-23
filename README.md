@@ -80,7 +80,7 @@ Note that for devices with native ESPHome factory firmware, I opt to strip out t
 
 #### Micro-Air EasyStart Soft-Starter
 
-- [Template](./templates/easystart.yaml) to attach a [Micro-Air EasyStart](https://www.microair.net) AC compressor soft-starter to a Bluetooth proxy as a `ble_client`, exposing live current, estimated power, line frequency, last-start peak, short-cycle delay, system state, running state, and start / fault / learned-start counters in Home Assistant.
+- [Template](./templates/easystart.yaml) to attach a [Micro-Air EasyStart](https://www.microair.net) AC compressor soft-starter to a Bluetooth proxy as a `ble_client`, exposing live current, estimated power, line frequency, last-start peak, short-cycle delay, system state, running state, and start / fault / learned-start counters in Home Assistant, plus a BLE signal-strength diagnostic for the link.
 - Used by [`office-bluetooth-proxy.yaml`](./office-bluetooth-proxy.yaml), which sits near the HVAC units and attaches both compressors.
 - The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/](./easystart/), see [easystart/README.md](./easystart/README.md) for details.
 
