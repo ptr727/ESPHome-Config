@@ -104,7 +104,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 Board and component helpers:
 
-- [RGB LED Status](./templates/rgb-led-status.yaml) component. Useful for boards with only a RGB LED to use as [Status LED](https://esphome.io/components/status_led.html) component equivalent.
+- [RGB LED Status](./templates/rgb-led-status.yaml) component. Useful for boards with only an RGB LED to use as [Status LED](https://esphome.io/components/status_led.html) component equivalent.
 - [ESP32-S3-DevKitC](./templates/esp32-s3-devkitc.yaml) devkit template, and the [ESP32-S3-WROOM-1-N16R8](./templates/esp32-s3-wroom-1-n16r8.yaml), [ESP32-S3-WROOM-2-N16R8V](./templates/esp32-s3-wroom-2-n16r8v.yaml), and [ESP32-S3-WROOM-2-N32R8V](./templates/esp32-s3-wroom-2-n32r8v.yaml) board definitions for the [ESP32-S3-DevKitC](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html) boards. The default [`esp32-s3-devkitc-1`](https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html) board only supports the `ESP32-S3-WROOM-1-N8` with 8MB Quad Flash and no PSRAM, so compose the devkit template with the board definition matching the fitted module. Includes the on-chip temperature sensor and RGB LED as status LED. Note that the RGB LED moved from GPIO48 to GPIO38 at board revision v1.1, override the `rgb_led_pin` substitution if the LED stays dark.
 - [WEMOS LOLIN32 Lite](./templates/wemos-lolin32-lite.yaml) devkit template for [WEMOS LOLIN32 Lite](https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite) and clone boards. Includes the LED as status LED.
 - [Adafruit ESP32-S3 Feather](./templates/adafruit-esp32-s3-feather.yaml) devkit template for the [Adafruit ESP32-S3 Feather](https://www.adafruit.com/product/5323) board. Includes the on-chip temperature sensor, RGB LED as status LED, and [MAX17048](https://www.analog.com/en/products/max17048.html) I2C battery charge monitor.
@@ -195,7 +195,7 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 - Install Python from the Microsoft Store.
 - Setup [VSCode](#vscode-setup).
 - Compile ESPHome project: `esphome compile test/adafruit-esp32-s3-feather.yaml`.
-- Plugin device, hold Boot and press Reset if required.
+- Plug in the device, hold Boot and press Reset if required.
 - List COM ports from PowerShell:
   - Serial ports: `[System.IO.Ports.SerialPort]::getportnames()`
   - Msft drivers: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
