@@ -3,18 +3,23 @@
 # device_friendly_name
 
 # Espressif ESP32-S3-DevKitC-1/1U
-# https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html
+# https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 
-# ESP32-S3-WROOM-1-N8       : 8MB  Quad Flash, 0MB      PSRAM, 3.3V SPI
-# ESP32-S3-WROOM-1-N8R2     : 8MB  Quad Flash, 2MB Quad PSRAM, 3.3V SPI
-# ESP32-S3-WROOM-1-N8R8     : 8MB  Quad Flash, 8MB Octa PSRAM, 3.3V SPI
-# ESP32-S3-WROOM-1-N16R8    : 16MB Quad Flash, 8MB Octa PSRAM, 3.3V SPI
-# ESP32-S3-WROOM-2-N16R8V   : 16MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
-# ESP32-S3-WROOM-2-N32R8V   : 32MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
-# ESP32-S3-DEVKITC-1-N32R8V : 32MB Octa Flash, 8MB Octa PSRAM, 1.8V SPI
-# ESP32-S3-WROOM-1U-N8      : 8MB  Quad Flash, 0MB      PSRAM, 3.3V SPI
-# ESP32-S3-WROOM-1U-N8R2    : 8MB  Quad Flash, 2MB Quad PSRAM, 3.3V SPI
-# ESP32-S3-DEVKITC-1U-N8R8  : 8MB  Quad Flash, 8MB Octa PSRAM, 3.3V SPI
+# Module datasheets
+# ESP32-S3-WROOM-1/1U : https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.html
+# ESP32-S3-WROOM-2    : https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-2_datasheet_en.pdf
+
+# Module memory configurations
+# ESP32-S3-WROOM-1-N8       : 8MB  Quad  Flash, 0MB       PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N8R2     : 8MB  Quad  Flash, 2MB Quad  PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N8R8     : 8MB  Quad  Flash, 8MB Octal PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1-N16R8    : 16MB Quad  Flash, 8MB Octal PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-2-N16R8V   : 16MB Octal Flash, 8MB Octal PSRAM, 1.8V SPI
+# ESP32-S3-WROOM-2-N32R8V   : 32MB Octal Flash, 8MB Octal PSRAM, 1.8V SPI
+# ESP32-S3-DEVKITC-1-N32R8V : 32MB Octal Flash, 8MB Octal PSRAM, 1.8V SPI
+# ESP32-S3-WROOM-1U-N8      : 8MB  Quad  Flash, 0MB       PSRAM, 3.3V SPI
+# ESP32-S3-WROOM-1U-N8R2    : 8MB  Quad  Flash, 2MB Quad  PSRAM, 3.3V SPI
+# ESP32-S3-DEVKITC-1U-N8R8  : 8MB  Quad  Flash, 8MB Octal PSRAM, 3.3V SPI
 
 # GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
 # GPIO38 : RGB LED on board v1.1, GPIO48 on v1.0 and most clones, override rgb_led_pin to match
