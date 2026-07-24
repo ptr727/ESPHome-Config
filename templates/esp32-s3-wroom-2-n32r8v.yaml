@@ -10,7 +10,12 @@
 
 # GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
 
-# Keep in sync with esp32-s3-wroom-2-n16r8v.yaml
+# Keep in sync with esp32-s3-wroom-2-n16r8v.yaml and esp32-s3-wroom-1-n16r8.yaml
+
+# TODO: Declare the Octal flash mode instead of letting IDF correct it at boot.
+# ESPHome supports `flash_mode: opi`, and the generated sdkconfig currently has CONFIG_ESPTOOLPY_FLASHMODE_DIO.
+# That matches the boot log warning below, where IDF detects the mismatch and switches to Octal itself.
+# Not changed here because it alters flash timing and cannot be validated without the hardware.
 
 # TODO: Boot log warnings
 # "spi_flash: Octal flash chip is using but dio mode is selected, will automatically swich to Octal mode"
@@ -21,44 +26,17 @@
 # Use max 16MB flash else OTA does not work
 # https://github.com/esphome/issues/issues/5824
 
-# https://esphome.io/components/esphome
-esphome:
-
-  # Modify default esp32-s3-devkitc-1 (8MB Flash, no PSRAM) board configuration
-  platformio_options:
-
-    # https://github.com/espressif/arduino-esp32/tree/master/tools/partitions
-    board_build.arduino.partitions: large_littlefs_32MB.csv
-    # Octal memory type for Flash and PSRAM
-    board_build.arduino.memory_type: opi_opi
-    # TODO: Per devs adding psram in YAML should auto add -DBOARD_HAS_PSRAM, could not confirm
-    board_build.extra_flags:
-      - "-DARDUINO_ESP32S3_DEV"
-      - "-DBOARD_HAS_PSRAM"
-      - "-DARDUINO_USB_MODE=1"
-      - "-DARDUINO_RUNNING_CORE=1"
-      - "-DARDUINO_EVENT_RUNNING_CORE=1"
-    # Octal memory type for PSRAM
-    board_build.psram_type: opi
-    board_name: "Espressif ESP32-S3-WROOM-2-N32R8V (ESP32-S3R8V, 32MB Octal SPI Flash, 8MB Octal SPI PSRAM, 1.8V SPI)"
-    # TODO: https://github.com/esphome/issues/issues/5404
-    # TODO: Error when setting flash size in board config?
-    # "Please specify flash_size within esp32 configuration only.""
-    # board_upload.flash_size: 32MB
-    # 32MB
-    board_upload.maximum_size: 33554432
+# Modifies the default esp32-s3-devkitc-1 board configuration, 8MB Quad Flash and no PSRAM.
+# ESPHome derives the sdkconfig flash size, the partition table, and the upload size from flash_size.
+# It derives the PSRAM sdkconfig from psram, so neither is declared by hand any more.
+# The former platformio_options block only ever applied to the Arduino framework, not to esp-idf.
 
 # https://esphome.io/components/esp32
 esp32:
-
-  # TODO: Why can't we set flash size in board config?
   flash_size: 32MB
 
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
-    # "Warning! Flash memory size mismatch detected. Expected 32MB, found 2MB!"
-    sdkconfig_options:
-      CONFIG_ESPTOOLPY_FLASHSIZE_32MB: "y"
     # ESPHome rejects 32MB flash with OTA unless experimental IDF features are opted in.
     # common.yaml always pulls OTA in, so the opt-in is required to build at all.
     # This does not fix the OTA limitation in the TODO above, 16MB remains the safer choice.

@@ -1,0 +1,25 @@
+# ESP32-S3-WROOM-1-N16R8 / ESP32-S3-WROOM-1U-N16R8
+# ESP32-S3R8, 16MB Quad SPI Flash, 8MB Octal SPI PSRAM, 3.3V SPI
+# https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.html
+
+# Board definition overlay for esp32-s3-devkitc.yaml, whose default board is the
+# ESP32-S3-WROOM-1-N8, 8MB Quad Flash and no PSRAM.
+# WROOM-1 and WROOM-1U differ only in PCB antenna versus IPEX connector, and are identical to program.
+# Espressif does not list an N16R8 DevKitC-1 SKU, so these boards are third-party builds of the module.
+# Set rgb_led_pin per board, DevKitC-1 v1.0 clones use GPIO48 and v1.1 uses the GPIO38 default.
+
+# Module is rated -40 to 65 C ambient, check against the mounting location.
+
+# GPIO35, GPIO36, GPIO37 : Octal SPI PSRAM
+
+# Keep in sync with esp32-s3-wroom-2-n16r8v.yaml and esp32-s3-wroom-2-n32r8v.yaml
+
+# https://esphome.io/components/esp32
+esp32:
+  flash_size: 16MB
+
+# https://esphome.io/components/psram
+# ESPHome has no default mode on the S3, which supports both quad and octal PSRAM.
+psram:
+  mode: octal
+  speed: 80MHz

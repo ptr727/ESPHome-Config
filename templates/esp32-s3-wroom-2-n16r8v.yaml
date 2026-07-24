@@ -4,24 +4,20 @@
 
 # GPIO35, GPIO36, GPIO37 : Octal SPI flash PSRAM
 
-# Similar config to ESP32-S3-WROOM-2-N32R8V but with 16MB Flash
-# Keep in sync with esp32-s3-wroom-2-n32r8v.yaml
+# Same board as ESP32-S3-WROOM-2-N32R8V but with 16MB Flash, and no OTA restriction at this size.
+# Keep in sync with esp32-s3-wroom-2-n32r8v.yaml and esp32-s3-wroom-1-n16r8.yaml
 
-# https://esphome.io/guides/configuration-types.html#local-packages
-packages:
-  # Modify changes from 32MB to 16MB in esp32-s3-wroom-2-n32r8v.yaml
-  n32r8v: !include esp32-s3-wroom-2-n32r8v.yaml
+# See the Octal flash mode TODO in esp32-s3-wroom-2-n32r8v.yaml, it applies to this module too.
 
-# https://esphome.io/components/esphome
-esphome:
-  platformio_options:
-    board_build.arduino.partitions: default_16MB.csv
-    board_name: "Espressif ESP32-S3-WROOM-2-N16R8V (ESP32-S3R8V, 16MB Octal SPI Flash, 8MB Octal SPI PSRAM, 1.8V SPI)"
-    board_upload.maximum_size: 16777216
+# Modifies the default esp32-s3-devkitc-1 board configuration, 8MB Quad Flash and no PSRAM.
+# Declared standalone rather than deriving from the 32MB template, which leaked its settings in here.
+# That left this 16MB build with CONFIG_ESPTOOLPY_FLASHSIZE_32MB and the 32MB-only experimental opt-in.
 
 # https://esphome.io/components/esp32
 esp32:
   flash_size: 16MB
-  framework:
-    sdkconfig_options:
-      CONFIG_ESPTOOLPY_FLASHSIZE_16MB: "y"
+
+# https://esphome.io/components/psram
+psram:
+  mode: octal
+  speed: 80MHz

@@ -1,0 +1,12 @@
+# CI compile-test for templates/esp32-s3-wroom-1-n16r8.yaml
+# The board definition is an overlay, not a standalone device.
+# Composed on the devkit template, as esp32-s3-devkitc.yaml documents.
+substitutions:
+  device_name: esp32-s3-wroom1-n16r8-test
+  device_friendly_name: "ESP32-S3-WROOM-1-N16R8 Test"
+  # Third-party N16R8 boards commonly follow the DevKitC-1 v1.0 layout, RGB LED on GPIO48 not GPIO38.
+  rgb_led_pin: GPIO48
+
+packages:
+  device: !include ../templates/esp32-s3-devkitc.yaml
+  board: !include ../templates/esp32-s3-wroom-1-n16r8.yaml
