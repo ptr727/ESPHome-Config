@@ -5,7 +5,7 @@
 # Board definition overlay for esp32-s3-devkitc.yaml, whose default board is the
 # ESP32-S3-WROOM-1-N8, 8MB Quad Flash and no PSRAM.
 # WROOM-1 and WROOM-1U differ only in PCB antenna versus IPEX connector, and are identical to program.
-# Espressif does not list an N16R8 DevKitC-1 SKU, so these boards are third party builds of the module.
+# Espressif does not list an N16R8 DevKitC-1 SKU, so these boards are third-party builds of the module.
 # Set rgb_led_pin per board, DevKitC-1 v1.0 clones use GPIO48 and v1.1 uses the GPIO38 default.
 
 # Module is rated -40 to 65 C ambient, check against the mounting location.
