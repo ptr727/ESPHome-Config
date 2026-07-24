@@ -1,0 +1,7 @@
+# CI compile-test for templates/esp32-s3-devkitc.yaml
+substitutions:
+  device_name: esp32-s3-devkitc-test
+  device_friendly_name: "ESP32-S3-DevKitC Test"
+
+packages:
+  device: !include ../templates/esp32-s3-devkitc.yaml

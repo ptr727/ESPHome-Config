@@ -1,0 +1,7 @@
+# CI compile-test for templates/konnected-blaq.yaml
+substitutions:
+  device_name: konnected-blaq-test
+  device_friendly_name: "Konnected blaQ Test"
+
+packages:
+  device: !include ../templates/konnected-blaq.yaml

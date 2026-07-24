@@ -301,6 +301,32 @@ Write like the developer who owns this repo, not like an AI assistant.
   messages, PR text. If the user adds a Unicode symbol on purpose, leave it; just
   don't author em-dashes or decorative non-ASCII yourself.
 
+### Comments are structured, not prose
+
+Comment only where a comment is needed, and keep it scannable.
+
+- Prefer a single-line comment.
+- One sentence per line; never wrap prose across lines.
+- No block paragraphs and no multi-sentence run-ons.
+- Indent with sub-bullets (`# - point`) only for actual sub-topics, meaning parallel items
+  hanging off a lead line. A continuation of the same topic stays unindented.
+
+Continuation, so no indentation:
+
+```yaml
+# Change gate for the compile tests.
+# An esp-idf build costs minutes, so gate on what each test covers.
+# An undeterminable diff runs everything.
+```
+
+Sub-topics, so indented, because each line elaborates a distinct item named in the lead:
+
+```yaml
+# Source lint plus change-gated compile tests.
+# - compile-test builds the easystart external component.
+# - template-compile-test builds one example device per published template.
+```
+
 ## Reverse-engineering and external tooling
 
 BLE and device reverse-engineering work (for example the Micro-Air EasyStart soft-starter)

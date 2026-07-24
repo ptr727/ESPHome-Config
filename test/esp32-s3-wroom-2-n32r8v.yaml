@@ -1,0 +1,10 @@
+# CI compile-test for templates/esp32-s3-wroom-2-n32r8v.yaml
+# The board definition is an overlay, not a standalone device.
+# Composed on the devkit template, as esp32-s3-devkitc.yaml documents.
+substitutions:
+  device_name: esp32-s3-wroom2-n32r8v-test
+  device_friendly_name: "ESP32-S3-WROOM-2-N32R8V Test"
+
+packages:
+  device: !include ../templates/esp32-s3-devkitc.yaml
+  board: !include ../templates/esp32-s3-wroom-2-n32r8v.yaml

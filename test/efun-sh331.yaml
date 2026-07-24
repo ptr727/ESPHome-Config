@@ -1,0 +1,7 @@
+# CI compile-test for templates/efun-sh331.yaml
+substitutions:
+  device_name: efun-sh331-test
+  device_friendly_name: "EFUN SH331 Test"
+
+packages:
+  device: !include ../templates/efun-sh331.yaml

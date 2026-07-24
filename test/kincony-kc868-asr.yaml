@@ -1,0 +1,7 @@
+# CI compile-test for templates/kincony-kc868-asr.yaml
+substitutions:
+  device_name: kincony-kc868-asr-test
+  device_friendly_name: "Kincony KC868-ASR Test"
+
+packages:
+  device: !include ../templates/kincony-kc868-asr.yaml

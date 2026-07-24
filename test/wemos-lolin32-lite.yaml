@@ -1,0 +1,7 @@
+# CI compile-test for templates/wemos-lolin32-lite.yaml
+substitutions:
+  device_name: wemos-lolin32-lite-test
+  device_friendly_name: "WEMOS LOLIN32 Lite Test"
+
+packages:
+  device: !include ../templates/wemos-lolin32-lite.yaml

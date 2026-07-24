@@ -91,10 +91,12 @@ select:
 button:
   - id: !remove update_firmware
 
-# Remove the glue script that drives the firmware selector/update (references
-# firmware_selector + firmware_update, both removed above).
+# Remove the glue scripts driving the firmware selector/update.
+# Both reference firmware_selector and firmware_update, removed above.
+# Their only caller was the firmware_selector select, also removed.
 script:
   - id: !remove sync_selected_firmware_source
+  - id: !remove check_firmware_update_when_online
 
 # Remove base.yaml's "Disable Bluetooth after boot" switch - it only gated
 # wifi.yaml's now-absent ble.disable call, and we run no Bluetooth at all. The

@@ -12,6 +12,8 @@ A [collection](./templates/) of utility and device-specific configuration templa
 
 Note that for devices with native ESPHome factory firmware, I opt to strip out the generic project and [Improv](https://www.improv-wifi.com/) configuration in favor of a custom configuration specific to my environment. This also cuts down on resource utilization by removing unused features.
 
+Every device template has an example configuration in [test](./test/) that CI compiles against the current ESPHome release, so a published template is known to build. The examples also serve as minimal usage samples.
+
 ### Device Templates
 
 #### Ayococr X5P WiFi Plug

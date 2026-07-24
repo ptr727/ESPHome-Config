@@ -170,6 +170,12 @@
 ## https://github.com/esphome/feature-requests/issues/513
 
 
+# ESPHome resolves `includes:` against the device config's directory, not this template's.
+# The default suits a device config in the repository root.
+# An including config elsewhere overrides it, see test/norvi-enet-ae06-r.yaml.
+substitutions:
+  templates_dir: templates
+
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
@@ -181,7 +187,7 @@ esphome:
         - ds1307.read_time:
   includes:
     # Utility functions
-    templates/Utils.h
+    ${templates_dir}/Utils.h
 
 # https://esphome.io/components/esp32
 esp32:
