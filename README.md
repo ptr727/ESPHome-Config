@@ -105,7 +105,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 Board and component helpers:
 
 - [RGB LED Status](./templates/rgb-led-status.yaml) component. Useful for boards with only a RGB LED to use as [Status LED](https://esphome.io/components/status_led.html) component equivalent.
-- [ESP32-S3-DevKitC](./templates/esp32-s3-devkitc.yaml) devkit template, and [ESP32-S3-WROOM-2-N32R8V](./templates/esp32-s3-wroom-2-n32r8v.yaml) and [ESP32-S3-WROOM-2-N16R8V](./templates/esp32-s3-wroom-2-n16r8v.yaml) board definitions for the [ESP32-S3-DevKitC](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html) boards. The default [`esp32-s3-devkit-c-1`](https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html) board only supports the `ESP32-S3-WROOM-1-N8` with 8MB Quad Flash and no PSRAM, any other board requires some customization, especially for the Octal memory boards. Includes the on-chip temperature sensor and RGB LED as status LED.
+- [ESP32-S3-DevKitC](./templates/esp32-s3-devkitc.yaml) devkit template, and the [ESP32-S3-WROOM-1-N16R8](./templates/esp32-s3-wroom-1-n16r8.yaml), [ESP32-S3-WROOM-2-N16R8V](./templates/esp32-s3-wroom-2-n16r8v.yaml), and [ESP32-S3-WROOM-2-N32R8V](./templates/esp32-s3-wroom-2-n32r8v.yaml) board definitions for the [ESP32-S3-DevKitC](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html) boards. The default [`esp32-s3-devkitc-1`](https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html) board only supports the `ESP32-S3-WROOM-1-N8` with 8MB Quad Flash and no PSRAM, so compose the devkit template with the board definition matching the fitted module. Includes the on-chip temperature sensor and RGB LED as status LED. Note that the RGB LED moved from GPIO48 to GPIO38 at board revision v1.1, override the `rgb_led_pin` substitution if the LED stays dark.
 - [WEMOS LOLIN32 Lite](./templates/wemos-lolin32-lite.yaml) devkit template for [WEMOS LOLIN32 Lite](https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite) and clone boards. Includes the LED as status LED.
 - [Adafruit ESP32-S3 Feather](./templates/adafruit-esp32-s3-feather.yaml) devkit template for the [Adafruit ESP32-S3 Feather](https://www.adafruit.com/product/5323) board. Includes the on-chip temperature sensor, RGB LED as status LED, and [MAX17048](https://www.analog.com/en/products/max17048.html) I2C battery charge monitor.
 
@@ -181,7 +181,7 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 - Select default Python interpreter and create virtual environment (Ctrl-Shift-P Python...).
 - Install ESPHome (in venv terminal): `pip install --upgrade [--pre] setuptools wheel platformio esphome`.
 - Make sure [ESPHome](https://esphome.io/guides/cli) is installed: `esphome version`.
-- Compile ESPHome project: `esphome compile esp32-s3-test.yaml`.
+- Compile ESPHome project: `esphome compile test/esp32-s3-devkitc.yaml`.
 - Launch Dashboard: `esphome dashboard .`, open [http://localhost:6052/](http://localhost:6052/).
 
 ### Debugging in DevContainer
@@ -194,14 +194,14 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 
 - Install Python from the Microsoft Store.
 - Setup [VSCode](#vscode-setup).
-- Compile ESPHome project: `esphome compile esp32-s3-feather-test.yaml`.
+- Compile ESPHome project: `esphome compile test/adafruit-esp32-s3-feather.yaml`.
 - Plugin device, hold Boot and press Reset if required.
 - List COM ports from PowerShell:
   - Serial ports: `[System.IO.Ports.SerialPort]::getportnames()`
   - Msft drivers: `Get-CimInstance -Class Win32_SerialPort | Select-Object Name, Description, DeviceID`.
   - Custom drivers: `Get-CimInstance -ClassName Win32_PnPEntity | Where-Object { $_.Name -match '.*\(COM(\d)\)' } Select-Object Caption`.
-- Upload firmware: `esphome run --device COM4 esp32-s3-feather-test.yaml`.
-- Log output: `esphome logs [--device COM5] esp32-s3-feather-test.yaml`.
+- Upload firmware: `esphome run --device COM4 test/adafruit-esp32-s3-feather.yaml`.
+- Log output: `esphome logs [--device COM5] test/adafruit-esp32-s3-feather.yaml`.
 
 ### Debugging on Windows WSL
 
@@ -222,7 +222,7 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 - Open VSCode Remote WSL Ubuntu session.
   - Setup [VSCode](#vscode-setup) in remote WSL session.
   - List COM ports: `ls /dev/tty*`.
-  - Upload firmware: `esphome run --device /dev/ttyUSB0 esp32-s3-test.yaml`
+  - Upload firmware: `esphome run --device /dev/ttyUSB0 test/esp32-s3-devkitc.yaml`
 - Unbind serial port.
   - Windows: `usbipd detach --busid 7-1`
   - Windows: `usbipd unbind --all`
