@@ -1,8 +1,8 @@
 # ESPHome Operations
 
-How to work in this repository: reaching the ESPHome CLI, validating and flashing a change, the template and vendor-firmware patterns, the tooling hazards, and the traps that have cost time before. [`AGENTS.md`][agents] carries the cross-cutting rules that every repository in the fleet shares, and this file everything specific to this one. Read it before editing any YAML under this tree, and read "Repository Tooling Hazards" before driving `gh` or the repo-config script.
+How to work in this repository: reaching the ESPHome CLI, validating and flashing a change, the template and vendor-firmware patterns, the tooling hazards, and the traps that have cost time before. [`AGENTS.md`][agents] carries the cross-cutting rules every repository in the fleet shares. Read this file before editing any YAML under this tree, and read [Repository Tooling Hazards][repository-tooling-hazards] before driving `gh` or the repo-config script.
 
-This file is where a durable rule for this repository goes. `AGENTS.md` is carried fleet law and byte-locked, so it cannot take one.
+`AGENTS.md` is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
 
 ## Container and CLI
 
@@ -233,13 +233,16 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
+[codestyle]: ./CODESTYLE.md
 [configure-sh]: ./repo-config/configure.sh
 [easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
+[repository-tooling-hazards]: #repository-tooling-hazards
 [templates]: ./templates/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
 [vscode-setup]: #vscode-setup
+[workflow]: ./WORKFLOW.md
 
 <!-- External -->
 
