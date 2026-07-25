@@ -203,7 +203,7 @@ See [LICENSE][license].
 [easystart-bluetooth-manual-link]: https://www.micro-air.com/support-documents/installation_resources/EasyStart_Bluetooth_Manual.pdf
 [easystart-spec-sheet-link]: https://www.micro-air.com/support-documents/installation_resources/EasyStart_Specification_Sheet.pdf
 [esphome-components-ble-client-link]: https://esphome.io/components/ble_client/
-[esphome-components-sensor-link]: https://esphome.io/components/sensor/ble_client
+[esphome-components-sensor-link]: https://esphome.io/components/sensor/ble_client/
 [github-derekseaman-esphome-micro-air-easystart-link]: https://github.com/DerekSeaman/ESPHome-Micro-Air-EasyStart
 [github-ibotpeaches-apktool-link]: https://github.com/iBotPeaches/Apktool/releases/latest
 [github-keen-coffee-home-assistant-link]: https://github.com/Keen-coffee/home_assistant/blob/main/easyStart

@@ -257,7 +257,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [discord-dbwxp5r3-link]: https://discord.gg/dbwxp5R3
 [docs-en-latest-link]: https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
 [docs-projects-esp-dev-kits-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
-[esphome-components-status-led-link]: https://esphome.io/components/status_led.html
+[esphome-components-status-led-link]: https://esphome.io/components/status_led/
 [github-apolloautomation-plt-1-link]: https://github.com/ApolloAutomation/PLT-1/blob/main/Integrations/ESPHome/PLT-1B.yaml
 [github-konnected-io-konnected-esphome-link]: https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
 [github-ptr727-esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot

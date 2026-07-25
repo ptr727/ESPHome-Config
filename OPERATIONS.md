@@ -231,8 +231,8 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 <!-- External -->
 
 [dashboard-link]: http://localhost:6052/
-[esp-idf-framework-link]: https://esphome.io/components/esp32#esp-idf-framework
-[esphome-cli-link]: https://esphome.io/guides/cli
+[esp-idf-framework-link]: https://esphome.io/components/esp32/#esp-idf-framework
+[esphome-cli-link]: https://esphome.io/guides/cli/
 [esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
