@@ -56,6 +56,18 @@ Then the agent greps the decompiled source for: service/characteristic **UUIDs**
 strings and byte-offset parsing. This alone usually yields the UUIDs, the command(s), and the
 frame layout - before touching any hardware. No screenshots or manual file transfers involved.
 
+<details><summary>What `pull-apk.sh` does under the hood (manual fallback)</summary>
+
+```shell
+adb shell pm list packages | grep -i <keyword>     # find the package name
+adb shell pm path <package.name>                   # get APK path(s) - may be split APKs
+adb pull <path>/base.apk <package>-<ver>.apk       # pull each path returned, name by version
+```
+
+The helper adds the version naming, `package:`-prefix / `\r` stripping, and split-APK handling
+described in the gotchas below.
+</details>
+
 **Tool sourcing:** look for each tool (PATH -> winget package dirs -> local repo copies); if
 missing, self-source the official GitHub release / zip locally - but **don't auto-run
 `winget install`** or mutate system packages. Ask the user only if it can't be found or sourced.
@@ -70,17 +82,6 @@ missing, self-source the official GitHub release / zip locally - but **don't aut
 - `jadx`: winget `Skylot.jadx` installs the **GUI only**; the CLI is in the GitHub zip at
   `jadx-1.5.6/bin/jadx.bat`. `apktool` smali is usually enough; use jadx only for readable Java.
 - Split-APK apps return several paths - pull them all (the helper handles this).
-
-### What `pull-apk.sh` does under the hood (manual fallback)
-
-```shell
-adb shell pm list packages | grep -i <keyword>     # find the package name
-adb shell pm path <package.name>                   # get APK path(s) - may be split APKs
-adb pull <path>/base.apk <package>-<ver>.apk       # pull each path returned, name by version
-```
-
-The helper adds the version naming, `package:`-prefix / `\r` stripping, and split-APK handling
-described in the gotchas above.
 
 ## Phase 2 - Live validation from the computer (CLI, text only)
 
