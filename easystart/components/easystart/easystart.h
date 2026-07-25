@@ -37,7 +37,7 @@ static const char *const TAG = "easystart";
 // e1 = NOTIFY, e2 = WRITE / WRITE-NO-RESPONSE.
 static const char *const SERVICE_UUID = "d973f2e0-b19e-11e2-9e96-0800200c9a66";
 static const char *const NOTIFY_UUID = "d973f2e1-b19e-11e2-9e96-0800200c9a66";  // module -> host
-static const char *const WRITE_UUID = "d973f2e2-b19e-11e2-9e96-0800200c9a66";  // host -> module
+static const char *const WRITE_UUID = "d973f2e2-b19e-11e2-9e96-0800200c9a66";   // host -> module
 
 static const char *const CMD_READ_LIVE = "{\"Cmd\": ReadLive}";
 
@@ -46,16 +46,16 @@ static const size_t FRAME_MIN_LEN = 18;
 
 // System-state / fault code table (byte [2]).
 static const char *const STATE_TEXT[] = {
-    "Normal",             // 0
-    "Unexpctd Curr Flt",  // 1
-    "Short Cycle Delay",  // 2
+    "Normal",              // 0
+    "Unexpctd Curr Flt",   // 1
+    "Short Cycle Delay",   // 2
     "Pwr Intrrptn Fault",  // 3
-    "Stall Fault",        // 4
-    "Stuck SR Fault",     // 5
-    "Open Ovrld Fault",   // 6
-    "Overcurrent Fault",  // 7
-    "Bad Wiring Fault",   // 8
-    "Wrong Voltage Flt",  // 9
+    "Stall Fault",         // 4
+    "Stuck SR Fault",      // 5
+    "Open Ovrld Fault",    // 6
+    "Overcurrent Fault",   // 7
+    "Bad Wiring Fault",    // 8
+    "Wrong Voltage Flt",   // 9
 };
 
 class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
@@ -117,16 +117,14 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
         this->write_handle_ = wr->handle;
         this->notify_handle_ = nt->handle;
         // Subscribe to notifications (ESPHome writes the CCCD automatically).
-        auto err = esp_ble_gattc_register_for_notify(gattc_if, this->parent()->get_remote_bda(),
-                                                     this->notify_handle_);
+        auto err = esp_ble_gattc_register_for_notify(gattc_if, this->parent()->get_remote_bda(), this->notify_handle_);
         if (err != ESP_OK)
           ESP_LOGW(TAG, "register_for_notify failed, err=%d", err);
         this->node_state = espbt::ClientState::ESTABLISHED;
         // Connected + subscribed -> the module's radio is up -> the compressor is running.
         if (this->running_sensor_ != nullptr)
           this->running_sensor_->publish_state(true);
-        ESP_LOGI(TAG, "handles resolved (write=%d notify=%d)", this->write_handle_,
-                 this->notify_handle_);
+        ESP_LOGI(TAG, "handles resolved (write=%d notify=%d)", this->write_handle_, this->notify_handle_);
         break;
       }
       case ESP_GATTC_NOTIFY_EVT: {
@@ -144,9 +142,8 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
 
  protected:
   void send_read_live_() {
-    auto err = esp_ble_gattc_write_char(this->parent()->get_gattc_if(),
-                                        this->parent()->get_conn_id(), this->write_handle_,
-                                        strlen(CMD_READ_LIVE), (uint8_t *) CMD_READ_LIVE,
+    auto err = esp_ble_gattc_write_char(this->parent()->get_gattc_if(), this->parent()->get_conn_id(),
+                                        this->write_handle_, strlen(CMD_READ_LIVE), (uint8_t *) CMD_READ_LIVE,
                                         ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
     if (err != ESP_OK)
       ESP_LOGW(TAG, "ReadLive write failed, err=%d", err);
@@ -202,8 +199,8 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
 
     const char *state_str = (state <= 9) ? STATE_TEXT[state] : "Not Defined";
 
-    ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%u faults=%u", state_str,
-             current_a, freq_hz, peak_a, total_starts, total_faults);
+    ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%u faults=%u", state_str, current_a, freq_hz,
+             peak_a, total_starts, total_faults);
 
     // "running" is driven by BLE connection state (radio only on while compressor runs), not by
     // this frame - see publish_offline_() and the OPEN/DISCONNECT handlers.
