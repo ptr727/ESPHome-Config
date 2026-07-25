@@ -84,7 +84,7 @@ described in the gotchas above.
 
 ## Phase 2 - Live validation from the computer (CLI, text only)
 
-Use the **computer's own Bluetooth as the central** via [`bleak`](https://bleak.readthedocs.io/)
+Use the **computer's own Bluetooth as the central** via [`bleak`][bleak-link]
 (cross-platform: Windows/macOS/Linux). No phone, no extra hardware. The agent writes a monitor
 script; the human runs one command and pastes the output.
 
@@ -151,3 +151,7 @@ The agent then drives `adb` -> `apktool`/`jadx` -> analysis on its own. From the
 3. Human runs it near the device, pastes the text. -> agent decodes, iterates, and (optionally)
    ground-truths against the vendor app's on-screen values.
 4. "Now write the ESPHome component / integration." -> agent ports it.
+
+<!-- External -->
+
+[bleak-link]: https://bleak.readthedocs.io/

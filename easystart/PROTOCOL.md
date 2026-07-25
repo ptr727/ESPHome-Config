@@ -173,8 +173,8 @@ modules, with app-displayed values as ground truth:
 Characteristic roles, command string, framing, and the full 18-byte layout are all confirmed.
 
 **Independent cross-check:** this from-scratch decode matches the community ESPHome
-implementations byte-for-byte - [Keen-coffee](https://github.com/Keen-coffee/home_assistant/blob/main/easyStart)
-(original) and [DerekSeaman](https://github.com/DerekSeaman/ESPHome-Micro-Air-EasyStart) - including
+implementations byte-for-byte - [Keen-coffee][github-keen-coffee-home-assistant-link]
+(original) and [DerekSeaman][github-derekseaman-esphome-micro-air-easystart-link] - including
 the non-obvious `500000/period` frequency, the u32 total-starts, the two-notification framing,
 and write=`e2`/notify=`e1`. This decode additionally reads byte `[3]` = learned starts, which
 neither of those implementations decodes.
@@ -188,3 +188,8 @@ The protocol is complete for monitoring. A few low-value details are not fully p
 - The other commands (`ReadEEP`, `NormMode`, `ProgMode`, OTA/flash) are identified but their
   request/response payloads were not reverse-engineered - not needed for read-only monitoring.
 - Exact poll interval the app uses (~1 s observed) - irrelevant for our own polling.
+
+<!-- External -->
+
+[github-derekseaman-esphome-micro-air-easystart-link]: https://github.com/DerekSeaman/ESPHome-Micro-Air-EasyStart
+[github-keen-coffee-home-assistant-link]: https://github.com/Keen-coffee/home_assistant/blob/main/easyStart

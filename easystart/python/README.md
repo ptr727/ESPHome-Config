@@ -2,11 +2,11 @@
 
 `easystart_monitor.py` connects to the soft-starter over your computer's Bluetooth, polls
 `{"Cmd": ReadLive}`, and prints the decoded live frame in real time - for validating the
-protocol (see [../PROTOCOL.md](../PROTOCOL.md)) without flashing ESPHome firmware.
+protocol (see [../PROTOCOL.md][protocol]) without flashing ESPHome firmware.
 
 ## Run with uv (recommended)
 
-The script declares its dependency inline (PEP 723), so [uv](https://docs.astral.sh/uv/)
+The script declares its dependency inline (PEP 723), so [uv][docs-uv-link]
 installs `bleak` and runs it in one step - no venv, no pip:
 
 ```shell
@@ -57,3 +57,11 @@ current changes). Paste the raw hex lines back for confirmation of the decode.
 
 `requirements.txt` is provided for a classic `pip install -r requirements.txt` in a venv if
 you prefer, but uv is simpler on Windows.
+
+<!-- Repo -->
+
+[protocol]: ../PROTOCOL.md
+
+<!-- External -->
+
+[docs-uv-link]: https://docs.astral.sh/uv/
