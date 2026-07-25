@@ -170,13 +170,14 @@
         },
         {
             // Discovers the tracked C/C++ files rather than hardcoding a list, so a new source is never skipped.
+            // An empty list is an error, not a pass - a discovery pattern that stops matching must not read as green.
             // Names bash explicitly because the discovery needs a shell, matching the CI step.
             "label": "Lint: C++",
             "type": "process",
             "command": "bash",
             "args": [
                 "-c",
-                "set -Eeuo pipefail; mapfile -t files < <(git ls-files '*.h' '*.hpp' '*.c' '*.cc' '*.cpp' '*.ino'); [ ${#files[@]} -eq 0 ] && { echo 'no C/C++ sources tracked'; exit 0; }; docker run --rm --pull=always -v \"$PWD\":/src -w /src xianpengshen/clang-tools:19 clang-format --dry-run --Werror \"${files[@]}\""
+                "set -Eeuo pipefail; mapfile -t files < <(git ls-files '*.h' '*.hpp' '*.c' '*.cc' '*.cpp' '*.ino'); [ ${#files[@]} -eq 0 ] && { echo 'no C/C++ sources found, the discovery pattern stopped matching' >&2; exit 1; }; docker run --rm --pull=always -v \"$PWD\":/src -w /src xianpengshen/clang-tools:19 clang-format --dry-run --Werror \"${files[@]}\""
             ],
             "options": { "cwd": "${workspaceFolder}" },
             "problemMatcher": [],
