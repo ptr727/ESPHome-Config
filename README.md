@@ -46,7 +46,7 @@ Every device template has an example configuration in [test][test] that CI compi
   - Norvi devices are sold under the [SensOper Controls][sensoper-link] brand in the US and available at the [SensOper store][sensoper-shop-link].
   - Norvi branded devices can be shipped to the US from the Sri Lanka based [Norvi store][shop-link], or the Germany based [CarTFT store][cartft-link].
   - Norvi addressed PSU interference and drifting ADC issues through a design change (May 2024 date code), see the [notes][norvi-enet-ae06-r] section in YML for details.
-  - There is an ongoing issue where enabling output on GPIO15 turns the status LED's on and could interfere with input sensors, see the [notes][norvi-enet-ae06-r] section in YML for details.
+  - There is an ongoing issue where enabling output on GPIO15 turns the status LEDs on and could interfere with input sensors, see the [notes][norvi-enet-ae06-r] section in YML for details.
 
 #### RocketController ASTRA DIN Controller
 

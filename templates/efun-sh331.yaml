@@ -16,7 +16,7 @@
 
 # https://esphome.io/guides/configuration-types.html#packages
 packages:
-  # Use the Aoycocr X5P as a generic Tuya template for the LED's, button, and relay
+  # Use the Aoycocr X5P as a generic Tuya template for the LEDs, button, and relay
   aoycocr_x5p: !include aoycocr-x5p.yaml
 
 # https://esphome.io/components/sensor
