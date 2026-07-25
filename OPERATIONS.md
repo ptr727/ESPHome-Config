@@ -159,14 +159,14 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 
 ### Debugging in the DevContainer
 
-- Complete the [VSCode setup](#vscode-setup).
+- Complete the [VSCode setup][vscode-setup].
 - Open the workspace and clone into the devcontainer volume.
 - TODO: serial port forwarding configuration.
 
 ### Debugging on Windows
 
 - Install Python from the Microsoft Store.
-- Complete the [VSCode setup](#vscode-setup).
+- Complete the [VSCode setup][vscode-setup].
 - Compile a project: `esphome compile test/adafruit-esp32-s3-feather.yaml`.
 - Plug in the device, holding Boot and pressing Reset when required.
 - List COM ports from PowerShell:
@@ -191,7 +191,7 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
   - WSL: `ls /dev/tty*`, for example `/dev/ttyACM0`, `/dev/ttyUSB0`
 - Install VSCode and the Remote Explorer extension.
 - Open a VSCode Remote WSL Ubuntu session.
-  - Complete the [VSCode setup](#vscode-setup) in the remote WSL session.
+  - Complete the [VSCode setup][vscode-setup] in the remote WSL session.
   - List ports: `ls /dev/tty*`.
   - Upload firmware: `esphome run --device /dev/ttyUSB0 test/esp32-s3-devkitc.yaml`
 - Unbind the serial port.
@@ -200,7 +200,7 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 
 ### Debugging in PlatformIO
 
-- Complete the [VSCode setup](#vscode-setup) and install the PlatformIO extension.
+- Complete the [VSCode setup][vscode-setup] and install the PlatformIO extension.
 - Compile the project with `esphome compile [project]`.
 - Launch the PlatformIO extension and open the project folder, for example `./.esphome/build/esp32-s3-test`.
 - PlatformIO opens a new instance of VSCode for that project.
@@ -226,12 +226,13 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [templates]: ./templates/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
+[vscode-setup]: #vscode-setup
 
 <!-- External -->
 
 [dashboard-link]: http://localhost:6052/
-[esp-idf-framework-link]: https://esphome.io/components/esp32#esp-idf-framework
-[esphome-cli-link]: https://esphome.io/guides/cli
+[esp-idf-framework-link]: https://esphome.io/components/esp32/#esp-idf-framework
+[esphome-cli-link]: https://esphome.io/guides/cli/
 [esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf

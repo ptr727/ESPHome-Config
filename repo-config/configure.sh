@@ -175,6 +175,7 @@ gh_ok() { gh api "$@" >/dev/null 2>&1; }
 
 check_ruleset() { # payload-file - the live ruleset must match the committed policy, driven by the payload
     local file="$1" rname id live t want got wantc gotc want_enf
+    if [ ! -e "$file" ]; then fail "ruleset payload $file missing"; return; fi
     rname="$(jq -r '.name // empty' "$file")"
     if [ -z "$rname" ]; then fail "ruleset payload $file has no name"; return; fi
     if ! id="$(ruleset_id "$rname")"; then fail "ruleset '$rname' - could not resolve id"; return; fi

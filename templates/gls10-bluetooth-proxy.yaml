@@ -100,7 +100,7 @@ binary_sensor:
         # https://github.com/esphome/esphome/blob/dev/esphome/core/application.h
         - lambda: App.safe_reboot();
 
-# LED's
+# LEDs
 output:
   - platform: gpio
     id: power_led
