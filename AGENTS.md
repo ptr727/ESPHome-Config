@@ -215,7 +215,7 @@ The repo runs a review loop on every PR: local agent iteration plus remote autom
 **Do not merge - and do not enable auto-merge - unless ALL of these hold:**
 
 1. Required status checks are green (`mergeStateStatus: CLEAN`), **and**
-2. A Copilot review is confirmed on the **current head SHA** (not an earlier push), **and**
+2. A Copilot review is confirmed on the **current head SHA** by matching the review's commit SHA to the head, not an earlier push - a push makes required checks go green **before** the re-review lands, so a green merge-state can precede the current-head review and never signals readiness on its own, **and**
 3. **Every** Copilot finding on that head SHA is closed out - all review threads resolved, **and** any issue-level Copilot comments (which have no resolve action) triaged and replied to - so zero outstanding findings remain, **and**
 4. The maintainer has given **explicit** permission to merge.
 
