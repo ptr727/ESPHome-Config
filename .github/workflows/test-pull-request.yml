@@ -59,7 +59,9 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
       # Lint the standalone Python utility, the easystart BLE monitor, with ruff.
-      # Matches the ptr727 fleet convention of uvx with a pinned tool version.
+      # The version is pinned so an upstream ruff release cannot fail an unrelated change.
+      # The fleet default is unpinned latest, so this is a recorded divergence, see CODESTYLE.md.
+      # Keep the pin identical to the Ruff tasks in .vscode/tasks.json.
       # pyright stays editor-only via Pylance.
       - name: Lint Python step
         working-directory: easystart/python
@@ -67,6 +69,22 @@ jobs:
           set -euo pipefail
           uvx ruff@0.15.22 check .
           uvx ruff@0.15.22 format --check .
+
+      # Style-only check of the committed C++, the easystart component and the template lambda helpers.
+      # The shared .clang-format also drives the editor and the Lint: C++ task, so all three agree.
+      # Semantic analysis stays with the ESPHome compile, which has the compile context clang-tidy would need.
+      # Discovers the tracked sources so a new file is never silently skipped.
+      - name: Lint C++ step
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git ls-files '*.h' '*.hpp' '*.c' '*.cc' '*.cpp' '*.ino')
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::no C/C++ sources found, the discovery pattern stopped matching"
+            exit 1
+          fi
+          printf 'checking %s\n' "${files[@]}"
+          docker run --rm -v "$PWD":/src --workdir /src xianpengshen/clang-tools:19 \
+            clang-format --dry-run --Werror "${files[@]}"
 
   # Change gate for the compile tests, plus the template matrix definition.
   # An esp-idf build costs minutes, so gate on what each test covers.
