@@ -9,7 +9,7 @@
 #   uvx ruff format --check .
 
 [tool.ruff]
-# Match the ptr727 fleet standard (ProjectTemplate / PlexCleaner / Financial-Modeling).
+# Match the fleet standard.
 # The script itself stays portable via its PEP 723 requires-python = ">=3.9".
 target-version = "py313"
 line-length = 100

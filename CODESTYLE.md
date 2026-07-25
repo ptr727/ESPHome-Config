@@ -22,7 +22,7 @@ Each language defines a **clean-compile** verification - the combination of buil
 
 ### Analyzer Diagnostics and Suppressions
 
-- **A new port is not a license to silence diagnostics.** Brownfield / just-ported status never justifies relaxing analyzer or linter severities or muting newly surfaced warnings - fix them. (The only brownfield allowance in this template is the one-time git-signing / line-ending migration described in [AGENTS.md][agents] and [README.md][readme], which has nothing to do with code analysis.)
+- **A new port is not a license to silence diagnostics.** Brownfield / just-ported status never justifies relaxing analyzer or linter severities or muting newly surfaced warnings - fix them. (The only brownfield allowance is the one-time git-signing / line-ending migration described in [AGENTS.md][agents] and [README.md][readme], which has nothing to do with code analysis.)
 - **Suppress only genuine false-positives or deliberate, documented exceptions**, always at the **narrowest scope that fits**, in this order of preference:
   1. An **in-code annotation on the specific symbol**, with a justification - the language's attribute/comment form, never a blanket pragma spanning a region.
   2. The **owning project's local config** when the exception is project-wide for one project (e.g. a test project's own `.editorconfig` / `pyproject.toml`).
@@ -33,9 +33,9 @@ Each language defines a **clean-compile** verification - the combination of buil
 
 These apply repo-wide, in every directory:
 
-1. **Markdown linting**: All `.md` files must be lint-clean (error and warning free) via the VS Code `markdownlint` extension. [`.markdownlint-cli2.jsonc`][markdownlint-cli2] at the repo root is the single source of truth - the davidanson `markdownlint` extension and a command-line `markdownlint-cli2` run both read it, so the IDE and CLI stay in lock-step. Rules it deliberately disables (e.g. `MD013` line-length, `MD033` inline HTML) are **intentional** - do not "fix" them. Fix violations at the source rather than disabling rules.
-2. **Spelling**: All spelling must be clean via the CSpell VS Code integration; words must be correctly spelled in **US English** (the repo-wide convention - see [AGENTS.md][agents]). The shared `cspell.json` sets `"language": "en-US"` so British spellings are flagged - a bare `"en"` accepts both US and British and silently passes the wrong spelling. Project-specific terms go in the workspace CSpell config.
-3. **Spelling CI scope**: The enforced CI spell-check gate covers **`README.md` and `HISTORY.md` only** - these are the files every repo visitor sees, so they must be clean. It is deliberately **not** all `**/*.md`: repos carry many markdown files full of technical terms, and gating every one of them would mean endlessly padding `cspell.json` just to keep CI green. Broad, live spell-checking across any file (source, markdown, text) is the **cspell editor extension's** job, so typos still surface to whoever is editing. A repo owner **may** widen their own CI file list, but the template ships README + HISTORY as the default; keep every surface that runs cspell - the CI workflow and any local VS Code task or one-liner the repo has - on the same file list. The list is explicit (not a glob), so a repo that ships no `HISTORY.md` (e.g. one with no changelog) must drop it from all three surfaces and gate on `README.md` alone - cspell errors on a listed file that does not exist. Markdown *linting* (item 1) stays repo-wide `**/*.md` - it does not choke on technical terms.
+1. **Markdown linting**: All `.md` files must be lint-clean (error and warning free) via the VS Code `markdownlint` extension. [`.markdownlint-cli2.jsonc`][markdownlint-cli2] at the repo root is the single source of truth - the davidanson `markdownlint` extension and a command-line `markdownlint-cli2` run both read it, so the IDE and CLI stay in lock-step. Rules it deliberately disables (e.g. `MD013` line-length) are **intentional** - do not "fix" them. `MD033` inline HTML stays **enabled**: HTML comments are permitted (markdownlint does not flag them), HTML elements are flagged, and anything with a native markdown equivalent uses the markdown. Fix violations at the source rather than disabling rules.
+2. **Spelling**: All spelling must be clean via the CSpell VS Code integration; words must be correctly spelled in **US English** (the repo-wide convention - see [AGENTS.md][agents]). The shared `cspell.json` sets `"language": "en-US"` so British spellings are flagged - a bare `"en"` accepts both US and British and silently passes the wrong spelling. Project-specific terms go in the shared `cspell.json` `words` list - it is the single source of truth the extension, CLI, and CI all read. The `.code-workspace` must **not** carry its own `cspell.words`/`cSpell.words` block; when externalizing words into `cspell.json`, delete any word list left in the workspace (a leftover one duplicates the list and silently drifts).
+3. **Spelling CI scope**: The enforced CI spell-check gate covers **`README.md` and `HISTORY.md` only** - these are the files every repo visitor sees, so they must be clean. It is deliberately **not** all `**/*.md`: repos carry many markdown files full of technical terms, and gating every one of them would mean endlessly padding `cspell.json` just to keep CI green. Broad, live spell-checking across any file (source, markdown, text) is the **cspell editor extension's** job, so typos still surface to whoever is editing. A repo owner **may** widen their own CI file list, but README + HISTORY are the default; keep the CI workflow, the `Lint: Spelling` VS Code task, and the AGENTS.md cspell one-liner on the same file list. The list is explicit (not a glob), so a repo that ships no `HISTORY.md` (e.g. one with no changelog) must drop it from all three surfaces and gate on `README.md` alone - cspell errors on a listed file that does not exist. Markdown *linting* (item 1) stays repo-wide `**/*.md` - it does not choke on technical terms.
 
 ## .NET
 
@@ -60,6 +60,15 @@ This is the style guide for any **.NET projects** in this repo.
 3. **CI lint backstop**
    - CI runs the clean-compile checks on every PR as the authoritative backstop
    - Git hooks are optional; a repo may wire a local runner (Husky.Net) for pre-commit enforcement, but CI is the gate that matters
+
+#### Central Build and Package Configuration
+
+Shared MSBuild configuration is centralized at the repository root, never duplicated per project:
+
+- **`Directory.Build.props`** carries the properties every project shares - the analyzer set and `TreatWarningsAsErrors` from the Zero Warnings Policy above, plus `LangVersion`, `TargetFramework` where uniform, and any repo-wide build metadata. A csproj carries only what is genuinely project-specific (`OutputType`, `IsPackable`, project references).
+- **`Directory.Packages.props`** owns central package management: it sets `ManagePackageVersionsCentrally` to `true` (in this file, not `Directory.Build.props`) and declares every dependency version once as a `PackageVersion` item, so a csproj's `PackageReference` items are versionless. One file to review on a bump, one Dependabot surface, and no version skew between projects.
+
+A repo whose projects still carry per-project analyzer settings or versioned `PackageReference` items is drifted - move the shared property or version up to the root file rather than editing it in place.
 
 #### Build Tasks
 
@@ -188,9 +197,7 @@ Note: Code snippets are illustrative examples only. Replace namespaces/types to 
    - YAML files: 2 spaces
    - JSON files: 4 spaces
 
-5. **Line endings**
-   - C#, XML, YAML, JSON, Windows scripts: CRLF
-   - Linux scripts (`.sh`): LF
+5. **Line endings**: not specified here - governed per repo by `.editorconfig` / `.gitattributes` per the [AGENTS.md][agents] "Line Endings" section.
 
 6. **`#region`**: Do not use regions. Prefer logical file/folder/namespace organization.
 7. **Member ordering (StyleCop SA1201)**: const -> static readonly -> static fields -> instance readonly fields -> instance fields -> constructors -> public (events -> properties -> indexers -> methods -> operators) -> non-public in same order -> nested types
@@ -252,7 +259,7 @@ Follow the scope hierarchy in [Analyzer Diagnostics and Suppressions][analyzer-d
    logger.LogError(exception, "{Function}", function);
    ```
 
-2. **Libraries log through abstractions, never a concrete backend.** A NuGet **library** depends only on `Microsoft.Extensions.Logging.Abstractions` and exposes an `ILoggerFactory` seam - a settable global factory defaulting to `NullLoggerFactory.Instance` (fallback `NullLogger.Instance`) with `SetFactory`/`TrySetFactory`, and/or an `ILoggerFactory`/`ILogger` parameter in its API. It must **not** reference Serilog or any sink - that forces a logging framework on every consumer and drags in AOT-incompatible dependencies. The consuming **application** owns the concrete logger (Serilog is fine there), bridges it to `ILoggerFactory` (e.g. `SerilogLoggerFactory` from `Serilog.Extensions.Logging`), and injects it. Reference: `LanguageTags` - `LogOptions` in the library; the CLI's `LoggerFactory` builds the Serilog-backed factory and injects it via `LogOptions.SetFactory`.
+2. **Libraries log through abstractions, never a concrete backend.** A NuGet **library** depends only on `Microsoft.Extensions.Logging.Abstractions` and exposes an `ILoggerFactory` seam - a settable global factory defaulting to `NullLoggerFactory.Instance` (fallback `NullLogger.Instance`) with `SetFactory`/`TrySetFactory`, and/or an `ILoggerFactory`/`ILogger` parameter in its API. It must **not** reference Serilog or any sink - that forces a logging framework on every consumer and drags in AOT-incompatible dependencies. The consuming **application** owns the concrete logger (Serilog is fine there), bridges it to `ILoggerFactory` (e.g. `SerilogLoggerFactory` from `Serilog.Extensions.Logging`), and injects it. Reference pattern: a `LogOptions` seam in the library; the consuming CLI builds the Serilog-backed factory and injects it via `LogOptions.SetFactory`.
 
 3. **CallerMemberName**: Use for automatic function name tracking
 
@@ -293,7 +300,7 @@ Follow the scope hierarchy in [Analyzer Diagnostics and Suppressions][analyzer-d
 
 #### Testing Conventions
 
-1. **Framework**: **xUnit v3 or later** (the `xunit.v3` package, never the legacy v2 `xunit` package) with **AwesomeAssertions** for every assertion; native xUnit asserts (`Assert.Equal`, `Assert.True`, ...) are not allowed - use the fluent `.Should()` API
+1. **Framework**: **xUnit v3 or later** (the `xunit.v3` package, never the legacy v2 `xunit` package) with **AwesomeAssertions** for every assertion. Native xUnit asserts (`Assert.Equal`, `Assert.True`, ...) are not allowed - use the fluent `.Should()` API. Dynamic test skipping (`Assert.Skip`, `Assert.SkipWhen`) is control flow, not an assertion, and stays native.
 
    ```csharp
    [Fact]
@@ -346,18 +353,31 @@ Follow the scope hierarchy in [Analyzer Diagnostics and Suppressions][analyzer-d
 
 This is the style guide for any **Python project(s)** in this repo.
 
+**Adapt before propagating.** The rules below describe the default Python profile - a package that publishes to PyPI, type-checked by `pyright` in strict mode, dependencies in `[dependency-groups]`. A derived repo often differs; when it does, **adapt these fields to match the repo's actual toolchain rather than copying verbatim** (a verbatim copy that misdescribes the repo is inaccurate and gets rejected in review). The axes that commonly vary per repo:
+
+- **Type checker in CI** - `pyright` strict, **`mypy` in CI with `pyright` editor-only** (Pylance), or both. Whichever runs in CI is the one the clean-compile and the CI gate invoke.
+- **Dependency declaration** - `[dependency-groups]`, or PEP 621 `[project.optional-dependencies]` (dev tools installed with `uv sync --extra <group>`).
+- **Versioning / publishing** - a published package (`_version.py` + a version source + `uv build` + a PyPI publish step), or a **source-only** repo with a static `version` and no publish step (see [Versioning][versioning-section]).
+- **Disabled markdownlint rules** - repo-specific; `.markdownlint-cli2.jsonc` at the repo root is the source of truth, not any example rule named here.
+- **VS Code config home** - editor **settings/extensions** may live in `.vscode/*.json` **or** the `<Repo>.code-workspace`; **tasks / launch / debug** configs can only be external `.vscode/*.json` (they cannot live in the workspace file). A `[vscode-tasks]` reference must point wherever the repo actually keeps `tasks.json`.
+
+**Two profiles.** A repo's Python is one of two shapes, and the rest of this section (uv project, `uv.lock`, `uv run`, `src` layout, pytest coverage) describes the **project** profile. The two differ by whether the Python has **third-party runtime dependencies**, which shows up structurally in `pyproject.toml`, so the audit detects the profile there (`python.profile.detect`):
+
+- **Project** - the Python has third-party runtime dependencies, or is the repo's deliverable. It is a PEP 621 uv project: `[project]` with `dependencies` (dev tools in `[project.optional-dependencies]` or `[dependency-groups]`), a `[build-system]`, and a committed `uv.lock` (pinned LF - see [Line Endings][line-endings]); CI runs `uv sync --frozen` + `uv run <tool>`, so the lockfile pins tool versions.
+- **Scripts** - stdlib-only utility scripts embedded in a **non-Python** repo (e.g. a Python tooling subtree of a `csharp` app). Run the tools with **`uvx`** (no project install, no lockfile): the `pyproject.toml` carries **only** tool config (`[tool.ruff]`, `[tool.mypy]`, and an optional `[tool.pyright]` editor block) - no `[project]`, no `[build-system]`, no `uv.lock` (that metadata would misrepresent it as a shippable package). **mypy** is the type-check gate (there is no first-party package for pyright strict to anchor on), and a `[tool.pyright]` block in **standard** mode keeps Pylance quiet in the editor - the same mypy-gate/pyright-editor split the Project profile uses. There is no lockfile, and a `uvx <tool>@<ver>` pin in a `run:` step is not something Dependabot tracks, so **CI runs `uvx ruff@latest` / `uvx mypy@latest`** rather than a manual pin that would silently go stale. The fleet rule is to pin only what Dependabot auto-updates (SHA-pinned actions, package deps) and otherwise run latest, so the VS Code tasks, README, and CI all run the unpinned latest here. `.py` files follow the repo's line-ending default (CRLF in a CRLF-default repo, and a shebang-executed script is LF-pinned by path - see [Line Endings][line-endings]). There is no pytest suite, so the coverage expectation is N/A. A co-present `csharp` type still carries `codecov.yml` for its own tests.
+
 ### Toolchain
 
 | Tool | Role | Config |
 |---|---|---|
-| [uv][uv-link] | env, deps, build, publish | `pyproject.toml` `[dependency-groups]`, `uv.lock` |
-| [hatchling][latest-link] | build backend | `pyproject.toml` `[build-system]` |
+| [uv][uv-link] | env, deps, build, publish (build/publish only where the repo ships a package) | `pyproject.toml` `[dependency-groups]` or `[project.optional-dependencies]`, `uv.lock` |
+| [hatchling][latest-link] | build backend (published packages) | `pyproject.toml` `[build-system]` |
 | [ruff][ruff-link] | lint + format + import sort | `pyproject.toml` `[tool.ruff]` |
-| [pyright][pyright-link] | type checker (strict baseline) | `pyproject.toml` `[tool.pyright]` |
-| [mypy][mypy-link] | additional type checker (optional; required for Home Assistant) | `pyproject.toml` `[tool.mypy]` (or per home-assistant/core) |
+| [pyright][pyright-link] | type checker (default; strict baseline) | `pyproject.toml` `[tool.pyright]` |
+| [mypy][mypy-link] | additional/alternate type checker (optional; the CI checker in a mypy-in-CI repo; required for Home Assistant) | `pyproject.toml` `[tool.mypy]` (or per home-assistant/core) |
 | [pytest][docs-link] | test runner | `pyproject.toml` `[tool.pytest.ini_options]` |
 
-**Type checking targets strongly typed, deterministic code.** `pyright` in **strict** mode is the required baseline on first-party code (`[tool.pyright]` `strict = ["src"]`, or the integration package for a Home Assistant repo; tests run standard mode). pyright is the anchor because **Pylance embeds it**, so the editor and the CLI/CI (`uv run pyright`) run the *same* engine and never disagree; the standalone `ms-pyright.pyright` extension stays in `unwantedRecommendations` because Pylance covers it. Relax strictness on **third-party** code only when a dependency has no usable types and no alternative (e.g. `pandas`): a targeted, commented `# pyright: ignore[...]` or a scoped `[tool.pyright]` override, never a blanket relaxation.
+**Type checking targets strongly typed, deterministic code.** `pyright` in **strict** mode is the default baseline on first-party code (a repo may instead run `mypy` in CI and keep `pyright` editor-only via Pylance - see the next paragraph) (`[tool.pyright]` `strict = ["src"]`, or the integration package for a Home Assistant repo; tests run standard mode). pyright is the anchor because **Pylance embeds it**, so the editor and the CLI/CI (`uv run pyright`) run the *same* engine and never disagree; the standalone `ms-pyright.pyright` extension stays in `unwantedRecommendations` because Pylance covers it. Relax strictness on **third-party** code only when a dependency has no usable types and no alternative (e.g. `pandas`): a targeted, commented `# pyright: ignore[...]` or a scoped `[tool.pyright]` override, never a blanket relaxation.
 
 **`mypy` is allowed, and required where the ecosystem demands it - it is not banned.** Running more than one checker is normal when each serves a purpose - the .NET side pairs `CSharpier` and `dotnet format` the same way - and pyright's inference and mypy's plugin ecosystem (e.g. `pydantic.mypy`) catch different classes of error. A **Home Assistant** integration runs `mypy --strict` because the platinum `strict-typing` quality-scale tier requires it; a pydantic-heavy library may opt in for the plugin. When a repo uses mypy it runs in **CI and the editor** (the `ms-python.mypy-type-checker` extension) so the two stay consistent, and its mypy command joins the clean-compile; a repo with no such need stays pyright-only, which is lighter and inherently consistent.
 
@@ -373,10 +393,10 @@ uv run ruff check                # verify lint clean
 uv run ruff format --check       # verify format clean
 uv run pyright                   # verify types
 uv run pytest                    # run tests
-uv build                         # produce wheel + sdist in ./dist
+uv build                         # produce wheel + sdist in ./dist (published packages only)
 ```
 
-The Python clean-compile (see [Clean-Compile Verification][clean-compile-verification]) is `uv run ruff format` + `uv run ruff check` + `uv run pyright` (plus the repo's mypy command, e.g. `uv run mypy src`, where mypy is used - see Type checking above); run it (plus `uv run pytest`) before committing. These are documented commands, not VS Code tasks. CI runs the same clean-compile commands as the authoritative backstop. Git hooks are opt-in; wire `pre-commit` for `ruff` and `pyright` yourself if you want local enforcement.
+The Python clean-compile (see [Clean-Compile Verification][clean-compile-verification]) is `uv run ruff format` + `uv run ruff check` + the repo's type checker - `uv run pyright`, or `uv run mypy src` where mypy is the CI checker, or both where the repo runs both (see Type checking above); run it (plus `uv run pytest`) before committing. These are documented commands; an optional VS Code tasks mirror (all `type: process`, no `&&` shell chaining, so it runs the same on any task shell) is in [`vscode-tasks-python.json`][vscode-tasks-python]. CI runs the same clean-compile commands as the authoritative backstop. Git hooks are opt-in; wire `pre-commit` for `ruff` and the type checker yourself if you want local enforcement.
 
 ### Layout
 
@@ -390,7 +410,7 @@ The Python clean-compile (see [Clean-Compile Verification][clean-compile-verific
     src/
         <package_name>/
             __init__.py
-            _version.py
+            _version.py        # published packages; a source-only repo uses a static version instead
             <modules>.py
     tests/
         __init__.py
@@ -419,7 +439,7 @@ The Python clean-compile (see [Clean-Compile Verification][clean-compile-verific
 
 #### Type Hints
 
-- **All public APIs are typed.** Pyright runs on `src/` in strict mode (`[tool.pyright]` `strict = ["src"]`); tests run in standard mode.
+- **All public APIs are typed.** The repo's configured type checker runs on `src/` (pyright strict via `[tool.pyright]` `strict = ["src"]`, or `mypy` where that is the CI checker); tests run in the checker's looser/standard mode.
 - **Use modern syntax**: `list[int]` not `List[int]`, `dict[str, X]` not `Dict[str, X]`, `X | None` not `Optional[X]`, `from __future__ import annotations` only when needed for forward references.
 - **Don't add `# type: ignore` to silence pyright errors without a comment** explaining the constraint. If a recurring false positive needs suppression, configure it project-wide in `[tool.pyright]`. A new port doesn't change this - fix freshly surfaced type errors rather than muting them (see [Analyzer Diagnostics and Suppressions][analyzer-diagnostics-and-suppressions]).
 
@@ -454,27 +474,55 @@ The Python clean-compile (see [Clean-Compile Verification][clean-compile-verific
 
 ### Versioning
 
-`_version.py` ships with `__version__ = "0.0.0"` as a placeholder. Until you wire `_version.py` to something that increments (the usual options are `hatch-vcs`, a version.json bridge, or manual bumps), no new PyPI versions will land - publishing with `skip-existing: true` keeps a stuck placeholder version from failing the run.
+**Published packages.** `_version.py` ships with `__version__ = "0.0.0"` as a placeholder. Until you wire `_version.py` to something that increments (the usual options are `hatch-vcs`, a version.json bridge, or manual bumps), no new PyPI versions will land - publishing with `skip-existing: true` keeps a stuck placeholder version from failing the run.
+
+**Source-only repos** (no PyPI publish; source-release on dispatch, or no release at all) do not need `_version.py`: keep a static `version` in `pyproject.toml` `[project]`, or let the release pipeline's version source (e.g. NBGV + `version.json`) own the tag. There is no publish step to guard, so `skip-existing` does not apply.
 
 ### Linter Cleanliness
 
 Before pushing or opening a PR:
 
 - VS Code's **Problems** pane should be quiet for the files you touched. The relevant linters are ruff (via the `charliermarsh.ruff` extension) and pyright (via the `ms-python.python` extension's bundled Pylance).
-- The CI gate is `uv run ruff check && uv run ruff format --check && uv run pyright && uv run pytest` - same as the local commands above, run from the Python project directory.
+- The CI gate is `uv run ruff check`, `uv run ruff format --check`, the repo's type checker (`uv run pyright` or `uv run mypy src`), and `uv run pytest` - the same commands as the local loop above, run from the Python project directory. (Invoke them as separate steps, not `&&`-chained, so the runner shell is irrelevant.)
 - Markdown in this directory follows the repo-wide [Markdown and Spelling][markdown-and-spelling] rules.
+
+## C++
+
+The C++ here is a small amount of hand-written code that an ESPHome build compiles: the EasyStart external component and the lambda helpers the templates include. It is never built by this repository, so the scope of these rules is **style only**.
+
+### Formatting Toolchain
+
+[`.clang-format`][clang-format] at the repository root is the single source of truth for C/C++ formatting, shared by three surfaces so they cannot disagree:
+
+- **The editor** - the `xaver.clang-format` extension, set as the C/C++ default formatter in the workspace, formats on save from this file.
+- **The CLI** - `clang-format --dry-run --Werror <files>` reproduces the check locally.
+- **CI** - the lint job runs the same check, feeding the operational lint gate.
+
+The style derives from ESPHome upstream (LLVM-based, 2-space indent, 120-column limit) so the committed sources format clean and do not churn against upstream conventions. A repository's `.h` is read as C++ by context, which is what ESPHome and Arduino headers are.
+
+Semantic and static analysis is deliberately out of scope. The downstream ESPHome build compiles this code and does the compile-time checking, and it holds the compile database that a `clang-tidy` pass would need. Adding a second, weaker analysis here would duplicate that without the context to be correct.
+
+### Conventions
+
+- **Comments follow the repo-wide [comment rules][agents]** in `AGENTS.md`: structured rather than prose, one sentence per line, no file- or class-header summary blocks.
+- **Keep header helpers header-only and side-effect free.** `templates/Utils.h` is textually included into generated lambdas, so anything with a translation-unit identity or static state does not belong there.
+- **Match ESPHome's own naming** in an external component - `snake_case` members and methods, a trailing underscore on private members - so the component reads like the framework it plugs into.
 
 <!-- Repo -->
 
 [agents]: ./AGENTS.md
 [analyzer-diagnostics-and-suppressions]: #analyzer-diagnostics-and-suppressions
+[clang-format]: ./.clang-format
 [clean-compile-verification]: #clean-compile-verification
 [history]: ./HISTORY.md
+[line-endings]: ./AGENTS.md#line-endings
 [markdown-and-spelling]: #markdown-and-spelling
 [markdownlint-cli2]: ./.markdownlint-cli2.jsonc
 [readme]: ./README.md
 [root]: ./.editorconfig
-[vscode-tasks]: ./catalog/snippets/configs/vscode-tasks.json
+[versioning-section]: #versioning
+[vscode-tasks]: ./.vscode/tasks.json
+[vscode-tasks-python]: ./.vscode/tasks.json
 
 <!-- External -->
 
