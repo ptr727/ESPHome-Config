@@ -125,7 +125,7 @@ The decode was confirmed end-to-end against real modules.
 Every field matched the official app's on-screen values (current, last-start-peak `24.5 A`, line frequency `59.8 Hz`, total starts `4947`).\
 See [PROTOCOL.md section 7][protocol] for the validation table.
 
-- **[`python/easystart_monitor.py`][easystart-monitor]** - a `uv`-runnable ([bleak][bleak-link]) monitor that connects over your computer's Bluetooth, polls `ReadLive`, and prints each frame raw + decoded in real time. See [`python/README.md`][readme].
+- **[`python/easystart_monitor.py`][easystart-monitor]** - a `uv`-runnable ([bleak][bleak-link]) monitor that connects over your computer's Bluetooth, polls `ReadLive`, and prints each frame raw + decoded in real time. See [`python/README.md`][python-readme].
 
   ```shell
   uv run python/easystart_monitor.py --discover              # discover your units (name + MAC)
@@ -193,7 +193,7 @@ See [LICENSE][license].
 [office-bluetooth-proxy]: ../office-bluetooth-proxy.yaml
 [protocol]: ./PROTOCOL.md
 [pull-apk]: ./tools/pull-apk.sh
-[readme]: ./python/README.md
+[python-readme]: ./python/README.md
 
 <!-- External -->
 

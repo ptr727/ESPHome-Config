@@ -84,7 +84,7 @@ Every device template has an example configuration in [test][test] that CI compi
 
 - [Template][easystart-template] to attach a [Micro-Air EasyStart][microair-link] AC compressor soft-starter to a Bluetooth proxy as a `ble_client`, exposing live current, estimated power, line frequency, last-start peak, short-cycle delay, system state, running state, and start / fault / learned-start counters in Home Assistant, plus a BLE signal-strength diagnostic for the link.
 - Used by [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy], which sits near the HVAC units and attaches both compressors.
-- The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/][easystart], see [easystart/README.md][readme] for details.
+- The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/][easystart], see [easystart/README.md][easystart-readme] for details.
 
 ### Utility Templates
 
@@ -197,8 +197,9 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [basic]: ./templates/basic.yaml
 [common]: ./templates/common.yaml
 [debug]: ./templates/debug.yaml
-[easystart]: ./easystart/
+[easystart-readme]: ./easystart/README.md
 [easystart-template]: ./templates/easystart.yaml
+[easystart]: ./easystart/
 [efun-sh331]: ./templates/efun-sh331.yaml
 [esp32-s3-devkitc]: ./templates/esp32-s3-devkitc.yaml
 [esp32-s3-wroom-1-n16r8]: ./templates/esp32-s3-wroom-1-n16r8.yaml
@@ -221,7 +222,6 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [ota]: ./templates/ota.yaml
 [pantry-bluetooth-proxy]: ./pantry-bluetooth-proxy.yaml
 [patio-plant-sensor]: ./patio-plant-sensor.yaml
-[readme]: ./easystart/README.md
 [recirculation-pump-controller]: ./recirculation-pump-controller.yaml
 [rgb-led-status]: ./templates/rgb-led-status.yaml
 [rocket-astra]: ./templates/rocket-astra.yaml
