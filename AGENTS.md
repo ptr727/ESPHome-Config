@@ -4,6 +4,10 @@ Operating rules for AI coding agents working in this repository. This file is th
 
 Two companion docs carry the rest. [`OPERATIONS.md`](./OPERATIONS.md) holds the ESPHome operational knowledge an agent needs to change a device config safely - how to reach the ESPHome CLI, how to validate and flash, the template and vendor-firmware patterns, and the traps that have bitten before. [`CODESTYLE.md`](./CODESTYLE.md) holds code style, and [`WORKFLOW.md`](./WORKFLOW.md) the CI/CD workflow contract. Read `OPERATIONS.md` before editing any YAML under this tree.
 
+**Every `##` section here except `Devcontainer` and `Repository Layout` is carried, and must not be edited.** Those carried sections are universal rule text held byte-identical across a fleet of repositories and verified by a hash, so any local change to one registers as drift and fails the repository audit - including a change that fixes a real mistake, and including a new section added in good faith.
+
+`Devcontainer` and `Repository Layout` describe this repository rather than stating a rule, so they are yours to maintain, and `Repository Layout` in particular should be kept current as the tree changes. This intro is repo-owned as well. A rule this repository needs belongs in `OPERATIONS.md` or [`CODESTYLE.md`](./CODESTYLE.md) instead. A genuine defect in the carried text is worth reporting upstream rather than patching locally, and the maintainer supplies the destination - see "Reviewing Carried Fleet Content" in [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) for how to handle one that surfaces in review.
+
 ## Foundational Principles
 
 The specific rules in this file implement a few governing principles. Read these first: they are the reason the branching, release, and versioning rules are shaped the way they are, and every rule below serves one of them.
