@@ -59,7 +59,9 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
       # Lint the standalone Python utility, the easystart BLE monitor, with ruff.
-      # Matches the ptr727 fleet convention of uvx with a pinned tool version.
+      # The version is pinned so an upstream ruff release cannot fail an unrelated change.
+      # The fleet default is unpinned latest, so this is a recorded divergence, see CODESTYLE.md.
+      # Keep the pin identical to the Ruff tasks in .vscode/tasks.json.
       # pyright stays editor-only via Pylance.
       - name: Lint Python step
         working-directory: easystart/python
