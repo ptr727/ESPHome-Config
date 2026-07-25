@@ -1,6 +1,8 @@
 # ESPHome Operations
 
-How to work on the device configurations in this repository: reaching the ESPHome CLI, validating and flashing a change, the template and vendor-firmware patterns, and the traps that have cost time before. [`AGENTS.md`][agents] carries the cross-cutting rules, this file the ESPHome-specific ones. Read this before editing any YAML under this tree.
+How to work in this repository: reaching the ESPHome CLI, validating and flashing a change, the template and vendor-firmware patterns, the tooling hazards, and the traps that have cost time before. [`AGENTS.md`][agents] carries the cross-cutting rules that every repository in the fleet shares, and this file everything specific to this one. Read it before editing any YAML under this tree, and read "Repository Tooling Hazards" before driving `gh` or the repo-config script.
+
+This file is where a durable rule for this repository goes. `AGENTS.md` is carried fleet law and byte-locked, so it cannot take one.
 
 ## Container and CLI
 
@@ -207,6 +209,16 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 - Select the default Python interpreter and create a virtual environment, via Ctrl-Shift-P then Python.
 - PlatformIO Core installs into the virtual environment and uses that environment's Python.
 
+## Repository Tooling Hazards
+
+Sharp edges in the tooling around this repository, each one learned by tripping over it.
+
+- **Never build a GitHub comment or reply body inside a double-quoted shell string.** Write it to a file and pass `--body-file`, or `-F body=@file` on a REST call. Backticks in a double-quoted string are command substitution, so a body that mentions a path in code formatting **executes that path**. This is not theoretical: a review reply containing `` `repo-config/configure.sh` `` ran the script, which writes by default, and the posted comment came out with its code spans replaced by command output. Escaping each backtick works and is one missed backslash from repeating the incident.
+- **[`repo-config/configure.sh`][configure-sh] writes unless told otherwise.** With no arguments it runs in `apply` mode and PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass `check` for the read-only validation, which is what you almost always want: `repo-config/configure.sh check`.
+- **Markdown links are reference-style everywhere except [`AGENTS.md`][agents] and `.github/copilot-instructions.md`**, which keep inline links because they are agent-instruction files. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
+- **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
+- **The spell-check gate covers `**/README.md` plus `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
+
 ## Things to Avoid
 
 - Do not claim a config change works until `esphome config`, and where appropriate `esphome compile`, returns success.
@@ -221,6 +233,7 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
+[configure-sh]: ./repo-config/configure.sh
 [easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
