@@ -337,7 +337,7 @@ When pulling a public image fails on a Docker-Desktop/WSL credential-helper erro
 
 ## Devcontainer
 
-This repository is the live `/config` directory of a running ESPHome instance, so the normal editing surface is the host itself over remote SSH, not a container. The [`.devcontainer/devcontainer.json`](./.devcontainer/devcontainer.json) here is an optional offline aid rather than the primary toolchain: it runs the same `ptr727/esphome-nonroot:latest` image the live instance runs, bind-mounts the workspace at `/config` and the sibling `../cache` directory at `/cache`, forwards the dashboard on port 6052, and runs as `1001:100` so files it writes keep the host's non-root ownership. Use it to validate, compile, and debug a config away from the live instance; it backs the debugging walkthroughs in [`OPERATIONS.md`](./OPERATIONS.md). ESPHome supplies the whole toolchain from that image, so there is nothing further to install.
+This repository is the live `/config` directory of a running ESPHome instance, so the normal editing surface is the host itself over remote SSH, not a container. The [`.devcontainer/devcontainer.json`](./.devcontainer/devcontainer.json) here is an optional offline aid rather than the primary toolchain: it runs the same `ptr727/esphome-nonroot:latest` image the live instance runs, bind-mounts the workspace at `/config` and the sibling `../cache` directory at `/cache`, forwards the dashboard on port 6052, and runs as `1001:100` so files it writes keep the host's non-root ownership. Use it to validate, compile, and debug a config away from the live instance, which is what the debugging walkthroughs in [`OPERATIONS.md`](./OPERATIONS.md) describe. ESPHome supplies the whole toolchain from that image, so there is nothing further to install.
 
 ## Editor and Tasks
 
@@ -356,12 +356,12 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 
 ## Repository Layout
 
-- [`AGENTS.md`](./AGENTS.md), [`OPERATIONS.md`](./OPERATIONS.md), [`CODESTYLE.md`](./CODESTYLE.md), [`WORKFLOW.md`](./WORKFLOW.md), [`AUDIT.md`](./AUDIT.md) - the governance and audit docs; this file is the cross-cutting-rules authority and `OPERATIONS.md` the ESPHome one.
-- Root `*.yaml` - the deployed per-device configs, one per physical device, each composed from templates via `packages:`. `secrets.yaml` is the live secret store and is not committed; [`secrets._yaml`](./secrets._yaml) is its committed template.
+- [`AGENTS.md`](./AGENTS.md), [`OPERATIONS.md`](./OPERATIONS.md), [`CODESTYLE.md`](./CODESTYLE.md), [`WORKFLOW.md`](./WORKFLOW.md), [`AUDIT.md`](./AUDIT.md) - the governance and audit docs, where this file is the cross-cutting-rules authority and `OPERATIONS.md` the ESPHome one.
+- Root `*.yaml` - the deployed per-device configs, one per physical device, each composed from templates via `packages:`. `secrets.yaml` is the live secret store and is not committed, while [`secrets._yaml`](./secrets._yaml) is its committed template.
 - [`templates/`](./templates/) - the shared device and utility templates the device configs include, plus [`templates/Utils.h`](./templates/Utils.h) for the lambda helpers.
 - [`test/`](./test/) - one minimal example device config per published template. CI compiles these against the current ESPHome release, so a published template is known to build, and they double as usage samples.
 - [`easystart/`](./easystart/) - the Micro-Air EasyStart soft-starter project: the ESPHome external component, its protocol and reverse-engineering notes, the standalone BLE monitor utility under `easystart/python`, and its own nested `AGENTS.md`.
-- [`archive/`](./archive/) - retired device configs kept for reference; not built or validated.
+- [`archive/`](./archive/) - retired device configs kept for reference, neither built nor validated.
 - [`repo-config/`](./repo-config/) - branch rulesets and the apply script, kept out of `.github/` (which is Actions-owned).
 - [`spec/`](./spec/) - the machine-readable secret-name ground truth this repo's audit checks against.
 - [`.devcontainer/`](./.devcontainer/) - the offline debugging container described above.
