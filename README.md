@@ -19,12 +19,12 @@ Every device template has an example configuration in [test][test] that CI compi
 #### Ayococr X5P WiFi Plug
 
 - [Template][aoycocr-x5p] for the [Ayococr X5P][amazon-dp-b07r6ct3g7-link] US 120V AC WiFi wall plug.
-- See blog [post][blog-2020-09-link] for firmware conversion details.
+- See blog [post][blog-tuya-to-esphome-link] for firmware conversion details.
 
 #### EFUN SH331 WiFi Power Monitoring Plug
 
-- [Template][efun-sh331] for the [EFUN SH331W][amazon-gp-product-link] US 120V AC WiFi power monitoring wall plug.
-- See blog [post][blog-2020-09-link] for firmware conversion details.
+- [Template][efun-sh331] for the [EFUN SH331W][efun-sh331w-link] US 120V AC WiFi power monitoring wall plug.
+- See blog [post][blog-tuya-to-esphome-link] for firmware conversion details.
 - Note: No longer listed on Amazon.
 
 #### Sonoff TH10/TH16 WiFi Relay
@@ -111,9 +111,9 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 #### Espressif ESP32-S3-DevKitC-1 Devkit
 
-- [Template][esp32-s3-devkitc] for the [ESP32-S3-DevKitC-1][docs-projects-esp-dev-kits-link] and clone boards.
+- [Template][esp32-s3-devkitc] for the [ESP32-S3-DevKitC-1][espressif-esp32-s3-devkitc-link] and clone boards.
 - Includes the on-chip temperature sensor and the RGB LED as status LED.
-- The default [`esp32-s3-devkitc-1`][docs-en-latest-link] board is the `ESP32-S3-WROOM-1-N8`, 8MB Quad Flash and no PSRAM.
+- The default [`esp32-s3-devkitc-1`][platformio-esp32-s3-devkitc-link] board is the `ESP32-S3-WROOM-1-N8`, 8MB Quad Flash and no PSRAM.
 - Compose the devkit template with the board definition matching the fitted module:
   - [ESP32-S3-WROOM-1-N16R8][esp32-s3-wroom-1-n16r8]: 16MB Quad Flash, 8MB Octal PSRAM, 3.3V.
   - [ESP32-S3-WROOM-2-N16R8V][esp32-s3-wroom-2-n16r8v]: 16MB Octal Flash, 8MB Octal PSRAM, 1.8V.
@@ -132,7 +132,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 - [Template][adafruit-esp32-s3-feather] for the [Adafruit ESP32-S3 Feather][adafruit-product-5323-link] board.
 - Includes the on-chip temperature sensor and the RGB LED as status LED.
-- Includes the [MAX17048][analog-en-products-link] I2C battery charge monitor.
+- Includes the [MAX17048][analog-max17048-link] I2C battery charge monitor.
 
 ## Projects
 
@@ -158,16 +158,16 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 ### Garage Fan Thermostats
 
 - [`garage-door-fan-controller.yaml`][garage-door-fan-controller] (Sonoff TH10) and [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] (Norvi) control cool air ventilation fans in the garage based on temperature.
-- See blog [post][blog-2021-08-link] for project details.
+- See blog [post][blog-garage-cooling-link] for project details.
 
 ### Hot Water Recirculation Pump
 
 - [`recirculation-pump-controller.yaml`][recirculation-pump-controller] (Sonoff TH10) controls the whole home hot water recirculation pump using temperature probes on an interval / duration schedule.
-- See blog [post][blog-2020-10-link] for project details.
+- See blog [post][blog-recirculation-pump-link] for project details.
 
 ## Usage
 
-- The standard [ESPHome][hub-r-esphome-link] container does not support running as non-root. Deploy the [ESPHome-NonRoot][github-ptr727-esphome-nonroot-link] container for non-root operation if desired.
+- The standard [ESPHome][docker-hub-esphome-link] container does not support running as non-root. Deploy the [ESPHome-NonRoot][github-ptr727-esphome-nonroot-link] container for non-root operation if desired.
 - Set directory permissions:
   - `sudo chown -R nonroot:users /data/appdata/esphome`
   - `sudo chmod -R ug=rwx,o=rx /data/appdata/esphome`
@@ -242,29 +242,28 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 
 [adafruit-product-5323-link]: https://www.adafruit.com/product/5323
 [amazon-dp-b07r6ct3g7-link]: https://www.amazon.com/dp/B07R6CT3G7
-[amazon-gp-product-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
 [amazon-sonoff-monitoring-certified-assistant-supporting-dp-link]: https://www.amazon.com/Sonoff-Monitoring-Certified-Assistant-Supporting/dp/B08GKGS197
 [amazon-sonoff-temperature-humidity-monitoring-assistant-dp-link]: https://www.amazon.com/Sonoff-Temperature-Humidity-Monitoring-Assistant/dp/B07TF5SYGL
 [amazon-sonoff-temperature-monitoring-assistant-ds18b20-dp-link]: https://www.amazon.com/Sonoff-Temperature-Monitoring-Assistant-DS18B20/dp/B08DFQ2NP3
-[analog-en-products-link]: https://www.analog.com/en/products/max17048.html
+[analog-max17048-link]: https://www.analog.com/en/products/max17048.html
 [apolloautomation-products-plt-1-link]: https://apolloautomation.com/products/plt-1
 [blakadder-gl-s10-link]: https://blakadder.com/gl-s10/
-[blog-2020-09-link]: https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/
-[blog-2020-10-link]: https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/
-[blog-2021-08-link]: https://blog.insanegenius.com/2021/08/11/trying-to-keep-my-garage-cool/
+[blog-garage-cooling-link]: https://blog.insanegenius.com/2021/08/11/trying-to-keep-my-garage-cool/
+[blog-recirculation-pump-link]: https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/
+[blog-tuya-to-esphome-link]: https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/
 [cartft-link]: https://www.cartft.com
 [ceilsense-en-link]: https://ceilsense.nl/en/
 [discord-dbwxp5r3-link]: https://discord.gg/dbwxp5R3
-[docs-en-latest-link]: https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
-[docs-projects-esp-dev-kits-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
+[docker-hub-esphome-link]: https://hub.docker.com/r/esphome/esphome
+[efun-sh331w-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
+[espressif-esp32-s3-devkitc-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 [github-apolloautomation-plt-1-link]: https://github.com/ApolloAutomation/PLT-1/blob/main/Integrations/ESPHome/PLT-1B.yaml
 [github-konnected-io-konnected-esphome-link]: https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
 [github-ptr727-esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [github-smarthomeshop-ceilsense-link]: https://github.com/smarthomeshop/ceilsense/blob/main/ceilsense-v1/ceilsense-complete-wifi-ld2412.yaml
 [gl-inet-products-gl-s10-link]: https://www.gl-inet.com/products/gl-s10/
 [home-assistant-blog-2023-link]: https://www.home-assistant.io/blog/2023/11/06/removal-of-myq-integration/
-[hub-r-esphome-link]: https://hub.docker.com/r/esphome/esphome
 [improv-wifi-link]: https://www.improv-wifi.com/
 [issue-29-link]: https://github.com/ptr727/ESPHome-Config/issues/29
 [issues-link]: https://github.com/ptr727/ESPHome-Config/issues
@@ -272,6 +271,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [kincony-esp32-sd-card-rtc-ds3231-link]: https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
 [konnected-products-smart-garage-door-opener-blaq-myq-alternative-link]: https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
 [microair-link]: https://www.microair.net
+[platformio-esp32-s3-devkitc-link]: https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
 [rocketcontroller-docs-esphome-link]: https://www.rocketcontroller.com/docs/esphome
 [rocketcontroller-link]: https://www.rocketcontroller.com
 [sensoper-link]: https://sensoper.com/

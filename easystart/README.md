@@ -19,7 +19,7 @@ My decoding adds the byte `[3]` = learned starts value, and I use ESPHome's Pyth
 
 ### Tools
 
-- Install [Android Platform Tools][developer-tools-releases-link].
+- Install [Android Platform Tools][android-platform-tools-link].
   - `winget install Google.PlatformTools`
 - Install [JADX][github-skylot-jadx-link].
 - Install [apktool][github-ibotpeaches-apktool-link].
@@ -148,12 +148,12 @@ A hardware-validated ESPHome external component (uses `ble_client`, derives comp
 defaults 240 V / 1.0), line frequency, last-start peak, short-cycle delay, system state, and start/fault/learned-start counters). Flashed on a GL-S10 proxy and confirmed against both live modules: both clients connect, every decoded field matches, and both `running` sensors report `on` in Home Assistant:
 
 - [`components/easystart/easystart.h`][easystart-header] - the C++ component (BLE + frame parsing).
-- [`components/easystart/__init__.py`][init] - ESPHome codegen / config schema (one instance per module).
+- [`components/easystart/__init__.py`][easystart-init] - ESPHome codegen / config schema (one instance per module).
 
 Wire it into a Bluetooth proxy with the reusable template [`../templates/easystart.yaml`][easystart-template] (include once per module, with `vars` for the MAC + label).
 A complete two-module example is [`../office-bluetooth-proxy.yaml`][office-bluetooth-proxy]. The office proxy sits near the HVAC units and attaches both compressors. Place the proxy close to the units: EasyStart BLE is very short range, it would not connect from across the room and needed the proxy relocated near the modules; an external-antenna ESP32 helps if the signal is marginal.
 
-The template also adds a **signal-strength diagnostic** per module, using ESPHome's built-in [`ble_client` RSSI sensor][esphome-components-sensor-link] (`type: rssi`, `entity_category: diagnostic`, default 60s). It reads the RSSI of the **live connection** (`esp_ble_gap_read_rssi`), not of advertisements, which matters because a module stops advertising once connected. It reads blank while disconnected (which on its own does not separate "compressor off" from "out of range", since `running` is also derived from BLE presence). Its value is the **link margin while connected**: around -60 dBm is healthy, and approaching -90 dBm means the link is barely viable, which is what turns an intermittent "everything unavailable" into a diagnosable placement problem. The office proxy measured -93 dBm on a live connection, effectively at the sensitivity floor. Use it to site a proxy, dropping `easystart_rssi_update_interval` to a few seconds while walking the location.
+The template also adds a **signal-strength diagnostic** per module, using ESPHome's built-in [`ble_client` RSSI sensor][esphome-ble-client-sensor-link] (`type: rssi`, `entity_category: diagnostic`, default 60s). It reads the RSSI of the **live connection** (`esp_ble_gap_read_rssi`), not of advertisements, which matters because a module stops advertising once connected. It reads blank while disconnected (which on its own does not separate "compressor off" from "out of range", since `running` is also derived from BLE presence). Its value is the **link margin while connected**: around -60 dBm is healthy, and approaching -90 dBm means the link is barely viable, which is what turns an intermittent "everything unavailable" into a diagnosable placement problem. The office proxy measured -93 dBm on a live connection, effectively at the sensitivity floor. Use it to site a proxy, dropping `easystart_rssi_update_interval` to a few seconds while walking the location.
 
 Two connection notes learned on hardware:
 
@@ -169,7 +169,7 @@ The frame decode is logged at INFO (the `state=... current=...` line) and the ra
 - [EasyStart Flex Home AC Soft Starter / ASY-398-X1S-BL][microair-products-easystart-flex-home-ac-soft-starter-link]
 - [EasyStart Home AC Wiring][micro-air-support-documents-residential-link]
 - [Bluetooth Operation Manual][easystart-bluetooth-manual-link]
-- [Google Play EasyStart App][play-store-apps-link]
+- [Google Play EasyStart App][play-store-easystart-link]
 - [Matt Brown's YouTube Channel][youtube-mattbrwn-link]
 - [Reddit Thread][reddit-r-homeassistant-link]
 - [Keen-coffee GitHub][github-keen-coffee-home-assistant-link]
@@ -185,10 +185,10 @@ See [LICENSE][license].
 [agents]: ./AGENTS.md
 [ble-re-playbook]: ./BLE-RE-PLAYBOOK.md
 [easystart-header]: ./components/easystart/easystart.h
+[easystart-init]: ./components/easystart/__init__.py
 [easystart-monitor]: ./python/easystart_monitor.py
 [easystart-template]: ../templates/easystart.yaml
 [esphome-integration]: #esphome-integration
-[init]: ./components/easystart/__init__.py
 [license]: ../LICENSE
 [office-bluetooth-proxy]: ../office-bluetooth-proxy.yaml
 [protocol]: ./PROTOCOL.md
@@ -197,13 +197,13 @@ See [LICENSE][license].
 
 <!-- External -->
 
+[android-platform-tools-link]: https://developer.android.com/tools/releases/platform-tools
 [bleak-link]: https://bleak.readthedocs.io/
 [claude-product-claude-code-link]: https://claude.com/product/claude-code
-[developer-tools-releases-link]: https://developer.android.com/tools/releases/platform-tools
 [easystart-bluetooth-manual-link]: https://www.micro-air.com/support-documents/installation_resources/EasyStart_Bluetooth_Manual.pdf
 [easystart-spec-sheet-link]: https://www.micro-air.com/support-documents/installation_resources/EasyStart_Specification_Sheet.pdf
+[esphome-ble-client-sensor-link]: https://esphome.io/components/sensor/ble_client/
 [esphome-components-ble-client-link]: https://esphome.io/components/ble_client/
-[esphome-components-sensor-link]: https://esphome.io/components/sensor/ble_client/
 [github-derekseaman-esphome-micro-air-easystart-link]: https://github.com/DerekSeaman/ESPHome-Micro-Air-EasyStart
 [github-ibotpeaches-apktool-link]: https://github.com/iBotPeaches/Apktool/releases/latest
 [github-keen-coffee-home-assistant-link]: https://github.com/Keen-coffee/home_assistant/blob/main/easyStart
@@ -211,7 +211,7 @@ See [LICENSE][license].
 [micro-air-support-documents-residential-link]: https://www.micro-air.com/support-documents/residential/current/EasyStart_HomeResidential_Installation_Guide.pdf
 [microair-products-easystart-flex-home-ac-soft-starter-link]: https://www.microair.net/products/easystart-flex-home-ac-soft-starter
 [oracle-java-technologies-link]: https://www.oracle.com/java/technologies/downloads/
-[play-store-apps-link]: https://play.google.com/store/apps/details?id=net.microair.easystart&hl=en_US
+[play-store-easystart-link]: https://play.google.com/store/apps/details?id=net.microair.easystart&hl=en_US
 [reddit-r-homeassistant-link]: https://www.reddit.com/r/homeassistant/comments/1dm00lg/integration_for_microair_easystart/
 [wireshark-download-link]: https://www.wireshark.org/download.html
 [youtube-mattbrwn-link]: https://www.youtube.com/@mattbrwn
