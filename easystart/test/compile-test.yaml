@@ -1,5 +1,5 @@
-# CI compile-test: proves the easystart external component (C++ + codegen) builds. Uses a dummy
-# MAC and no secrets, so it compiles standalone in CI. See .github/workflows/test-pull-request.yml.
+# CI compile-test proving the easystart external component builds.
+# The dummy MAC and absent secrets keep it standalone in CI.
 
 esphome:
   name: easystart-compile-test

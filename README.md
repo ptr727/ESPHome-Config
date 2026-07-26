@@ -134,6 +134,15 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Includes the on-chip temperature sensor and the RGB LED as status LED.
 - Includes the [MAX17048][analog-max17048-link] I2C battery charge monitor.
 
+#### Unexpected Maker ProS3D Devkit
+
+- [Template][unexpectedmaker-pros3d] for the [Unexpected Maker ProS3D][unexpectedmaker-pros3d-link] board.
+- Includes the on-chip temperature sensor and the RGB LED as status LED.
+- Includes the [MAX17048][analog-max17048-link] I2C battery charge monitor and a USB power presence sensor.
+- Optional substitutions:
+  - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
+  - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
+
 ## Projects
 
 Per-device configs live in the repository root. Each sets `substitutions:` (device name, friendly name, and any per-device overrides) and pulls in a template via `packages:`.
@@ -234,6 +243,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [templates]: ./templates/
 [test]: ./test/
 [time]: ./templates/time.yaml
+[unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
 [upstairs-hallway-plant-sensor]: ./upstairs-hallway-plant-sensor.yaml
 [wemos-lolin32-lite]: ./templates/wemos-lolin32-lite.yaml
 [wifi]: ./templates/wifi.yaml
@@ -282,4 +292,5 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [tasmota-sonoff-s31-link]: https://tasmota.github.io/docs/devices/Sonoff-S31/
 [tasmota-sonoff-th-link]: https://tasmota.github.io/docs/devices/Sonoff-TH/
 [templates-sonoff-thr316-link]: https://templates.blakadder.com/sonoff_THR316.html
+[unexpectedmaker-pros3d-link]: https://esp32s3.com/pros3.html
 [web-web-20191002041532-link]: https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite

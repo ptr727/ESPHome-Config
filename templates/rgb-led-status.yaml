@@ -6,10 +6,8 @@
 # system_status_led_brightness (default "50%")
 # blink_on_off_time            (default "200ms")
 
-# RGB status LED driven by Flo-R1der's prioritized status package.
-# Package handles boot/wifi/API state colors automatically; consumers can also
-# call `script.execute: led_working_status_<color>` / `led_feedback_blink_<color>`
-# from their own configs. See package README for full color/effect catalog.
+# The package drives boot, WiFi, and API state colors on its own.
+# A consumer can also call script.execute on led_working_status_<color> or led_feedback_blink_<color>.
 # https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
 
 # https://esphome.io/guides/configuration-types.html#packages
