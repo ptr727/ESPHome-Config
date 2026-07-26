@@ -3,14 +3,16 @@ name: Merge bot pull request action
 # Auto-merges in-repo Dependabot PRs, enabling on opened/reopened and disabling on a maintainer push.
 # - Merge method by base: develop = squash, main = merge.
 # - App token, not GITHUB_TOKEN: fires downstream workflows on merge, and grants write on read-only Dependabot PRs.
-# - pull_request_target, not pull_request: jobs hold the App key, so the workflow and action SHAs resolve from the trusted base rather than PR head.
+# - pull_request_target, not pull_request: the jobs hold the App key.
+# - Workflow and action SHAs therefore resolve from the trusted base, not PR head.
 # - No job checks out PR code, each runs gh pr merge by URL, which is what makes that safe.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize]
 
-# Keyed on the PR number so each PR queues independently, not on github.ref, which under pull_request_target is the base branch and would serialize every bot PR.
-# cancel-in-progress stays false so a follow-up synchronize cannot cancel an in-flight opened run before it enables auto-merge.
+# Keyed on the PR number so each PR queues independently.
+# github.ref would be the base branch under pull_request_target, serializing every bot PR against it.
+# cancel-in-progress stays false so a synchronize cannot cancel an in-flight opened run before it enables auto-merge.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: false

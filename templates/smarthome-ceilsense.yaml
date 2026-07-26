@@ -9,7 +9,8 @@
 # https://github.com/smarthomeshop/ceilsense/tree/main/ceilsense-v1
 
 # Assembled from the base, ld2412, and scd4x sub-packages rather than the vendor's complete entry point.
-# That entry point pulls in a wifi.yaml whose un-id'd on_boot list forces the Improv and BLE stack, and an un-id'd list item cannot be removed.
+# That entry point pulls in a wifi.yaml whose on_boot list forces the Improv and BLE stack.
+# The list carries no ids, and a list item without one cannot be removed.
 # ../OPERATIONS.md "SmartHome CeilSense" covers the strip in full.
 
 substitutions:
@@ -41,7 +42,8 @@ esphome:
             timeout: 30s
 
 # https://esphome.io/guides/configuration-types.html#packages
-# The vendor's complete-wifi-ld2412 variant is these three plus its own wifi.yaml, which the header explains is left out.
+# The vendor's complete-wifi-ld2412 variant is these three plus its own wifi.yaml.
+# The header explains why that one is left out.
 packages:
   base:   github://smarthomeshop/ceilsense/ceilsense-v1/base.yaml@main
   ld2412: github://smarthomeshop/ceilsense/ceilsense-v1/packages/ld2412.yaml@main

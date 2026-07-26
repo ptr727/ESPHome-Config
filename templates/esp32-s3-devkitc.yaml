@@ -48,7 +48,8 @@ esp32:
   framework:
     type: esp-idf
     # Unpinned, tracking latest.
-    # Pin here again if an ESPHome upgrade reintroduces the boot crash loops seen on platform_version < 6.7.0 or esp-idf < 5.2.1.
+    # Pin again here if an ESPHome upgrade reintroduces the boot crash loops.
+    # Those were seen on platform_version < 6.7.0 and esp-idf < 5.2.1.
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:

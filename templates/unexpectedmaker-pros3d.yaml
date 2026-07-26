@@ -70,7 +70,7 @@ i2c:
   scl: GPIO9
 
 # MAX17048
-# TODO: # https://github.com/esphome/feature-requests/issues/2277
+# TODO: https://github.com/esphome/feature-requests/issues/2277
 # https://www.analog.com/en/products/max17048.html
 # https://github.com/Option-Zero/esphome-components
 external_components:

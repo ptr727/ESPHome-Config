@@ -15,7 +15,8 @@ substitutions:
   friendly_name: ${device_friendly_name}
   # A per-device 0s disables the reboot loop that can let a Sec+ 1.0 UART glitch open the door.
   wifi_reboot_timeout: 15min
-  # Overridden rather than removed, because upstream lambdas read the ESPHOME_PROJECT_NAME and ESPHOME_PROJECT_VERSION macros that exist only while esphome.project is set.
+  # Overridden rather than removed, because upstream lambdas read the project macros.
+  # ESPHOME_PROJECT_NAME and ESPHOME_PROJECT_VERSION exist only while esphome.project is set.
   project_name: "ptr727.${device_name}"
   # Remove project version
   project_version: "0.0.0"
