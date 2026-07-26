@@ -1,0 +1,122 @@
+# Required substitutions:
+# device_name
+# device_friendly_name
+
+# Optional substitutions:
+# external_antenna_restore_mode (default ALWAYS_OFF, onboard PCB antenna, ALWAYS_ON selects the u.FL connector)
+# ldo2_power_restore_mode       (default ALWAYS_ON, powers the 3V3_2 rail feeding the RGB LED and the 3V3_2 header pin)
+
+# Unexpected Maker ProS3D
+# ESP32-S3, 16MB Quad Flash, 8MB Quad PSRAM
+
+# https://esp32s3.com/pros3.html
+# https://github.com/UnexpectedMaker/esp32s3/blob/main/series_d/code/arduino/readme.md
+# https://github.com/UnexpectedMaker/esp32s3/blob/main/series_d/pinout_cards/pros3d_pinout.jpg
+# https://github.com/UnexpectedMaker/esp32s3/blob/main/series_d/schematics/schematic-pros3d-p1.pdf
+
+# GPIO18 : RGB LED
+# GPIO17 : LDO2 enable, powers the RGB LED and the 3V3_2 header pin
+# GPIO11 : Antenna select, low is the onboard PCB antenna and high is the u.FL connector
+# GPIO33 : 5V presence detect, divided down from USB VBUS
+
+# I2C SDA : GPIO8
+# I2C SCL : GPIO9
+
+# MAX17048G
+# I2C 0x36
+# GPIO10 : ALRT
+# - No ESPHome fuel gauge component reads it, so nothing here configures it.
+# - Its pull-up goes to VBAT, above 3V3 logic, so do not repurpose it as a GPIO.
+
+# https://esphome.io/guides/configuration-types.html#substitutions
+substitutions:
+  rgb_led_pin: GPIO18
+  external_antenna_restore_mode: ALWAYS_OFF
+  ldo2_power_restore_mode: ALWAYS_ON
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+# https://esphome.io/components/esp32
+esp32:
+  # The Series[D] revision reuses the ProS3 board package, there is no um_pros3d.
+  # https://docs.platformio.org/en/latest/boards/espressif32/um_pros3.html
+  board: um_pros3
+
+  # The board definition does not set this, ESPHome defaults to 4MB.
+  flash_size: 16MB
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/components/psram
+# The PSRAM is an 8 pin part, so quad, and ESPHome has no default mode on the S3.
+psram:
+  mode: quad
+  speed: 80MHz
+
+# https://esphome.io/guides/configuration-types.html#local-packages
+packages:
+  common: !include common.yaml
+  temperature: !include temperature.yaml
+  rgbledstatus: !include rgb-led-status.yaml
+
+# https://esphome.io/components/i2c
+i2c:
+  sda: GPIO8
+  scl: GPIO9
+
+# MAX17048
+# TODO: # https://github.com/esphome/feature-requests/issues/2277
+# https://www.analog.com/en/products/max17048.html
+# https://github.com/Option-Zero/esphome-components
+external_components:
+  - source: github://Option-Zero/esphome-components
+    components: [max17048]
+
+# https://esphome.io/components/sensor/
+sensor:
+
+  # MAX17048
+  # I2C 0x36
+  - platform: max17048
+    battery_voltage:
+      name: "Battery Voltage"
+      device_class: voltage
+    battery_level:
+      name: "Battery Level"
+    rate:
+      name: "Battery Discharge Rate"
+      device_class: ""
+
+# https://esphome.io/components/binary_sensor/
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio
+  - platform: gpio
+    pin: GPIO33
+    name: "USB Power"
+    device_class: plug
+    entity_category: diagnostic
+
+# https://esphome.io/components/switch/
+switch:
+
+  # Hardware ANDs the enable with VDD_SPI, so the rail also drops in deep sleep.
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    id: ldo2_power
+    pin: GPIO17
+    name: "LDO2 Power"
+    restore_mode: ${ldo2_power_restore_mode}
+    internal: true
+
+  - platform: gpio
+    id: external_antenna
+    pin: GPIO11
+    name: "External Antenna"
+    restore_mode: ${external_antenna_restore_mode}
+    internal: true
