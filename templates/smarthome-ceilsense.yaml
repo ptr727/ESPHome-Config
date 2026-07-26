@@ -8,17 +8,9 @@
 # https://github.com/smarthomeshop/ceilsense
 # https://github.com/smarthomeshop/ceilsense/tree/main/ceilsense-v1
 
-# Imports SmartHomeShop's firmware sub-packages and surgically strips the
-# cloud-app / project-based-OTA / stock-provisioning concerns.
-#
-# We assemble the device from base.yaml + the ld2412 + scd4x packages directly
-# instead of importing the vendor's `ceilsense-complete-wifi-ld2412.yaml` entry
-# point. That entry point also pulls in `wifi.yaml`, whose on_boot calls the
-# `ble.disable` action and pulls in the Improv/BLE provisioning stack. on_boot
-# entries are an un-id'd list, so a single one can't be `!remove`d; importing the
-# sub-packages and supplying our own `wifi:` + boot phase lets us drop Bluetooth
-# entirely (no esp32_ble, no Improv, no captive portal) rather than disabling it
-# after boot. base.yaml + the two sensor packages contain no BLE references.
+# Assembled from the base, ld2412, and scd4x sub-packages rather than the vendor's complete entry point.
+# That entry point pulls in a wifi.yaml whose un-id'd on_boot list forces the Improv and BLE stack, and an un-id'd list item cannot be removed.
+# ../OPERATIONS.md "SmartHome CeilSense" covers the strip in full.
 
 substitutions:
   # base.yaml expects these for esphome.name / friendly_name
@@ -30,17 +22,11 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   name_add_mac_suffix: false
-  # Remove SmartHomeShop's `project:` block so ESPHome Update Manager does not
-  # auto update. Safe here: nothing in base/ld2412/scd4x references the
-  # ESPHOME_PROJECT_NAME/VERSION compile-time macros (the Software Version text
-  # sensor uses the `${project_version}` substitution, not the macro), unlike
-  # templates/konnected-blaq.yaml which must keep the block and override the
-  # version substitution instead.
+  # Removed to stop the ESPHome Update Manager auto updating.
+  # Safe here because no sub-package reads the ESPHOME_PROJECT_NAME or ESPHOME_PROJECT_VERSION macros.
   project: !remove
-  # Replacement for wifi.yaml's boot phase 1 (which we no longer import), minus
-  # the BLE bits: start the status-LED loading animation and wait for WiFi. The
-  # remaining self-test phases (LD2412 / SCD4x / BH1750 / BMP3xx) come from the
-  # sub-packages' own on_boot entries.
+  # Stands in for the unimported wifi.yaml boot phase 1, without its BLE actions.
+  # The remaining self-test phases come from the sub-packages' own on_boot entries.
   on_boot:
     - priority: 600
       then:
@@ -55,22 +41,20 @@ esphome:
             timeout: 30s
 
 # https://esphome.io/guides/configuration-types.html#packages
-# The vendor's complete-wifi-ld2412 variant is just base.yaml + these two sensor
-# packages + wifi.yaml; we take all but wifi.yaml (see header) and add our own.
+# The vendor's complete-wifi-ld2412 variant is these three plus its own wifi.yaml, which the header explains is left out.
 packages:
   base:   github://smarthomeshop/ceilsense/ceilsense-v1/base.yaml@main
   ld2412: github://smarthomeshop/ceilsense/ceilsense-v1/packages/ld2412.yaml@main
   scd4x:  github://smarthomeshop/ceilsense/ceilsense-v1/packages/scd4x.yaml@main
   time: !include time.yaml
 
-# Strip the web UI + the HA-side http_request firmware-update entity (whole-key
-# removals from base.yaml).
+# Whole-key removals from base.yaml, dropping the web UI and the firmware-update entity.
 web_server:   !remove
 update:       !remove   # http_request firmware-update entity (id: firmware_update)
 http_request: !remove   # only consumed by `update` + the ota_http_request platform, both removed
 
-# Extend base.yaml's esphome OTA entry (id: ota_esphome) to add our password,
-# and drop the http_request OTA platform (depends on the removed http_request).
+# Extends base.yaml's ota_esphome entry to add a password.
+# The http_request OTA platform goes, since it depends on the removed http_request.
 ota:
   - id: !extend ota_esphome
     password: !secret ota_password
@@ -81,13 +65,11 @@ api:
   encryption:
     key: !secret api_encryption_key
 
-# Remove the cloud/local "Firmware Variant" selector. Removed by id, not as a
-# whole key, because packages/ld2412.yaml adds its own selects to this list.
+# Removed by id, not as a whole key, because packages/ld2412.yaml adds its own selects to this list.
 select:
   - id: !remove firmware_selector
 
-# Remove the "CeilSense Firmware Update" button. Removed by id so the restart /
-# factory-reset / LD2412 / SCD4x buttons in the same list stay.
+# Removed by id so the restart, factory-reset, LD2412, and SCD4x buttons in the same list stay.
 button:
   - id: !remove update_firmware
 
@@ -98,9 +80,8 @@ script:
   - id: !remove sync_selected_firmware_source
   - id: !remove check_firmware_update_when_online
 
-# Remove base.yaml's "Disable Bluetooth after boot" switch - it only gated
-# wifi.yaml's now-absent ble.disable call, and we run no Bluetooth at all. The
-# "LD2412 Debug Mode" switch in the same list stays.
+# Pointless with no Bluetooth stack, since it only gated the unimported wifi.yaml ble.disable call.
+# The "LD2412 Debug Mode" switch in the same list stays.
 switch:
   - id: !remove ble_disable_after_boot
 
