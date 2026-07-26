@@ -1,7 +1,6 @@
 # https://esphome.io/components/api
 substitutions:
-  # Default for shared devices; override per-device when a reboot loop is
-  # more dangerous than a stale HA connection (e.g. Sec+ garage controller).
+  # Override per-device where a reboot loop is more dangerous than a stale Home Assistant connection.
   api_reboot_timeout: 15min
 
 api:

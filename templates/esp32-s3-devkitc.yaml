@@ -47,9 +47,9 @@ esp32:
   # https://esphome.io/components/esp32#esp-idf-framework
   framework:
     type: esp-idf
-    # No platform_version / version pin: prefer "latest" per repo policy. If next
-    # ESPHome upgrade reintroduces the boot crash loops we hit on platform_version
-    # < 6.7.0 / esp-idf < 5.2.1, pin again here.
+    # Unpinned, tracking latest.
+    # Pin again here if an ESPHome upgrade reintroduces the boot crash loops.
+    # Those were seen on platform_version < 6.7.0 and esp-idf < 5.2.1.
 
 # https://esphome.io/guides/configuration-types.html#local-packages
 packages:

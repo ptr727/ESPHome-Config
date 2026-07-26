@@ -3,16 +3,17 @@ name: Publish project release action
 on:
   workflow_dispatch:
 
-# A publish is a deliberate dispatch, so runs serialize on one group and queue rather than cancel, so a run is
-# never left with a half-created GitHub release.
+# A publish is a deliberate dispatch, so runs serialize on one group and queue rather than cancel.
+# That leaves no run with a half-created GitHub release.
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
 
-  # Publish the dispatched branch (main => release, develop => prerelease): NBGV computes the tag from the ref, then
-  # a GitHub release is created (tag + auto source archive + README + LICENSE). Source-only repo - no build targets.
+  # Publishes the dispatched branch, main as a release and develop as a prerelease.
+  # NBGV computes the tag from the ref, then the release is created from it.
+  # This is a source-only repo with no build targets.
   publish:
     name: Publish project release job
     runs-on: ubuntu-latest
@@ -60,8 +61,8 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # target_commitish pins the tag to the exact built commit (GitCommitId), not the default branch. The release is
-      # the tag plus GitHub's auto source archive, README, and LICENSE - no build assets (source-only).
+      # target_commitish pins the tag to the exact built commit, not the default branch.
+      # The release is that tag plus GitHub's auto source archive, README, and LICENSE, with no build assets.
       - name: Create GitHub release step
         if: ${{ steps.release-exists.outputs.exists == 'false' || github.event_name == 'workflow_dispatch' }}
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2

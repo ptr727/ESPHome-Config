@@ -1,0 +1,7 @@
+# CI compile-test for templates/unexpectedmaker-pros3d.yaml
+substitutions:
+  device_name: unexpectedmaker-pros3d-test
+  device_friendly_name: "Unexpected Maker ProS3D Test"
+
+packages:
+  device: !include ../templates/unexpectedmaker-pros3d.yaml

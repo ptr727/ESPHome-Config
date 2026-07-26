@@ -13,21 +13,10 @@ substitutions:
   # Used by garage-door-GDOv2-Q.yaml
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-  # Per-device override; 0s disables reboot loop that can result in sec1+ UART glitch opening the door.
+  # A per-device 0s disables the reboot loop that can let a Sec+ 1.0 UART glitch open the door.
   wifi_reboot_timeout: 15min
-  # NOTE: we cannot `!remove` the entire `esphome.project:` block here the
-  # way templates/apollo-plt-1b.yaml does. Konnected's upstream packages
-  # reference the compile-time macros `ESPHOME_PROJECT_NAME` and
-  # `ESPHOME_PROJECT_VERSION` from lambdas:
-  #   - packages/core-esp32-s3.yaml on_boot:
-  #       state: !lambda return ESPHOME_PROJECT_VERSION;
-  #   - packages/mdns.yaml:
-  #       project_name:    !lambda return ESPHOME_PROJECT_NAME;
-  #       project_version: !lambda return ESPHOME_PROJECT_VERSION;
-  # Those macros are only defined when `esphome.project:` is set, so
-  # removing it produces an unresolvable compile error in upstream files
-  # we can't easily patch. Apollo's PLT-1B.yaml references neither macro,
-  # which is why a `!remove` is safe there.
+  # Overridden rather than removed, because upstream lambdas read the project macros.
+  # ESPHOME_PROJECT_NAME and ESPHOME_PROJECT_VERSION exist only while esphome.project is set.
   project_name: "ptr727.${device_name}"
   # Remove project version
   project_version: "0.0.0"
