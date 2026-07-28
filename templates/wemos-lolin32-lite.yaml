@@ -26,11 +26,11 @@ esp32:
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
   common: !include common.yaml
 
-# https://esphome.io/components/status_led.html
+# https://esphome.io/components/status_led
 status_led:
   pin:
     number: GPIO22

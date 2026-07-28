@@ -17,7 +17,7 @@ wifi:
 # https://esphome.io/components/text_sensor
 text_sensor:
 
-  # https://esphome.io/components/text_sensor/wifi_info.html
+  # https://esphome.io/components/text_sensor/wifi_info
   - platform: wifi_info
     ip_address:
       name: "IP Address"
@@ -30,6 +30,6 @@ text_sensor:
 # https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/wifi_signal.html
+  # https://esphome.io/components/sensor/wifi_signal
   - platform: wifi_signal
     name: "WiFi Signal"

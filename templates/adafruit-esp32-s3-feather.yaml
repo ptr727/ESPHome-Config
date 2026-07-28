@@ -22,7 +22,7 @@
 # I2C 0x77
 # Not populated
 
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   rgb_led_pin: GPIO33
 
@@ -45,41 +45,19 @@ esp32:
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
   common: !include common.yaml
   temperature: !include temperature.yaml
   rgbledstatus: !include rgb-led-status.yaml
+  max17048: !include max17048.yaml
 
 # https://esphome.io/components/i2c
 i2c:
   sda: GPIO3 # WARNING GPIO3 is a strapping PIN and should only be used for I/O with care.
   scl: GPIO4
 
-# MAX17048
-# TODO: https://github.com/esphome/feature-requests/issues/2277
-# https://www.analog.com/en/products/max17048.html
-# https://github.com/Option-Zero/esphome-components
-external_components:
-  - source: github://Option-Zero/esphome-components
-    components: [max17048]
-
-# https://esphome.io/components/sensor/
-sensor:
-
-  # MAX17048
-  # I2C 0x36
-  - platform: max17048
-    battery_voltage:
-      name: "Battery Voltage"
-      device_class: voltage
-    battery_level:
-      name: "Battery Level"
-    rate:
-      name: "Battery Discharge Rate"
-      device_class: ""
-
-# https://esphome.io/components/switch/
+# https://esphome.io/components/switch
 switch:
 
   # https://esphome.io/components/switch/gpio

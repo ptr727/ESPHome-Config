@@ -1,9 +1,9 @@
-# Required substitutions (passed as vars via the !include):
+# Required substitutions:
 # easystart_id
 # easystart_mac
 # easystart_label
 
-# Optional substitutions (default):
+# Optional substitutions:
 # easystart_voltage (240)
 # easystart_power_factor (1.0)
 # easystart_update_interval (5s)
@@ -11,12 +11,9 @@
 
 # https://www.microair.net/products/easystart-flex-home-ac-soft-starter
 # https://esphome.io/components/ble_client
-# ../easystart/README.md for the protocol, the usage example, and the proxy siting notes
+# ../easystart/README.md
 
-# Include once per module, on a Bluetooth proxy in BLE range of it.
-# The including device supplies what this package cannot.
-# - Registration of the easystart external component.
-# - An esp32_ble max_connections of 3 plus one per ble_client, which needs a clean rebuild.
+# esp32_ble max_connections must be set to 3 for BT proxy + 1 per easystart device.
 
 substitutions:
   easystart_voltage: "240"
@@ -30,7 +27,7 @@ ble_client:
     mac_address: ${easystart_mac}
     auto_connect: true
 
-# Local external component, see ../easystart/PROTOCOL.md
+# ../easystart/PROTOCOL.md
 easystart:
   - ble_client_id: ${easystart_id}
     update_interval: ${easystart_update_interval}
@@ -58,8 +55,6 @@ easystart:
     learned_starts:
       name: "${easystart_label} Learned Starts"
 
-# Reads the live connection, not advertisements, which the module stops sending once connected.
-# Publishes NAN on disconnect, so Home Assistant reads unknown rather than a stale value.
 # https://esphome.io/components/ble_client
 sensor:
   - platform: ble_client

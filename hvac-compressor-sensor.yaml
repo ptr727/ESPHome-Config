@@ -1,0 +1,41 @@
+# https://esphome.io/components/substitutions
+substitutions:
+  device_name: hvac-compressor-sensor
+  device_friendly_name: "HVAC Compressor Sensor"
+  # ALWAYS_ON = u.FL connector
+  # ALWAYS_OFF = onboard antenna
+  external_antenna_restore_mode: ALWAYS_OFF
+
+# https://esphome.io/components/packages
+packages:
+  pros3d: !include templates/unexpectedmaker-pros3d.yaml
+  easystart_downstairs: !include
+    file: templates/easystart.yaml
+    vars:
+      easystart_id: easystart_downstairs
+      easystart_mac: !secret easystart_downstairs_mac
+      easystart_label: "Downstairs"
+  easystart_upstairs: !include
+    file: templates/easystart.yaml
+    vars:
+      easystart_id: easystart_upstairs
+      easystart_mac: !secret easystart_upstairs_mac
+      easystart_label: "Upstairs"
+
+# https://esphome.io/components/external_components
+external_components:
+  - source:
+      type: local
+      path: easystart/components
+    components: [easystart]
+
+# https://esphome.io/components/esp32_ble
+# One slot per ble_client, no bluetooth_proxy.
+esp32_ble:
+  max_connections: 2
+
+# https://esphome.io/components/esp32_ble_tracker
+# ble_client needs the tracker, no need for active scanning.
+esp32_ble_tracker:
+  scan_parameters:
+    active: false

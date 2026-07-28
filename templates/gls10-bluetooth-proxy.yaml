@@ -12,14 +12,16 @@
 
 # Board Tested: GL-S10-v2.1 / 2022-05-05
 
-# ESP32-D0WD, 4MB Flash, 8MB PSRAM
-# TODO: No PSRAM detected
+# ESP32-D0WD, 4MB Flash, no PSRAM
+# The vendor claim of 8MB PSRAM does not hold, this board has none.
+# Boot warns the bootloader is too old for OTA rollback and SRAM1 as IRAM, clearing it needs one USB flash.
+# Do not set sram1_as_iram before that USB flash, on an old bootloader it hard bricks the device.
 
-# GPIO32 : Globe LED (Green) (On when Ethernet is connected)
-# GPIO14 : Power LED (White) (ESPHome Status)
-# GPIO12 : BLE LED (Green) (On when Ethernet is not connected)
+# GPIO32 : Globe LED (Green) : ESPHome status, lit is healthy and flashing is a warning or error
+# GPIO14 : Power LED (White) : On from boot
+# GPIO12 : BLE LED (Green) : On when Ethernet is connected
 
-# GPIO33 : Reset button (Marked as Reset, not connected to reset) (Runs safe_reboot())
+# GPIO33 : Reset button (Not connected to physical reset) : Runs safe_reboot()
 
 # IP101 RMII Ethernet
 # GPIO23 : mdc
@@ -41,13 +43,11 @@ esphome:
 
 # https://esphome.io/components/esp32
 esp32:
-  # https://docs.platformio.org/en/latest/boards/espressif32/esp32dev.html
   board: esp32dev
-  # https://esphome.io/components/esp32#esp-idf-framework
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages
 packages:
   api: !include api.yaml
   basic: !include basic.yaml
@@ -57,7 +57,7 @@ packages:
   ota: !include ota.yaml
   time: !include time.yaml
 
-# https://esphome.io/components/ethernet.html
+# https://esphome.io/components/ethernet
 ethernet:
   type: IP101
   mdc_pin: GPIO23
@@ -66,26 +66,27 @@ ethernet:
     pin: GPIO0
     mode: CLK_EXT_IN
   phy_addr: 1
-  power_pin: GPIO5 # WARNING GPIO5 is a strapping PIN and should only be used for I/O with care.
+  # GPIO0 and GPIO5 are strapping pins and warn at validation.
+  # The ethernet schema takes bare pin numbers, so ignore_strapping_warning has nowhere to attach here.
+  power_pin: GPIO5
 
-# https://esphome.io/components/esp32_ble_tracker.html
+# https://esphome.io/components/esp32_ble_tracker
 esp32_ble_tracker:
   scan_parameters:
-    interval: 1100ms
-    window: 1100ms
     active: true
 
-# https://esphome.io/components/bluetooth_proxy.html
+# https://esphome.io/components/bluetooth_proxy
 bluetooth_proxy:
   active: true
 
-# https://esphome.io/components/status_led.html
+# https://esphome.io/components/status_led
+# The LED is active low and the pin is deliberately not inverted, so lit means healthy.
 status_led:
   pin:
     number: GPIO32
 
 # Reset button
-# https://esphome.io/components/binary_sensor/gpio.html
+# https://esphome.io/components/binary_sensor/gpio
 binary_sensor:
   - platform: gpio
     id: reset_button
@@ -110,16 +111,18 @@ output:
   - platform: gpio
     id: ble_led
     pin:
-      number: GPIO12 # WARNING GPIO12 is a strapping PIN and should only be used for I/O with care.
+      number: GPIO12 # Strapping pin, fixed board wiring, so the warning is acknowledged.
       inverted: true
+      ignore_strapping_warning: true
 
-# https://esphome.io/components/i2c.html
+# I2C not connected to anything internal on the GL-S10
+# https://esphome.io/components/i2c
 # i2c:
 #   sda: GPIO15 # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
 #   scl: GPIO13
 #   scan: true
 
-# https://esphome.io/guides/automations.html#interval-component
+# https://esphome.io/components/interval
 interval:
   - interval: 1s
     then:

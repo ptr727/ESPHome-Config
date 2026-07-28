@@ -19,14 +19,14 @@ esphome:
 esp8266:
   board: esp01_1m
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   common: !include common.yaml
 
 # https://esphome.io/components/binary_sensor
 binary_sensor:
 
-  # https://esphome.io/components/binary_sensor/gpio.html
+  # https://esphome.io/components/binary_sensor/gpio
   - platform: gpio
     name: "Button"
     device_class: power
@@ -40,7 +40,7 @@ binary_sensor:
 # https://esphome.io/components/switch
 switch:
 
-  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/gpio
   - platform: gpio
     name: "Relay"
     id: relay
@@ -63,7 +63,7 @@ switch:
     # Off on power-on
     restore_mode: ALWAYS_OFF
 
-# https://esphome.io/components/status_led.html
+# https://esphome.io/components/status_led
 status_led:
   # Blue LED
   pin: GPIO2

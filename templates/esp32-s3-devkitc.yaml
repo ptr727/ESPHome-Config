@@ -26,7 +26,7 @@
 # GPIO43, GPIO44 : SiLabs CP210x USB-UART
 # GPIO19, GPIO20 : USB-CDC
 
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   # Used by rgb-led-status.yaml
   rgb_led_pin: GPIO38
@@ -51,16 +51,15 @@ esp32:
     # Pin again here if an ESPHome upgrade reintroduces the boot crash loops.
     # Those were seen on platform_version < 6.7.0 and esp-idf < 5.2.1.
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
-  # TODO: Match Flash and PSRAM config for actual board
+  # Add the module template matching the board's flash and PSRAM, the memory table above names them.
   # n16r8v: !include esp32-s3-wroom-2-n16r8v.yaml
   common: !include common.yaml
   temperature: !include temperature.yaml
   rgbledstatus: !include rgb-led-status.yaml
 
-# TODO: Match programmer setup
-# Log to USB-UART port
+# Match the port the board is programmed through, UART0 is the CP210x bridge and the USB options are the native port.
 # https://esphome.io/components/logger
 logger:
   hardware_uart: UART0 # UART0, USB_CDC, USB_SERIAL_JTAG

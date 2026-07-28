@@ -6,7 +6,7 @@ substitutions:
   device_name: zigbee-coordinator
   device_friendly_name: "Zigbee Coordinator"
 
-# https://esphome.io/components/esphome.html
+# https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
@@ -18,7 +18,7 @@ esp32:
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
   # No wifi
   api: !include templates/api.yaml
@@ -29,17 +29,15 @@ packages:
   ota: !include templates/ota.yaml
   time: !include templates/time.yaml
 
-# https://esphome.io/components/external_components.html
+# https://esphome.io/components/external_components
 external_components:
-  # TODO: https://github.com/oxan/esphome-stream-server
-  # TODO: Fix initialize sin warning
-  # https://github.com/tube0013/esphome-stream-server-v2/pull/10
-  # https://github.com/tube0013/esphome-stream-server-v2
-  # - source: github://tube0013/esphome-stream-server-v2@main
-  - source: github://ptr727/tube0013-esphome-stream-server-v2@sin_zero
+  # The upstream original, it also ships a connection-count sensor the v2 fork lacks.
+  # It builds the bind address with set_sockaddr_any() rather than a hand-rolled initializer, so no missing-field warning.
+  # https://github.com/oxan/esphome-stream-server
+  - source: github://oxan/esphome-stream-server
 
 # WT32-ETH01 Ethernet
-# https://esphome.io/components/ethernet.html
+# https://esphome.io/components/ethernet
 ethernet:
   type: LAN8720
   mdc_pin: GPIO23
@@ -116,7 +114,8 @@ stream_server:
 binary_sensor:
   - platform: stream_server
     stream_server: ss
-    name: "TubesZB Serial Connected"
+    connected:
+      name: "TubesZB Serial Connected"
 
 # Use ESPHome's MDNS instead of custom ZeroConf, similar to how the v2023 boards are configured
 # https://github.com/tube0013/tube_gateways/blob/main/models/current/tubeszb-cc2652-poe-2023/firmware/esphome/tubeszb-cc2652-poe-2023.yaml

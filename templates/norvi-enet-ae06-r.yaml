@@ -196,11 +196,11 @@ esp32:
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
   common: !include common.yaml
 
-# https://esphome.io/components/external_components.html
+# https://esphome.io/components/external_components
 external_components:
 
   # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
@@ -234,7 +234,7 @@ time:
       then:
         ds1307.write_time:
 
-# https://esphome.io/components/display/index.html
+# https://esphome.io/components/display
 font:
   - file:
       type: gfonts
@@ -242,7 +242,7 @@ font:
     id: fonnt # font as id is reserved
     size: 14
 
-# https://esphome.io/components/display/ssd1306.html
+# https://esphome.io/components/display/ssd1306
 display:
   - platform: ssd1306_i2c
     model: "SSD1306 128x64"
@@ -265,10 +265,10 @@ display:
       it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
       line += lineSpacing.nIncrement;
 
-# https://esphome.io/components/sensor/
+# https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/adc.html
+  # https://esphome.io/components/sensor/adc
   - platform: adc
     pin: GPIO36
     name: "ADC Buttons"
@@ -296,7 +296,7 @@ analog_keypad:
 # https://esphome.io/components/switch
 switch:
 
-  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/gpio
   - platform: gpio
     name: "Relay 1"
     id: relay_1
@@ -322,7 +322,7 @@ switch:
     pin: GPIO13
     restore_mode: ALWAYS_OFF
 
-# https://esphome.io/components/binary_sensor/
+# https://esphome.io/components/binary_sensor
 binary_sensor:
 
   # https://github.com/ssieb/esphome_components/tree/master/components/analog_keypad
@@ -340,13 +340,13 @@ binary_sensor:
     key: E
 
 # Input handling to be defined in the device config as gpio, pulse counters, etc.
-# https://esphome.io/components/binary_sensor/gpio.html
+# https://esphome.io/components/binary_sensor/gpio
 # - platform: gpio
 #   pin:
 #     number: GPIO21
 #     inverted: true
 #
-# https://esphome.io/components/sensor/pulse_counter.html
+# https://esphome.io/components/sensor/pulse_counter
 # - platform: pulse_counter
 #   pin:
 #     number: GPIO21

@@ -108,7 +108,7 @@ esp32:
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   common: !include common.yaml
 
@@ -131,7 +131,7 @@ rtttl:
 # https://esphome.io/components/switch
 switch:
 
-  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/gpio
   - platform: gpio
     name: "Relay 1"
     id: relay_1
@@ -154,13 +154,13 @@ switch:
     restore_mode: ALWAYS_OFF
 
 # Input handling to be defined in the device config as gpio, pulse counters, etc.
-# https://esphome.io/components/binary_sensor/gpio.html
+# https://esphome.io/components/binary_sensor/gpio
 # - platform: gpio
 #   pin:
 #     number: GPIO34
 #     inverted: true
 #
-# https://esphome.io/components/sensor/pulse_counter.html
+# https://esphome.io/components/sensor/pulse_counter
 # - platform: pulse_counter
 #   pin:
 #     number: GPIO34

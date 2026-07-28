@@ -120,11 +120,22 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
         auto err = esp_ble_gattc_register_for_notify(gattc_if, this->parent()->get_remote_bda(), this->notify_handle_);
         if (err != ESP_OK)
           ESP_LOGW(TAG, "register_for_notify failed, err=%d", err);
+        ESP_LOGI(TAG, "handles resolved (write=%d notify=%d)", this->write_handle_, this->notify_handle_);
+        break;
+      }
+      case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
+        if (param->reg_for_notify.handle != this->notify_handle_)
+          break;
+        if (param->reg_for_notify.status != ESP_GATT_OK) {
+          ESP_LOGW(TAG, "notify registration failed, status=%d", param->reg_for_notify.status);
+          break;
+        }
+        // ESPHome frees the cached service list once every node reports ESTABLISHED.
+        // The CCCD lookup needs that list, so establish only after the registration lands.
         this->node_state = espbt::ClientState::ESTABLISHED;
         // Connected + subscribed -> the module's radio is up -> the compressor is running.
         if (this->running_sensor_ != nullptr)
           this->running_sensor_->publish_state(true);
-        ESP_LOGI(TAG, "handles resolved (write=%d notify=%d)", this->write_handle_, this->notify_handle_);
         break;
       }
       case ESP_GATTC_NOTIFY_EVT: {

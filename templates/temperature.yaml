@@ -4,6 +4,6 @@
 # https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/internal_temperature
+  # https://esphome.io/components/sensor/internal_temperature
   - platform: internal_temperature
     name: "Internal Temperature"

@@ -41,7 +41,7 @@ esphome:
               wifi.connected:
             timeout: 30s
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 # The vendor's complete-wifi-ld2412 variant is these three plus its own wifi.yaml.
 # The header explains why that one is left out.
 packages:

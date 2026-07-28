@@ -162,6 +162,10 @@ Two connection notes learned on hardware:
 
 The frame decode is logged at INFO (the `state=... current=...` line) and the raw hex frames at DEBUG. This repo's shared `logger.yaml` runs at DEBUG, so both are visible in `esphome logs` with no per-device override.
 
+## Follow-Up Targets
+
+The [BLE reverse-engineering playbook][ble-re-playbook] is written to generalize past this project, and the next candidate for it is a **Goodnature A24 rat trap**. A unit is in hand, its BLE client is untested, and nothing about it is confirmed first-hand: whether it advertises useful state without a connection, whether counters survive a disconnect the way the EasyStart counters do, and whether the [community decode][goodnature-decode-link] still matches current firmware. Start with the playbook's advertisement capture before pulling an APK, since a trap that broadcasts its kill count needs no connection at all.
+
 ## References
 
 - Ordered August 2023 (old product name): EasyStart 368 / ASY-368-X48-BLUE.
@@ -208,6 +212,7 @@ See [LICENSE][license].
 [github-ibotpeaches-apktool-link]: https://github.com/iBotPeaches/Apktool/releases/latest
 [github-keen-coffee-home-assistant-link]: https://github.com/Keen-coffee/home_assistant/blob/main/easyStart
 [github-skylot-jadx-link]: https://github.com/skylot/jadx/releases/latest
+[goodnature-decode-link]: https://gist.github.com/codyc1515/a6b93850ad81db06cde5e76244cf96f5#gistcomment-4587163
 [micro-air-support-documents-residential-link]: https://www.micro-air.com/support-documents/residential/current/EasyStart_HomeResidential_Installation_Guide.pdf
 [microair-products-easystart-flex-home-ac-soft-starter-link]: https://www.microair.net/products/easystart-flex-home-ac-soft-starter
 [oracle-java-technologies-link]: https://www.oracle.com/java/technologies/downloads/
