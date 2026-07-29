@@ -177,6 +177,7 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 - It is deliberately **not** a Bluetooth proxy. It runs no `bluetooth_proxy`, sets `esp32_ble: max_connections: 2` for its two `ble_client` entries, and scans passively, since it only ever connects to two known addresses and reads no advertisement payloads.
 - Sited outdoors beside the compressors because EasyStart BLE is very short range. From that position the modules read -53 to -66 dBm against the -85 dBm the office proxy managed indoors, and connections establish first time.
 - The modules power their radios down with the compressor, so every entity reading `unknown` and the status LED flashing is the normal idle state rather than a fault.
+- [`ble-notify-race-test.yaml`][ble-notify-race-test] sits beside it in the dashboard but is not a device. It is a throwaway harness reproducing an upstream ESPHome defect, described in [`ESPHOME-BLE-ISSUE.md`][ble-issue], and it carries a component that is wrong on purpose.
 
 ### Garage Fan Thermostats
 
@@ -246,6 +247,8 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [garage-door-controller]: ./garage-door-controller.yaml
 [garage-door-fan-controller]: ./garage-door-fan-controller.yaml
 [garage-gate-fan-controller]: ./garage-gate-fan-controller.yaml
+[ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
+[ble-notify-race-test]: ./ble-notify-race-test.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gls10-bluetooth-proxy]: ./templates/gls10-bluetooth-proxy.yaml
 [hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
