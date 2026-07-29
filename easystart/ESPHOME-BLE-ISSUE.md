@@ -185,6 +185,13 @@ Event 6 is `ESP_GATTC_SEARCH_CMPL_EVT` and event 38 is `ESP_GATTC_REG_FOR_NOTIFY
 
 [Defect 2][defect-2] suppresses the release entirely for any client carrying a `ble_client` action or passkey trigger, and with it this crash. Reproducing defect 1 requires a configuration free of those nodes, which is why the harness above drives its reconnects from a `lambda` calling `disconnect()` rather than the `ble_client.disconnect` action.
 
+An unrelated third-party configuration for the same hardware shows both effects together. [Keen-coffee/home_assistant][keen-coffee-easystart] reads the same EasyStart modules using only stock components, and is protected twice over:
+
+- Its `ble_client.disconnect` action never reports `ESTABLISHED`, so `all_nodes_established_()` is permanently false for that client and the release never runs at all. That is defect 2 masking defect 1, in a configuration written without any knowledge of either.
+- Its subscription is the stock `ble_client` characteristic sensor with `notify: true`, which establishes in `ESP_GATTC_REG_FOR_NOTIFY_EVT` after checking the status. Even with the actions removed, the ordering would still be correct.
+
+What separates a configuration that crashes from one that does not is therefore whether a node assigns `node_state` itself, not how elaborate the configuration is. The stock nodes that subscribe to notifications order it correctly, so the undocumented contract only reaches code that implements `BLEClientNode` directly. That configuration also pays defect 2's cost in exchange: those services stay allocated for the life of every connection.
+
 ### Fix
 
 Two independent changes, either of which prevents the crash.
@@ -291,6 +298,7 @@ That is a workaround, not a fix. It amounts to a component obeying a rule that i
 [disconnect-action]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L367-L375
 [disconnect-trigger]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L38-L61
 [issue-17437]: https://github.com/esphome/esphome/issues/17437
+[keen-coffee-easystart]: https://github.com/Keen-coffee/home_assistant/blob/main/easyStart
 [numeric-comparison]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L84-L93
 [node-state]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.h#L34-L37
 [passkey-notification]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L73-L82
