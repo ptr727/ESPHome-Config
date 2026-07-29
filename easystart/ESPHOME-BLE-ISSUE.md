@@ -1,14 +1,21 @@
-# ESPHome Issue Draft: ble_client Service Release Crashes the Device <!-- omit from toc -->
+# ESPHome Issue Draft: Two Defects in the ble_client Service Release <!-- omit from toc -->
 
-Draft for an upstream ESPHome issue, with the evidence captured on this project's hardware. Nothing here is specific to the EasyStart component beyond it being the component that surfaced the fault.
+Draft for upstream ESPHome issues, with the evidence captured on this project's hardware. Nothing here is specific to the EasyStart component beyond it being the component that surfaced the first fault.
 
-## Summary
+Both defects sit on the same mechanism, the release of discovered services once every node reports `ESTABLISHED`, and they interact, so they are drafted together.
+
+- **[Defect 1][defect-1]** crashes the device. The release frees the peer's GATT database while a notify registration is still in flight, and a later event walks the freed database.
+- **[Defect 2][defect-2]** wastes memory. Several bundled nodes never report `ESTABLISHED`, so the release never runs for their client.
+
+They must be fixed in that order. Defect 2 currently masks defect 1, so fixing defect 2 first turns a latent crash into a reachable one.
+
+## Defect 1: The Release Races an Outstanding Notify Registration
 
 `ble_client` releases the peer's GATT database while a notify registration is still in flight, then calls an ESP-IDF API that walks that database. Bluedroid either returns `ESP_GATT_NOT_FOUND`, silently leaving the characteristic unsubscribed, or asserts on the freed list and panics the device.
 
 Both outcomes were observed on the same firmware against the same peer. The ordering is not a race: the release always wins. Only the consequence of reading the freed list varies.
 
-## Environment
+### Environment
 
 - ESPHome 2026.7.2
 - ESP-IDF v5.5.5, `framework: type: esp-idf`
@@ -18,7 +25,7 @@ Both outcomes were observed on the same firmware against the same peer. The orde
 
 The `esp32_ble_client` and `ble_client` sources in 2026.7.2 are byte-identical to `dev` at the time of writing, so the defect is present on both.
 
-## Symptom
+### Symptom
 
 ```text
 [12:17:50][D][esp32_ble_client:212]: [0] ESP_GATTC_SEARCH_CMPL_EVT
@@ -47,7 +54,7 @@ ESP32BLETracker::gattc_event_handler esphome/components/esp32_ble_tracker/esp32_
 
 The device reboots with reset reason `exception/panic`, confirmed by the uptime counter resetting to zero.
 
-## Root Cause
+### Root Cause
 
 Three ESPHome behaviors combine.
 
@@ -78,9 +85,9 @@ That lookup reaches into the freed cache. `ESP_GATTC_REG_FOR_NOTIFY_EVT` carries
 
 **What opens the window.** Any node that reports `ClientState::ESTABLISHED` before its own notify registration has completed makes `all_nodes_established_()` true while a registration is outstanding. The contract is undocumented, [`node_state`][node-state] is a public field, and most bundled node types do set it directly in `ESP_GATTC_SEARCH_CMPL_EVT` ([`ble_switch.cpp`][ble-switch], [`ble_rssi_sensor.cpp`][ble-rssi], several classes in [`automation.h`][automation]). Only [`sensor`][ble-sensor] and [`text_sensor`][ble-text-sensor] with `notify: true` wait for `ESP_GATTC_REG_FOR_NOTIFY_EVT`. Copying the common pattern into a component that registers for notifications is enough to trigger this, and the penalty is a hard crash rather than a warning.
 
-## Evidence
+### Evidence
 
-### Production capture
+#### Production capture
 
 From a single continuous 80 minute serial capture on one device and one build, every release raced the registration:
 
@@ -94,7 +101,7 @@ From a single continuous 80 minute serial capture on one device and one build, e
 
 Status 10 is `ESP_GATT_NOT_FOUND`. Five releases, five races, one abort. The four non-fatal outcomes are not successes: the handler breaks out before `esp_ble_gattc_write_char_descr()`, so the CCCD is never written and no notification ever arrives, while the node believes it is subscribed.
 
-### Deterministic reproduction
+#### Deterministic reproduction
 
 A minimal node that registers for notifications and then reports `ESTABLISHED` reproduces the race on every connection. See [`test/components/ble_notify_race/`][race-component] and [`ble-notify-race-test.yaml`][race-config], which forces a reconnect every 60 seconds so cycles do not depend on the peer's duty cycle.
 
@@ -109,13 +116,11 @@ DIAG event=38 services=0 nodes=2 client_state=6 all_established=1
 
 Event 6 is `ESP_GATTC_SEARCH_CMPL_EVT` and event 38 is `ESP_GATTC_REG_FOR_NOTIFY_EVT`. The service vector goes from 3 entries to 0 between them, and the CCCD lookup lands after the release.
 
-### Why this is not seen more often
+#### Why this is rarely hit
 
-Several bundled node types register themselves as BLE nodes but never reach `ESTABLISHED`, which pins `all_nodes_established_()` false and disables the release entirely for that client. [`BLEClientDisconnectAction`][disconnect-action] never assigns `node_state` at all, [`BLEClientConnectAction`][connect-action] assigns it only while the action is mid-flight because both return early when `num_running_ == 0`, and the three GAP triggers never assign it either.
+[Defect 2][defect-2] suppresses the release entirely for any client carrying a `ble_client` action or passkey trigger, and with it this crash. Reproducing defect 1 requires a configuration free of those nodes, which is why the harness above drives its reconnects from a `lambda` calling `disconnect()` rather than the `ble_client.disconnect` action.
 
-A single `ble_client.disconnect` action anywhere in a configuration is therefore enough to suppress the release, and with it this crash, for the whole client. That also means those configurations never free the service memory the release exists to reclaim. This is a separate defect with its own fix, which has to land after the one below: re-enabling the release also re-exposes those configurations to the crash.
-
-## Fix
+### Fix
 
 Two independent changes, either of which prevents the crash.
 
@@ -125,7 +130,7 @@ Two independent changes, either of which prevents the crash.
 
 The [`BLEClientNode::node_state`][node-state] comment is extended to state the ordering requirement.
 
-### Validation
+#### Validation
 
 All three runs used the same hardware, peer, and harness, differing only in the ESPHome sources.
 
@@ -144,6 +149,49 @@ DIAG event=38 services=3 nodes=2 client_state=6 all_established=1 notify_pending
 All clients established, services released
 ```
 
+## Defect 2: Nodes That Never Report Established Suppress the Release
+
+Several `ble_client` nodes register themselves with [`register_ble_node()`][register-ble-node] but never report `ESTABLISHED`. [`all_nodes_established_()`][all-nodes-established] therefore stays false for the life of the connection, and the release in [`BLEClient::gattc_event_handler`][ble-client-handler] never runs.
+
+A single such node anywhere in a configuration keeps the whole client's discovered services allocated, which is exactly the memory the release exists to reclaim.
+
+### Affected Nodes
+
+| Node | Behavior |
+|---|---|
+| [`BLEClientDisconnectAction`][disconnect-action] | Never assigns `node_state` at all |
+| [`BLEClientConnectAction`][connect-action] | Assigns it only while the action runs, the handler returns early when `num_running_ == 0` |
+| [`BLEClientPasskeyRequestTrigger`][passkey-request] | Handles only GAP events, never assigns `node_state` |
+| [`BLEClientPasskeyNotificationTrigger`][passkey-notification] | Same |
+| [`BLEClientNumericComparisonRequestTrigger`][numeric-comparison] | Same |
+
+[`BLEClientConnectTrigger`][connect-trigger] and [`BLEClientDisconnectTrigger`][disconnect-trigger] already do this correctly. [`BLEClientWriteAction`][write-action] does need the services, so it correctly establishes only after resolving its characteristic.
+
+### How This Was Found
+
+A device with a `ble_client.disconnect` action in an `interval:` never logged `All clients established, services released`, despite every configured node being established. A temporary diagnostic in `BLEClient::gattc_event_handler` showed a third, unexpected node:
+
+```text
+DIAG event=6 services=3 nodes=3 client_state=6 all_established=0
+DIAG   node_state=6
+DIAG   node_state=5      <- BLEClientDisconnectAction, CONNECTED, never Established
+DIAG   node_state=6
+```
+
+State 5 is `CONNECTED` and state 6 is `ESTABLISHED`. Replacing the action with a `lambda` calling `disconnect()` directly dropped the client to two nodes, and the release then fired on every connection.
+
+### The Change
+
+Add `BLEClientServicelessNode`, a base for nodes that never read the parent's services, which reports `ESTABLISHED` on `ESP_GATTC_SEARCH_CMPL_EVT`. The five nodes above derive from it. The two actions call the base handler ahead of their own `num_running_` gate, so they report it whether or not an action is running.
+
+### Ordering
+
+This has to land after the defect 1 fix. Restoring the release for these configurations also exposes them to the use-after-free, since the release is what frees the GATT cache that `ESP_GATTC_REG_FOR_NOTIFY_EVT` then walks. Fixing this one alone converts a latent crash into a reachable one for any configuration pairing a `ble_client` action with a notify subscription.
+
+### Compile Coverage
+
+Compiled against a configuration instantiating every affected node, since these are templates that only type-check when instantiated: `on_connect`, `on_disconnect`, `on_passkey_request`, `on_passkey_notification`, `on_numeric_comparison_request`, plus the `ble_client.connect`, `ble_client.ble_write`, and `ble_client.disconnect` actions.
+
 ## Possibly Related
 
 [esphome/esphome#17437][issue-17437] reports a silent hang whose last log line is `All clients established, services released`. The symptom differs and no backtrace is available, so this is noted rather than claimed.
@@ -156,21 +204,31 @@ That fix removes this project's exposure. It does not remove the underlying defe
 
 <!-- Repo -->
 
+[defect-1]: #defect-1-the-release-races-an-outstanding-notify-registration
+[defect-2]: #defect-2-nodes-that-never-report-established-suppress-the-release
 [easystart-header]: ./components/easystart/easystart.h
 [race-component]: ./test/components/ble_notify_race/
 [race-config]: ../ble-notify-race-test.yaml
 
 <!-- External -->
 
+[all-nodes-established]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.cpp#L74-L83
 [automation]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L33
 [ble-client-handler]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.cpp#L46-L59
 [ble-rssi]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/sensor/ble_rssi_sensor.cpp#L33-L34
 [ble-sensor]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/sensor/ble_sensor.cpp#L116-L128
 [ble-switch]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/switch/ble_switch.cpp#L22-L23
 [ble-text-sensor]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/text_sensor/ble_text_sensor.cpp#L116-L120
+[connect-trigger]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L26-L36
 [connect-action]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L326-L330
 [disconnect-action]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L367-L375
+[disconnect-trigger]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L38-L61
 [issue-17437]: https://github.com/esphome/esphome/issues/17437
+[numeric-comparison]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L84-L93
 [node-state]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.h#L34-L37
+[passkey-notification]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L73-L82
+[passkey-request]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L63-L71
 [reg-for-notify]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/esp32_ble_client/ble_client_base.cpp#L499-L514
+[register-ble-node]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.h#L61-L65
 [release-services]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/esp32_ble_client/ble_client_base.cpp#L196-L205
+[write-action]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L208
