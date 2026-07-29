@@ -1,10 +1,17 @@
 # Required substitutions:
 # device_name
 
+# Optional substitutions:
+# wifi_signal_update_interval (60s, drop it to a few seconds to survey placement)
+
 # Required secrets:
 # wifi_ssid
 # wifi_password
 # wifi_domain
+
+# https://esphome.io/components/substitutions
+substitutions:
+  wifi_signal_update_interval: 60s
 
 # https://esphome.io/components/wifi
 wifi:
@@ -33,3 +40,4 @@ sensor:
   # https://esphome.io/components/sensor/wifi_signal
   - platform: wifi_signal
     name: "WiFi Signal"
+    update_interval: ${wifi_signal_update_interval}
