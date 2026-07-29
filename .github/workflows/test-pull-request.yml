@@ -46,6 +46,7 @@ jobs:
         with:
           files: |
             **/README.md
+            DEVICES.md
             HISTORY.md
           incremental_files_only: false
 

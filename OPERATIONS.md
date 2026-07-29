@@ -4,6 +4,15 @@ How to work in this repository: reaching the ESPHome CLI, validating and flashin
 
 `AGENTS.md` is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
 
+## Documenting a Device
+
+This is a public repository whose primary audience is people reusing the templates, and it is also the live config directory of one specific home. Two human-facing docs keep those apart, and a change that adds prose picks between them before it picks a section.
+
+- **[`README.md`][readme] documents the reusable surface**: what each template in [`templates/`][templates] is for, the hardware it targets, its substitutions, its flashing route, and the gotchas that follow the template to whoever adopts it. It is written for a reader who owns none of these devices.
+- **[`DEVICES.md`][devices] documents the deployed fleet**: one section per device or device family, naming the template it composes and carrying the siting, status, and maintenance state of the physical unit. A reader who is not the maintainer has no use for it.
+- **The test is whether a stranger reusing the template needs it.** Knowledge that generalizes to any instance of the hardware belongs in `README.md`. Anything true only of this installation - where a unit is mounted, what signal it sees there, why one is powered off, which ones await a reflash - belongs in `DEVICES.md`. A device-specific fact does not migrate to `README.md` by being interesting.
+- **Agent-facing depth stays here** in [Template Notes][template-notes]. `README.md` and `DEVICES.md` are both written for humans, so a mechanism an agent needs in order to change a config safely is documented in this file and linked from there rather than expanded inline.
+
 ## Container and CLI
 
 This directory is the `/config` mount of a running ESPHome instance, so the tree you are editing is live state, not a checkout that gets deployed later.
@@ -295,7 +304,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 - **[`repo-config/configure.sh`][configure-sh] writes unless told otherwise.** With no arguments it runs in `apply` mode and PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass `check` for the read-only validation, which is what you almost always want: `repo-config/configure.sh check`.
 - **Markdown links are reference-style everywhere except [`AGENTS.md`][agents] and `.github/copilot-instructions.md`**, which keep inline links because they are agent-instruction files. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
-- **The spell-check gate covers `**/README.md` plus `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
+- **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
 - **Check an esphome.io link by page title, not HTTP status.** The site answers an unknown path with `200` and a `404 - Page Not Found | ESPHome` title, so a status-code sweep reports a dead link as healthy. The current link form carries no `.html` suffix and no trailing slash, the `guides/configuration-types` anchors have moved to the dedicated [`components/substitutions`][substitutions-link] and [`components/packages`][packages-link] pages, and the per-board pages live on [devices.esphome.io][devices-esphome-link]. An anchor is verified by fetching the page and matching the `id` attribute, since a renamed anchor silently lands the reader at the top of the page.
 
 ## Things to Avoid
@@ -315,12 +324,15 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [configure-sh]: ./repo-config/configure.sh
+[devices]: ./DEVICES.md
 [easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [max17048-template]: ./templates/max17048.yaml
+[readme]: ./README.md
 [repository-tooling-hazards]: #repository-tooling-hazards
 [strapping-pin-warnings]: #strapping-pin-warnings
+[template-notes]: #template-notes
 [templates]: ./templates/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
 [vscode-setup]: #vscode-setup

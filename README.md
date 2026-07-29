@@ -150,44 +150,9 @@ Shared building-block includes, composed via `packages:` by the device templates
   - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
   - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
 
-## Projects
+## Devices
 
-Per-device configs live in the repository root. Each sets `substitutions:` (device name, friendly name, and any per-device overrides) and pulls in a template via `packages:`.
-
-### Plant Sensors (Apollo PLT-1B)
-
-- [`music-room-plant-sensor.yaml`][music-room-plant-sensor], [`patio-plant-sensor.yaml`][patio-plant-sensor], [`stairs-plant-sensor.yaml`][stairs-plant-sensor], and [`upstairs-hallway-plant-sensor.yaml`][upstairs-hallway-plant-sensor] use the [Apollo PLT-1B template][apollo-plt-1b].
-
-### Garage Presence and Air Sensor (CeilSense)
-
-- [`garage-presence-sensor.yaml`][garage-presence-sensor] uses the [SmartHomeShop CeilSense template][smarthome-ceilsense] for presence, CO2, temperature, humidity, lux, and pressure in the garage.
-
-### Garage Door Controller (Konnected blaQ)
-
-- [`garage-door-controller.yaml`][garage-door-controller] uses the [Konnected blaQ template][konnected-blaq].
-- Note: currently powered off pending an upstream investigation into self-opening incidents, see the status block in the config and [issue #29][issue-29-link].
-
-### Bluetooth Proxies (GL-S10)
-
-- [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] and [`pantry-bluetooth-proxy.yaml`][pantry-bluetooth-proxy] use the [GL-S10 Bluetooth Proxy template][gls10-bluetooth-proxy].
-
-### HVAC Compressor Sensor (ProS3D)
-
-- [`hvac-compressor-sensor.yaml`][hvac-compressor-sensor] uses the [Unexpected Maker ProS3D template][unexpectedmaker-pros3d] and the [EasyStart template][easystart-template] once per module, reporting both HVAC compressors.
-- It is deliberately **not** a Bluetooth proxy. It runs no `bluetooth_proxy`, sets `esp32_ble: max_connections: 2` for its two `ble_client` entries, and scans passively, since it only ever connects to two known addresses and reads no advertisement payloads.
-- Sited outdoors beside the compressors because EasyStart BLE is very short range. From that position the modules read -53 to -66 dBm against the -85 dBm the office proxy managed indoors, and connections establish first time.
-- The modules power their radios down with the compressor, so every entity reading `unknown` and the status LED flashing is the normal idle state rather than a fault.
-- [`ble-notify-race-test.yaml`][ble-notify-race-test] sits beside it in the dashboard but is not a device. It is the reproduction case for the upstream ESPHome defect in [`ESPHOME-BLE-ISSUE.md`][ble-issue], kept ready to flash and CI-compiled so the defect can be demonstrated on demand against any peripheral with a notify characteristic, and it carries a component that is wrong on purpose.
-
-### Garage Fan Thermostats
-
-- [`garage-door-fan-controller.yaml`][garage-door-fan-controller] (Sonoff TH10) and [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] (Norvi) control cool air ventilation fans in the garage based on temperature.
-- See blog [post][blog-garage-cooling-link] for project details.
-
-### Hot Water Recirculation Pump
-
-- [`recirculation-pump-controller.yaml`][recirculation-pump-controller] (Sonoff TH10) controls the whole home hot water recirculation pump using temperature probes on an interval / duration schedule.
-- See blog [post][blog-recirculation-pump-link] for project details.
+The templates above run on my own devices, whose per-device configs live in the repository root. They are documented in [DEVICES.md][devices].
 
 ## Usage
 
@@ -201,23 +166,7 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 - Deploy `secrets.yaml`, use `secrets._yaml` as a template for required secrets.
 - In VSCode open remote SSH workspace on the docker host, and open the workspace from config directory.
 
-## Notes
-
-### Pending USB Reflash
-
-Three devices still run a bootloader older than ESP-IDF 5.2. OTA writes the app partition and never the bootloader, so only a serial flash clears it. Until then they log `Bootloader too old for OTA rollback and SRAM1 as IRAM (+40KB)` at every boot, have no OTA rollback, and cannot use the extra 40KB of IRAM. Setting `sram1_as_iram` before the reflash hard bricks the device, so that option waits.
-
-Nothing here is urgent. Each device works, and the cost is access rather than risk.
-
-| Device | Access needed |
-|---|---|
-| [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] | Open the case, flash via the UART pads, no USB port on the GL-S10 |
-| [`pantry-bluetooth-proxy.yaml`][pantry-bluetooth-proxy] | Same as above |
-| [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] | Mounted in an enclosure |
-
-The remaining ESP32 devices are clear: the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. The [garage door controller][garage-door-controller] is powered off and the plant sensors sleep on a 12 hour cycle, so none of them have been checked. The ESP8266 devices are unaffected.
-
-### Issues
+## Issues
 
 - For general ESPHome support visit the [ESPHome Discord `#general-support`][discord-dbwxp5r3-link].
 - Only file an [issue][issues-link] if you believe there is a bug in a [template][templates] or one of my projects.
@@ -235,6 +184,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [basic]: ./templates/basic.yaml
 [common]: ./templates/common.yaml
 [debug]: ./templates/debug.yaml
+[devices]: ./DEVICES.md
 [easystart-readme]: ./easystart/README.md
 [easystart-template]: ./templates/easystart.yaml
 [easystart]: ./easystart/
@@ -244,40 +194,27 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [esp32-s3-wroom-2-n16r8v]: ./templates/esp32-s3-wroom-2-n16r8v.yaml
 [esp32-s3-wroom-2-n32r8v]: ./templates/esp32-s3-wroom-2-n32r8v.yaml
 [ethernet-sensor]: ./templates/ethernet-sensor.yaml
-[garage-door-controller]: ./garage-door-controller.yaml
-[garage-door-fan-controller]: ./garage-door-fan-controller.yaml
-[garage-gate-fan-controller]: ./garage-gate-fan-controller.yaml
-[ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
-[ble-notify-race-test]: ./ble-notify-race-test.yaml
-[garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gls10-bluetooth-proxy]: ./templates/gls10-bluetooth-proxy.yaml
 [hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
 [kincony-kc868-asr]: ./templates/kincony-kc868-asr.yaml
 [konnected-blaq]: ./templates/konnected-blaq.yaml
 [logger]: ./templates/logger.yaml
 [max17048]: ./templates/max17048.yaml
-[music-room-plant-sensor]: ./music-room-plant-sensor.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
-[office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [operations-debugging]: ./OPERATIONS.md#debugging
 [operations-framework-and-platform-versions]: ./OPERATIONS.md#framework-and-platform-versions
 [ota]: ./templates/ota.yaml
-[pantry-bluetooth-proxy]: ./pantry-bluetooth-proxy.yaml
-[patio-plant-sensor]: ./patio-plant-sensor.yaml
-[recirculation-pump-controller]: ./recirculation-pump-controller.yaml
 [rgb-led-status]: ./templates/rgb-led-status.yaml
 [rocket-astra]: ./templates/rocket-astra.yaml
 [secrets]: ./templates/secrets.yaml
 [smarthome-ceilsense]: ./templates/smarthome-ceilsense.yaml
 [sonoff-s31]: ./templates/sonoff-s31.yaml
 [sonoff-th10]: ./templates/sonoff-th10.yaml
-[stairs-plant-sensor]: ./stairs-plant-sensor.yaml
 [temperature]: ./templates/temperature.yaml
 [templates]: ./templates/
 [test]: ./test/
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
-[upstairs-hallway-plant-sensor]: ./upstairs-hallway-plant-sensor.yaml
 [wemos-lolin32-lite]: ./templates/wemos-lolin32-lite.yaml
 [wifi]: ./templates/wifi.yaml
 
@@ -291,8 +228,6 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [analog-max17048-link]: https://www.analog.com/en/products/max17048.html
 [apolloautomation-products-plt-1-link]: https://apolloautomation.com/products/plt-1
 [blakadder-gl-s10-link]: https://blakadder.com/gl-s10/
-[blog-garage-cooling-link]: https://blog.insanegenius.com/2021/08/11/trying-to-keep-my-garage-cool/
-[blog-recirculation-pump-link]: https://blog.insanegenius.com/2020/10/11/hot-water-recirculation-pump-controller/
 [blog-tuya-to-esphome-link]: https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/
 [cartft-link]: https://www.cartft.com
 [ceilsense-en-link]: https://ceilsense.nl/en/
@@ -308,7 +243,6 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [gl-inet-products-gl-s10-link]: https://www.gl-inet.com/products/gl-s10/
 [home-assistant-blog-2023-link]: https://www.home-assistant.io/blog/2023/11/06/removal-of-myq-integration/
 [improv-wifi-link]: https://www.improv-wifi.com/
-[issue-29-link]: https://github.com/ptr727/ESPHome-Config/issues/29
 [issues-link]: https://github.com/ptr727/ESPHome-Config/issues
 [itead-product-sonoff-th-link]: https://itead.cc/product/sonoff-th/
 [kincony-esp32-sd-card-rtc-ds3231-link]: https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
