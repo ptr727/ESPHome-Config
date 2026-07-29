@@ -52,7 +52,7 @@ Nothing here is urgent. Each device works, and the cost is access rather than ri
 | [`pantry-bluetooth-proxy.yaml`][pantry-bluetooth-proxy] | Same as above |
 | [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] | Mounted in an enclosure |
 
-The remaining ESP32 devices are clear: the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. The [garage door controller][garage-door-controller] is powered off and the plant sensors sleep on a 12 hour cycle, so none of them have been checked. The ESP8266 devices are unaffected.
+The remaining ESP32 devices are clear: the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. The [garage door controller][garage-door-controller] is powered off and the plant sensors sleep on a 12-hour cycle, so none of them have been checked. The ESP8266 devices are unaffected.
 
 <!-- Repo -->
 
