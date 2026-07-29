@@ -161,7 +161,7 @@
             "label": "Lint: Spelling",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "--pull=always", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "**/README.md", "HISTORY.md" ],
+            "args": [ "run", "--rm", "--pull=always", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "**/README.md", "DEVICES.md", "HISTORY.md" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
