@@ -7,7 +7,7 @@
 # https://github.com/Option-Zero/esphome-components
 
 # Drop the gauge on a mains-powered device by removing both ids, the button lambda references the sensor.
-# sensor: [- id: !remove battery_gauge] and button: [- id: !remove battery_gauge_reset]
+# Remove `battery_gauge` under `sensor:` and `battery_gauge_reset` under `button:`, each as `id: !remove <id>`.
 
 # https://esphome.io/components/external_components
 external_components:

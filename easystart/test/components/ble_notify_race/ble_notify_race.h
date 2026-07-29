@@ -6,6 +6,8 @@
 #include "esphome/core/log.h"
 #include "esphome/components/ble_client/ble_client.h"
 
+#include <cinttypes>  // PRIu32
+
 namespace esphome {
 namespace ble_notify_race {
 
