@@ -163,7 +163,12 @@ Status 10 is `ESP_GATT_NOT_FOUND`. Five releases, five races, one abort. The fou
 
 #### Minimal reproduction
 
-Reproducing the above needs a Micro-Air soft starter. The node below is the same violation reduced to its essentials, so it reproduces against any peripheral with a notify characteristic. See [`test/components/ble_notify_race/`][race-component] and [`ble-notify-race-test.yaml`][race-config], which forces a reconnect every 60 seconds so cycles do not depend on the peer's duty cycle.
+Reproducing the above needs a Micro-Air soft starter, so the same violation is also kept as a standalone case that works against any peripheral with a notify characteristic. It is a committed, CI-compiled configuration rather than a snippet, so it can be checked out and flashed as is:
+
+- [`ble-notify-race-test.yaml`][race-config], a complete device config. It forces a reconnect every 60 seconds so cycles do not depend on the peer's duty cycle, and it drives that from a `lambda` calling `disconnect()` rather than the `ble_client.disconnect` action, for the reason in [defect 2][defect-2].
+- [`ble_notify_race`][race-component], a roughly 60 line `BLEClientNode` that registers for notifications and then reports `ESTABLISHED`. It carries no protocol knowledge, so any notify characteristic will do.
+
+Point it at any such peripheral, flash, and every connection reproduces the release. The `DIAG` lines quoted above come from this configuration with a temporary log added to `BLEClient::gattc_event_handler`.
 
 Four consecutive cycles on stock 2026.7.2, with a temporary diagnostic added to `BLEClient::gattc_event_handler`:
 
@@ -269,8 +274,8 @@ That is a workaround, not a fix. It amounts to a component obeying a rule that i
 [defect-1]: #defect-1-the-release-races-an-outstanding-notify-registration
 [defect-2]: #defect-2-nodes-that-never-report-established-suppress-the-release
 [easystart-header]: ./components/easystart/easystart.h
-[race-component]: ./test/components/ble_notify_race/
-[race-config]: ../ble-notify-race-test.yaml
+[race-component]: https://github.com/ptr727/ESPHome-Config/tree/main/easystart/test/components/ble_notify_race
+[race-config]: https://github.com/ptr727/ESPHome-Config/blob/main/ble-notify-race-test.yaml
 
 <!-- External -->
 
