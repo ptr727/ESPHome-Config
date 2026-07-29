@@ -51,7 +51,7 @@ The device reboots with reset reason `exception/panic`, confirmed by the uptime 
 
 Three ESPHome behaviors combine.
 
-**1. The release is triggered from inside the same event dispatch that runs the nodes.** `BLEClient::gattc_event_handler` forwards each GATT event to every node, then immediately releases the services if all nodes report established:
+**1. The release is triggered from inside the same event dispatch that runs the nodes.** [`BLEClient::gattc_event_handler`][ble-client-handler] forwards each GATT event to every node, then immediately releases the services if all nodes report established:
 
 ```cpp
 for (auto *node : this->nodes_)
@@ -63,9 +63,9 @@ if (!this->services_.empty() && this->all_nodes_established_()) {
 }
 ```
 
-**2. The release frees Bluedroid's database, not only ESPHome's mirror of it.** `BLEClientBase::release_services()` deletes the local `services_` vector and then calls `esp_ble_gattc_cache_clean()`, which frees the GATT cache inside Bluedroid.
+**2. The release frees Bluedroid's database, not only ESPHome's mirror of it.** [`BLEClientBase::release_services()`][release-services] deletes the local `services_` vector and then calls `esp_ble_gattc_cache_clean()`, which frees the GATT cache inside Bluedroid.
 
-**3. A later event walks the freed database.** `esp_ble_gattc_register_for_notify()` is asynchronous. When its `ESP_GATTC_REG_FOR_NOTIFY_EVT` arrives, `BLEClientBase` looks the CCCD up by characteristic handle:
+**3. A later event walks the freed database.** `esp_ble_gattc_register_for_notify()` is asynchronous. When its [`ESP_GATTC_REG_FOR_NOTIFY_EVT`][reg-for-notify] arrives, `BLEClientBase` looks the CCCD up by characteristic handle:
 
 ```cpp
 case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
@@ -76,7 +76,7 @@ case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
 
 That lookup reaches into the freed cache. `ESP_GATTC_REG_FOR_NOTIFY_EVT` carries no `conn_id`, so unlike every other event in this handler it has no existing guard to piggyback on.
 
-**What opens the window.** Any node that reports `ClientState::ESTABLISHED` before its own notify registration has completed makes `all_nodes_established_()` true while a registration is outstanding. The contract is undocumented, `node_state` is a public field, and most bundled node types do set it directly in `ESP_GATTC_SEARCH_CMPL_EVT` (`switch/ble_switch.cpp`, `sensor/ble_rssi_sensor.cpp`, several classes in `automation.h`). Only `sensor` and `text_sensor` with `notify: true` wait for `ESP_GATTC_REG_FOR_NOTIFY_EVT`. Copying the common pattern into a component that registers for notifications is enough to trigger this, and the penalty is a hard crash rather than a warning.
+**What opens the window.** Any node that reports `ClientState::ESTABLISHED` before its own notify registration has completed makes `all_nodes_established_()` true while a registration is outstanding. The contract is undocumented, [`node_state`][node-state] is a public field, and most bundled node types do set it directly in `ESP_GATTC_SEARCH_CMPL_EVT` ([`ble_switch.cpp`][ble-switch], [`ble_rssi_sensor.cpp`][ble-rssi], several classes in [`automation.h`][automation]). Only [`sensor`][ble-sensor] and [`text_sensor`][ble-text-sensor] with `notify: true` wait for `ESP_GATTC_REG_FOR_NOTIFY_EVT`. Copying the common pattern into a component that registers for notifications is enough to trigger this, and the penalty is a hard crash rather than a warning.
 
 ## Evidence
 
@@ -111,19 +111,19 @@ Event 6 is `ESP_GATTC_SEARCH_CMPL_EVT` and event 38 is `ESP_GATTC_REG_FOR_NOTIFY
 
 ### Why this is not seen more often
 
-Several bundled node types register themselves as BLE nodes but never reach `ESTABLISHED`, which pins `all_nodes_established_()` false and disables the release entirely for that client. `BLEClientDisconnectAction` never assigns `node_state` at all, and `BLEClientConnectAction` assigns it only while the action is mid-flight, because both return early when `num_running_ == 0`.
+Several bundled node types register themselves as BLE nodes but never reach `ESTABLISHED`, which pins `all_nodes_established_()` false and disables the release entirely for that client. [`BLEClientDisconnectAction`][disconnect-action] never assigns `node_state` at all, [`BLEClientConnectAction`][connect-action] assigns it only while the action is mid-flight because both return early when `num_running_ == 0`, and the three GAP triggers never assign it either.
 
-A single `ble_client.disconnect` action anywhere in a configuration is therefore enough to suppress the release, and with it this crash, for the whole client. That also means those configurations never free the service memory the release exists to reclaim. This looks like a separate defect and is not addressed by the fix below.
+A single `ble_client.disconnect` action anywhere in a configuration is therefore enough to suppress the release, and with it this crash, for the whole client. That also means those configurations never free the service memory the release exists to reclaim. This is a separate defect with its own fix, which has to land after the one below: re-enabling the release also re-exposes those configurations to the crash.
 
 ## Fix
 
 Two independent changes, either of which prevents the crash.
 
-**Hold the release while a registration is outstanding.** `BLEClientBase::register_for_notify()` wraps `esp_ble_gattc_register_for_notify()` and counts outstanding requests, `ESP_GATTC_REG_FOR_NOTIFY_EVT` retires them, and `BLEClient::gattc_event_handler` skips the release while the count is non-zero. The release still happens, one event later, so the memory optimization is preserved.
+**Hold the release while a registration is outstanding.** A new `BLEClientBase::register_for_notify()` wraps `esp_ble_gattc_register_for_notify()` and counts outstanding requests, `ESP_GATTC_REG_FOR_NOTIFY_EVT` retires them, and [`BLEClient::gattc_event_handler`][ble-client-handler] skips the release while the count is non-zero. The release still happens, one event later, so the memory optimization is preserved.
 
-**Guard the lookup.** `release_services()` sets a `services_released_` flag, cleared by `connect()`, and the `ESP_GATTC_REG_FOR_NOTIFY_EVT` handler returns early with a warning rather than calling into a cache that is gone. This covers external components that call the ESP-IDF API directly and so are invisible to the counter.
+**Guard the lookup.** `release_services()` sets a `services_released_` flag on the path that actually calls `esp_ble_gattc_cache_clean()`, `connect()` clears it, and the `ESP_GATTC_REG_FOR_NOTIFY_EVT` handler returns early with a warning rather than calling into a cache that is gone. This covers external components that call the ESP-IDF API directly and so are invisible to the counter. A `CONFIG_BT_GATTC_CACHE_NVS_FLASH` build never cleans the stack cache, so the flag stays false there and the lookup proceeds as before.
 
-The `BLEClientNode::node_state` comment is extended to state the ordering requirement.
+The [`BLEClientNode::node_state`][node-state] comment is extended to state the ordering requirement.
 
 ### Validation
 
@@ -162,4 +162,15 @@ That fix removes this project's exposure. It does not remove the underlying defe
 
 <!-- External -->
 
+[automation]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L33
+[ble-client-handler]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.cpp#L46-L59
+[ble-rssi]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/sensor/ble_rssi_sensor.cpp#L33-L34
+[ble-sensor]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/sensor/ble_sensor.cpp#L116-L128
+[ble-switch]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/switch/ble_switch.cpp#L22-L23
+[ble-text-sensor]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/text_sensor/ble_text_sensor.cpp#L116-L120
+[connect-action]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L326-L330
+[disconnect-action]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/automation.h#L367-L375
 [issue-17437]: https://github.com/esphome/esphome/issues/17437
+[node-state]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/ble_client/ble_client.h#L34-L37
+[reg-for-notify]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/esp32_ble_client/ble_client_base.cpp#L499-L514
+[release-services]: https://github.com/esphome/esphome/blob/72f904dcfbb119c9454f440e313416f828f8ee35/esphome/components/esp32_ble_client/ble_client_base.cpp#L196-L205
