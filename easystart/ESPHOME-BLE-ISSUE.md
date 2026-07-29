@@ -87,6 +87,66 @@ That lookup reaches into the freed cache. `ESP_GATTC_REG_FOR_NOTIFY_EVT` carries
 
 ### Evidence
 
+#### The configuration that hit this
+
+This was not constructed. A deployed device crashed, and the code below is the component as it ran, from [`easystart.h`][easystart-header] before its own fix.
+
+```cpp
+case ESP_GATTC_SEARCH_CMPL_EVT: {
+  auto *nt = this->parent()->get_characteristic(espbt::ESPBTUUID::from_raw(SERVICE_UUID),
+                                                espbt::ESPBTUUID::from_raw(NOTIFY_UUID));
+  ...
+  this->notify_handle_ = nt->handle;
+  auto err = esp_ble_gattc_register_for_notify(gattc_if, this->parent()->get_remote_bda(), this->notify_handle_);
+  if (err != ESP_OK)
+    ESP_LOGW(TAG, "register_for_notify failed, err=%d", err);
+  this->node_state = espbt::ClientState::ESTABLISHED;
+  ...
+}
+```
+
+The registration is requested and the node reports `ESTABLISHED` four lines later, in the same event, while the registration is still in flight. The component is an `esphome::ble_client::BLEClientNode` polling a Micro-Air EasyStart soft starter over the Laird VSP service.
+
+The YAML, reduced to the parts that matter (WiFi, API, OTA, and the board package omitted):
+
+```yaml
+esp32_ble:
+  max_connections: 2
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
+
+external_components:
+  - source:
+      type: local
+      path: easystart/components
+    components: [easystart]
+
+ble_client:
+  - id: easystart_downstairs
+    mac_address: XX:XX:XX:XX:XX:XX
+    auto_connect: true
+
+easystart:
+  - ble_client_id: easystart_downstairs
+    update_interval: 5s
+    running:
+      name: "Downstairs Running"
+    current:
+      name: "Downstairs Current"
+
+sensor:
+  - platform: ble_client
+    ble_client_id: easystart_downstairs
+    type: rssi
+    name: "Downstairs Signal Strength"
+    entity_category: diagnostic
+    update_interval: 60s
+```
+
+The `type: rssi` sensor is a stock ESPHome node and matters: it reports `ESTABLISHED` during `ESP_GATTC_SEARCH_CMPL_EVT`, so both nodes on the client are established inside that one event and the release runs immediately.
+
 #### Production capture
 
 From a single continuous 80 minute serial capture on one device and one build, every release raced the registration:
@@ -101,9 +161,9 @@ From a single continuous 80 minute serial capture on one device and one build, e
 
 Status 10 is `ESP_GATT_NOT_FOUND`. Five releases, five races, one abort. The four non-fatal outcomes are not successes: the handler breaks out before `esp_ble_gattc_write_char_descr()`, so the CCCD is never written and no notification ever arrives, while the node believes it is subscribed.
 
-#### Deterministic reproduction
+#### Minimal reproduction
 
-A minimal node that registers for notifications and then reports `ESTABLISHED` reproduces the race on every connection. See [`test/components/ble_notify_race/`][race-component] and [`ble-notify-race-test.yaml`][race-config], which forces a reconnect every 60 seconds so cycles do not depend on the peer's duty cycle.
+Reproducing the above needs a Micro-Air soft starter. The node below is the same violation reduced to its essentials, so it reproduces against any peripheral with a notify characteristic. See [`test/components/ble_notify_race/`][race-component] and [`ble-notify-race-test.yaml`][race-config], which forces a reconnect every 60 seconds so cycles do not depend on the peer's duty cycle.
 
 Four consecutive cycles on stock 2026.7.2, with a temporary diagnostic added to `BLEClient::gattc_event_handler`:
 
@@ -198,9 +258,11 @@ Compiled against a configuration instantiating every affected node, since these 
 
 ## Note on the Component That Surfaced This
 
-The component in this repository was setting `ESTABLISHED` during `ESP_GATTC_SEARCH_CMPL_EVT`, immediately after requesting the subscription, which is what opened the window on every connection. That is fixed separately in [`components/easystart/easystart.h`][easystart-header] by moving the state change into `ESP_GATTC_REG_FOR_NOTIFY_EVT` with a status check, matching the pattern ESPHome's own `ble_client` sensor uses.
+This component is not the defect, it is how the defect was found. It is an external `BLEClientNode` that subscribes to notifications, and it reported `ESTABLISHED` during `ESP_GATTC_SEARCH_CMPL_EVT` immediately after requesting the subscription, which opened the window on every connection.
 
-That fix removes this project's exposure. It does not remove the underlying defect.
+It now sets the state inside `ESP_GATTC_REG_FOR_NOTIFY_EVT` after checking `param->reg_for_notify.status`, matching the pattern ESPHome's own `ble_client` sensor uses, and the device no longer crashes.
+
+That is a workaround, not a fix. It amounts to a component obeying a rule that is written down nowhere, and every other component is free to get it wrong. The penalty for getting it wrong is a panic and a reboot rather than an error, which is what the fix above addresses.
 
 <!-- Repo -->
 
