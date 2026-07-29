@@ -1,0 +1,66 @@
+# Reproduction harness for the ESPHome ble_client GATT-cache race, see easystart/ESPHOME-BLE-ISSUE.md.
+# ble_notify_race reports ESTABLISHED with its notify registration outstanding, which triggers the release.
+# The periodic disconnect churns the reconnect cycle so the race is exercised on demand.
+# Everything else mirrors hvac-compressor-sensor.yaml, so a behavior difference is the harness, not the board.
+# Point external_components at an esphome fork branch to test a candidate fix, see OPERATIONS.md.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  device_name: ble-notify-race-test
+  device_friendly_name: "BLE Notify Race Test"
+  # ALWAYS_ON = u.FL connector
+  # ALWAYS_OFF = onboard antenna
+  external_antenna_restore_mode: ALWAYS_OFF
+  race_disconnect_interval: 60s
+
+# https://esphome.io/components/packages
+packages:
+  pros3d: !include templates/unexpectedmaker-pros3d.yaml
+
+# https://esphome.io/components/external_components
+external_components:
+  - source:
+      type: local
+      path: easystart/test/components
+    components: [ble_notify_race]
+
+# https://esphome.io/components/esp32_ble
+# Matches hvac-compressor-sensor.yaml rather than the single connection this harness opens.
+esp32_ble:
+  max_connections: 2
+
+# https://esphome.io/components/esp32_ble_tracker
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
+
+# https://esphome.io/components/ble_client
+ble_client:
+  - id: race_client
+    mac_address: !secret easystart_downstairs_mac
+    auto_connect: true
+
+# Laird VSP service and notify characteristic on the EasyStart module, see easystart/PROTOCOL.md.
+ble_notify_race:
+  ble_client_id: race_client
+  service_uuid: d973f2e0-b19e-11e2-9e96-0800200c9a66
+  characteristic_uuid: d973f2e1-b19e-11e2-9e96-0800200c9a66
+
+# https://esphome.io/components/ble_client
+# Second node on the same client, matching templates/easystart.yaml.
+sensor:
+  - platform: ble_client
+    ble_client_id: race_client
+    type: rssi
+    name: "Race Signal Strength"
+    entity_category: diagnostic
+    update_interval: 60s
+
+# https://esphome.io/components/interval
+interval:
+  - interval: ${race_disconnect_interval}
+    then:
+      # Not ble_client.disconnect: that action registers itself as a BLE node that never reports
+      # ESTABLISHED, which suppresses the service release this harness exists to trigger.
+      - lambda: |-
+          id(race_client)->disconnect();

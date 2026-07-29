@@ -12,7 +12,7 @@
 // Wiring into an existing bluetooth-proxy ESP32: keep your `bluetooth_proxy:` /
 // `esp32_ble_tracker:` blocks; add a `ble_client:` for the module's MAC and this component.
 // The ble_client active connection uses one of the ESP32's connection slots. See the reusable
-// package templates/easystart.yaml and the example office-bluetooth-proxy.yaml.
+// package templates/easystart.yaml and the example hvac-compressor-sensor.yaml.
 
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"

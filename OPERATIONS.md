@@ -72,6 +72,7 @@ Do not raise `api: max_connections` to paper over leaked sessions. Five is plent
 - **Scan parameters stay at the ESPHome defaults.** `interval` 320ms, `window` 30ms, and `active: true` are what upstream's own proxy configs ship. The [`bluetooth_proxy` docs][bluetooth-proxy-link] name a full duty cycle, `interval` and `window` both 1100ms, as an anti-pattern that adds CPU load and heat for no gain, and on a WiFi-connected board it also fights the shared radio. It competes with the connection events of any `ble_client` on the same device, so the cost lands where it hurts most.
 - **Passive scanning is enough to reach a known MAC.** A device whose only BLE job is connecting to `ble_client` targets parses no advertisement payloads, so `active: false` drops the scan-request transmissions with nothing lost.
 - **`ble_client` depends on `esp32_ble_tracker`, and needs it scanning.** The tracker is a hard dependency, and a client only connects once a scan discovers its address. Continuous scanning is the sole path back after a disconnect, so `continuous: false` strands a dropped module until something else starts a scan.
+- **A `ble_client` automation action registers itself as a BLE node, and most never report `ESTABLISHED`.** `ble_client.disconnect`, `ble_client.connect`, and the other actions in ESPHome's `ble_client/automation.h` call `register_ble_node(this)` from their constructors, and their handlers return early while `num_running_ == 0`. `BLEClientDisconnectAction` never assigns `node_state` at all. Since `BLEClient` releases its cached services only once *every* node reports `ESTABLISHED`, a single such action anywhere in a config suppresses that release for the whole client, so the service memory is never reclaimed. Use a `lambda` calling `id(client)->disconnect()` when the action's own completion semantics are not needed. This also masks the crash described in [`easystart/ESPHOME-BLE-ISSUE.md`][ble-issue], which is why it took a component without any such action to surface it.
 - **A flashing status LED on a device with a `ble_client` is usually not a fault.** The `ble_client` RSSI sensor calls `status_set_warning()` on `ESP_GATTC_CLOSE_EVT`, and `status_led` blinks on any component warning. An EasyStart module holds its BLE link only while its compressor runs, so the LED flashes for as long as a compressor is idle, which is most of the time. Judge link quality by the RSSI value and its history, never by the LED.
 
 ## Strapping Pin Warnings
@@ -198,6 +199,27 @@ When a CLI tool is needed, look for it first on `PATH`, then in package-manager 
 - `platform_version` specifies the `platformio/espressif32` [version][espressif32-versions-link]. `latest` is not supported, so use an exact version number.
 - `version` specifies the `platformio/framework-espidf` [version][framework-espidf-link]. `latest` resolves to the version supported by `platformio/espressif32` at release time, not the current latest version.
 
+## Building Against Patched ESPHome Core Components
+
+Testing a candidate fix to an ESPHome core component does not need a custom image, a venv, or a container change. `external_components` shadows a built-in component of the same name, because `loader.install_meta_finder()` inserts its finder at the front of `sys.meta_path`.
+
+- **Confirm the installed sources match the branch you are patching before trusting the result.** Compare the container's `/opt/venv/lib/python*/site-packages/esphome/components/<name>/` against the upstream ref. When they are identical, a build in the live instance is a valid test of that ref.
+- **A git source pulls a fork branch**, and needs `components:` listed explicitly because a full fork exceeds the loader's 100-component limit. Use `refresh: 0s` so an amended branch is re-fetched rather than served from `/cache/data/external_components/`.
+
+  ```yaml
+  external_components:
+    - source:
+        type: git
+        url: https://github.com/<owner>/esphome
+        ref: <branch>
+      components: [ble_client, esp32_ble_client]
+      refresh: 0s
+  ```
+
+- **A local source is better for iterating**, since it needs no push per attempt. Copy the components out of the image into a path under `/config` and patch them there, then point `type: local` at the parent directory. Copy whole component directories: a stray `.cpp` landing beside the wrong headers fails the build with a confusing missing-header error rather than a path error.
+- **Add temporary diagnostics to the core component this way too.** An `ESP_LOGW` inside the code under investigation settles a question that reading the source cannot, and the copy is deleted afterwards.
+- **Remember that `esphome upload` does not compile.** After a failed compile it happily flashes the previous binary, so a failed build followed by a successful upload means the device is running the *old* firmware. Check the compile result before reading anything into the device's behavior.
+
 ## Debugging
 
 The steps below run ESPHome outside the live instance, on a workstation, which is how a device gets flashed over USB and how a config gets debugged without touching the running controller.
@@ -288,6 +310,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 [agents]: ./AGENTS.md
 [apollo-template]: ./templates/apollo-plt-1b.yaml
+[ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md

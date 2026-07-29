@@ -4,9 +4,9 @@ Draft for an upstream ESPHome issue, with the evidence captured on this project'
 
 ## Summary
 
-`ble_client` releases the peer's GATT database while a notify registration is still in flight, then calls an ESP-IDF API that walks that database. Bluedroid asserts on the freed list and the device panics and reboots, rather than returning an error.
+`ble_client` releases the peer's GATT database while a notify registration is still in flight, then calls an ESP-IDF API that walks that database. Bluedroid either returns `ESP_GATT_NOT_FOUND`, silently leaving the characteristic unsubscribed, or asserts on the freed list and panics the device.
 
-The failure is a race, so the same code path recovers gracefully most of the time and hard-crashes occasionally. In one 80 minute capture the release ran five times and crashed once.
+Both outcomes were observed on the same firmware against the same peer. The ordering is not a race: the release always wins. Only the consequence of reading the freed list varies.
 
 ## Environment
 
@@ -15,6 +15,8 @@ The failure is a race, so the same code path recovers gracefully most of the tim
 - ESP32-S3 rev0.2 (Unexpected Maker ProS3D), 16MB flash, 8MB quad PSRAM
 - `esp32_ble: max_connections: 2`, two `ble_client` entries, no `bluetooth_proxy`
 - `esp32_ble_tracker` at stock scan parameters with `active: false`
+
+The `esp32_ble_client` and `ble_client` sources in 2026.7.2 are byte-identical to `dev` at the time of writing, so the defect is present on both.
 
 ## Symptom
 
@@ -47,7 +49,7 @@ The device reboots with reset reason `exception/panic`, confirmed by the uptime 
 
 ## Root Cause
 
-Two ESPHome code paths combine.
+Three ESPHome behaviors combine.
 
 **1. The release is triggered from inside the same event dispatch that runs the nodes.** `BLEClient::gattc_event_handler` forwards each GATT event to every node, then immediately releases the services if all nodes report established:
 
@@ -61,19 +63,9 @@ if (!this->services_.empty() && this->all_nodes_established_()) {
 }
 ```
 
-**2. The release frees Bluedroid's database, not only ESPHome's mirror of it.** `BLEClientBase::release_services()` deletes the local `services_` vector and then calls `esp_ble_gattc_cache_clean()`:
+**2. The release frees Bluedroid's database, not only ESPHome's mirror of it.** `BLEClientBase::release_services()` deletes the local `services_` vector and then calls `esp_ble_gattc_cache_clean()`, which frees the GATT cache inside Bluedroid.
 
-```cpp
-void BLEClientBase::release_services() {
-  for (auto &svc : this->services_)
-    delete svc;
-  this->services_.clear();
-#ifndef CONFIG_BT_GATTC_CACHE_NVS_FLASH
-  esp_ble_gattc_cache_clean(this->remote_bda_);
-#endif
-```
-
-**3. A later event walks the freed database.** `esp_ble_gattc_register_for_notify()` is asynchronous. When its `ESP_GATTC_REG_FOR_NOTIFY_EVT` arrives, `BLEClientBase` looks the CCCD up by character handle:
+**3. A later event walks the freed database.** `esp_ble_gattc_register_for_notify()` is asynchronous. When its `ESP_GATTC_REG_FOR_NOTIFY_EVT` arrives, `BLEClientBase` looks the CCCD up by characteristic handle:
 
 ```cpp
 case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
@@ -82,52 +74,92 @@ case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
       this->gattc_if_, this->conn_id_, param->reg_for_notify.handle, NOTIFY_DESC_UUID, &desc_result, &count);
 ```
 
-If the cache was cleaned between the registration request and its completion event, that lookup reaches a freed list. Bluedroid sometimes returns a status (ESPHome then logs `esp_ble_gattc_get_descr_by_char_handle` with status 10 and continues) and sometimes asserts on a NULL list and aborts the firmware.
+That lookup reaches into the freed cache. `ESP_GATTC_REG_FOR_NOTIFY_EVT` carries no `conn_id`, so unlike every other event in this handler it has no existing guard to piggyback on.
 
-**What opens the window.** Any node that reports `ClientState::ESTABLISHED` before its own notify registration has completed makes `all_nodes_established_()` true while a registration is outstanding. ESPHome's bundled `ble_client` sensor avoids this by establishing only in `ESP_GATTC_REG_FOR_NOTIFY_EVT`, but nothing enforces the ordering, the field is public to external components, and the penalty for getting it wrong is a hard crash rather than a warning.
+**What opens the window.** Any node that reports `ClientState::ESTABLISHED` before its own notify registration has completed makes `all_nodes_established_()` true while a registration is outstanding. The contract is undocumented, `node_state` is a public field, and most bundled node types do set it directly in `ESP_GATTC_SEARCH_CMPL_EVT` (`switch/ble_switch.cpp`, `sensor/ble_rssi_sensor.cpp`, several classes in `automation.h`). Only `sensor` and `text_sensor` with `notify: true` wait for `ESP_GATTC_REG_FOR_NOTIFY_EVT`. Copying the common pattern into a component that registers for notifications is enough to trigger this, and the penalty is a hard crash rather than a warning.
 
-## Evidence That It Is a Race
+## Evidence
 
-From a single continuous 80 minute serial capture on one device and one build:
+### Production capture
+
+From a single continuous 80 minute serial capture on one device and one build, every release raced the registration:
 
 | Time | `services released` | Outcome |
 |---|---|---|
-| 11:49:40 | yes | no fault |
+| 11:49:40 | yes | `get_descr_by_char_handle error, status=10` |
 | 12:17:50 | yes | **assert, panic, reboot** |
-| 12:18:03 | yes | no fault |
-| 12:54:27 | yes | no fault |
-| 12:57:53 | yes | graceful `status=10` warning |
+| 12:18:03 | yes | `get_descr_by_char_handle error, status=10` |
+| 12:54:27 | yes | `get_descr_by_char_handle error, status=10` |
+| 12:57:53 | yes | `get_descr_by_char_handle error, status=10` |
 
-Same firmware, same peer, same code path, five times, one crash. Whether the freed list reads as NULL or as an empty-but-valid structure decides between a warning and an abort.
+Status 10 is `ESP_GATT_NOT_FOUND`. Five releases, five races, one abort. The four non-fatal outcomes are not successes: the handler breaks out before `esp_ble_gattc_write_char_descr()`, so the CCCD is never written and no notification ever arrives, while the node believes it is subscribed.
 
-## Suggested Remediation
+### Deterministic reproduction
 
-Either fix alone prevents the crash. Doing both is cheap.
+A minimal node that registers for notifications and then reports `ESTABLISHED` reproduces the race on every connection. See [`test/components/ble_notify_race/`][race-component] and [`ble-notify-race-test.yaml`][race-config], which forces a reconnect every 60 seconds so cycles do not depend on the peer's duty cycle.
 
-**A. Do not release while a registration is outstanding.** Track notify registrations requested against `ESP_GATTC_REG_FOR_NOTIFY_EVT` received, and skip the release in `BLEClient::gattc_event_handler` while the count is non-zero. This preserves the memory optimization and removes the window entirely.
+Four consecutive cycles on stock 2026.7.2, with a temporary diagnostic added to `BLEClient::gattc_event_handler`:
 
-**B. Guard the lookup.** In the `ESP_GATTC_REG_FOR_NOTIFY_EVT` handler, return early when the services have already been released, logging a warning instead of calling into Bluedroid:
-
-```cpp
-case ESP_GATTC_REG_FOR_NOTIFY_EVT: {
-  if (this->services_released_) {
-    ESP_LOGW(TAG, "[%d] notify registration completed after services were released", this->connection_index_);
-    break;
-  }
+```text
+DIAG event=6 services=3 nodes=2 client_state=6 all_established=1
+All clients established, services released
+[W][esp32_ble_client:224]: esp_ble_gattc_get_descr_by_char_handle error, status=10
+DIAG event=38 services=0 nodes=2 client_state=6 all_established=1
 ```
 
-This needs a small flag set in `release_services()` and cleared on connect, because `services_` being empty is not by itself a reliable signal on every build configuration.
+Event 6 is `ESP_GATTC_SEARCH_CMPL_EVT` and event 38 is `ESP_GATTC_REG_FOR_NOTIFY_EVT`. The service vector goes from 3 entries to 0 between them, and the CCCD lookup lands after the release.
 
-**C. Document the node contract.** State in the external-component documentation that a `BLEClientNode` using notifications must set `node_state = ESTABLISHED` only from `ESP_GATTC_REG_FOR_NOTIFY_EVT`, after checking `param->reg_for_notify.status`.
+### Why this is not seen more often
 
-A defensive fix in Bluedroid (returning an error rather than asserting when the DB is absent) belongs upstream of ESPHome and is not proposed here.
+Several bundled node types register themselves as BLE nodes but never reach `ESTABLISHED`, which pins `all_nodes_established_()` false and disables the release entirely for that client. `BLEClientDisconnectAction` never assigns `node_state` at all, and `BLEClientConnectAction` assigns it only while the action is mid-flight, because both return early when `num_running_ == 0`.
+
+A single `ble_client.disconnect` action anywhere in a configuration is therefore enough to suppress the release, and with it this crash, for the whole client. That also means those configurations never free the service memory the release exists to reclaim. This looks like a separate defect and is not addressed by the fix below.
+
+## Fix
+
+Two independent changes, either of which prevents the crash.
+
+**Hold the release while a registration is outstanding.** `BLEClientBase::register_for_notify()` wraps `esp_ble_gattc_register_for_notify()` and counts outstanding requests, `ESP_GATTC_REG_FOR_NOTIFY_EVT` retires them, and `BLEClient::gattc_event_handler` skips the release while the count is non-zero. The release still happens, one event later, so the memory optimization is preserved.
+
+**Guard the lookup.** `release_services()` sets a `services_released_` flag, cleared by `connect()`, and the `ESP_GATTC_REG_FOR_NOTIFY_EVT` handler returns early with a warning rather than calling into a cache that is gone. This covers external components that call the ESP-IDF API directly and so are invisible to the counter.
+
+The `BLEClientNode::node_state` comment is extended to state the ordering requirement.
+
+### Validation
+
+All three runs used the same hardware, peer, and harness, differing only in the ESPHome sources.
+
+| Build | Result |
+|---|---|
+| Stock 2026.7.2, raw ESP-IDF registration | `status=10` on 4 of 4 cycles, release before the lookup |
+| Fix, raw ESP-IDF registration | Guard fires on 3 of 3 cycles, `REG_FOR_NOTIFY after services released`, no call into Bluedroid |
+| Fix, registration via `register_for_notify()` | Release held on 3 of 3 cycles, `notify_pending=1` at `SEARCH_CMPL`, lookup succeeds, release runs immediately after |
+
+The third run is the intended path and shows the release still happening:
+
+```text
+DIAG event=6  services=3 nodes=2 client_state=6 all_established=1 notify_pending=1
+REG_FOR_NOTIFY handle 14, status 0, services held
+DIAG event=38 services=3 nodes=2 client_state=6 all_established=1 notify_pending=0
+All clients established, services released
+```
+
+## Possibly Related
+
+[esphome/esphome#17437][issue-17437] reports a silent hang whose last log line is `All clients established, services released`. The symptom differs and no backtrace is available, so this is noted rather than claimed.
 
 ## Note on the Component That Surfaced This
 
 The component in this repository was setting `ESTABLISHED` during `ESP_GATTC_SEARCH_CMPL_EVT`, immediately after requesting the subscription, which is what opened the window on every connection. That is fixed separately in [`components/easystart/easystart.h`][easystart-header] by moving the state change into `ESP_GATTC_REG_FOR_NOTIFY_EVT` with a status check, matching the pattern ESPHome's own `ble_client` sensor uses.
 
-That fix removes this project's exposure. It does not remove the underlying defect: the release still races any outstanding registration, and the failure mode is still a panic rather than an error.
+That fix removes this project's exposure. It does not remove the underlying defect.
 
 <!-- Repo -->
 
 [easystart-header]: ./components/easystart/easystart.h
+[race-component]: ./test/components/ble_notify_race/
+[race-config]: ../ble-notify-race-test.yaml
+
+<!-- External -->
+
+[issue-17437]: https://github.com/esphome/esphome/issues/17437

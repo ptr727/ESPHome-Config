@@ -22,7 +22,8 @@ When editing docs/code/config, never paste real MACs or advertised names; use pl
   diagnostic via ESPHome's built-in `ble_client` `type: rssi` sensor (connection RSSI, not
   advertisement RSSI); that needs no component code and consumes no extra connection slot. The
   reusable package is `../templates/easystart.yaml`; the working
-  two-module config is `../office-bluetooth-proxy.yaml`. Flashed on the office GL-S10 proxy and
+  two-module config is `../hvac-compressor-sensor.yaml`, on a dedicated ProS3D sited at the units.
+  First proven on the office GL-S10 proxy and
   confirmed against both live modules: both `ble_client`s connect, every decoded field matches the
   frame math (e.g. HVAC 1 `6.7 A` / `59.82 Hz` / peak `23.7 A` / `1978` starts; HVAC 2 `6.4 A` /
   `4961` starts), and both `running` binary_sensors report `on` in Home Assistant.
@@ -102,7 +103,9 @@ zip/jar into the repo or a temp dir is fine; mutating the system's installed pac
 - `python/` - `bleak` live monitor (run with `--discover` to find your own units). Real MACs
   are kept only in the ESPHome `secrets.yaml`, never in this repo.
 - `components/easystart/` - the ESPHome external component (code + codegen).
-- `../templates/easystart.yaml` - reusable per-module package; `../office-bluetooth-proxy.yaml`
-  is the working two-module proxy config.
+- `../templates/easystart.yaml` - reusable per-module package; `../hvac-compressor-sensor.yaml`
+  is the working two-module config.
+- `test/components/ble_notify_race/` - deliberately racy BLE node reproducing the defect in
+  `ESPHOME-BLE-ISSUE.md`, driven by `../ble-notify-race-test.yaml`. Never copy its pattern.
 - `tools/pull-apk.sh` - APK extraction helper.
 - `EasyStart-apktool/` - decompiled app (kept local; not committed - proprietary).
