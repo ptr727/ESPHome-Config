@@ -27,7 +27,7 @@ esphome:
   friendly_name: ${device_friendly_name}
   name_add_mac_suffix: false
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
   # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
   gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml

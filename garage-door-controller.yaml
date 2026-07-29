@@ -42,7 +42,7 @@
 #   - project_name / project_version override in konnected-blaq.yaml:
 #     blocks the ESPHome Update Manager from force-flashing.
 
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   device_name: garage-door-controller
   device_friendly_name: "Garage Door Controller"
@@ -51,6 +51,6 @@ substitutions:
   api_reboot_timeout: "0s"
   wifi_reboot_timeout: "0s"
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   blaq: !include templates/konnected-blaq.yaml

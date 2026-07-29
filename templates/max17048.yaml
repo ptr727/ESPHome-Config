@@ -1,0 +1,42 @@
+# Requires an i2c bus on the including board.
+
+# MAX17048
+# I2C 0x36
+# TODO: https://github.com/esphome/feature-requests/issues/2277
+# https://www.analog.com/en/products/max17048.html
+# https://github.com/Option-Zero/esphome-components
+
+# Drop the gauge on a mains-powered device by removing both ids, the button lambda references the sensor.
+# Remove `battery_gauge` under `sensor:` and `battery_gauge_reset` under `button:`, each as `id: !remove <id>`.
+
+# https://esphome.io/components/external_components
+external_components:
+  - source: github://Option-Zero/esphome-components
+    components: [max17048]
+
+# https://esphome.io/components/sensor
+sensor:
+  - platform: max17048
+    id: battery_gauge
+    battery_voltage:
+      name: "Battery Voltage"
+      device_class: voltage
+    battery_level:
+      name: "Battery Level"
+    rate:
+      name: "Battery Discharge Rate"
+      device_class: ""
+
+# https://esphome.io/components/button
+button:
+
+  # QuickStart bit in the MODE register, the component only reads so nothing else re-fits the model.
+  # The gauge fits its curve once at its own power-on, so a cell attached later reads as a stale model.
+  # Press it with the cell resting, the fit comes from the instantaneous voltage.
+  # https://esphome.io/components/button/template
+  - platform: template
+    id: battery_gauge_reset
+    name: "Battery Gauge Reset"
+    entity_category: config
+    on_press:
+      - lambda: id(battery_gauge)->write_byte_16(0x06, 0x4000);

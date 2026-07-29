@@ -1,9 +1,9 @@
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   device_name: norvi-ae06r-test
   device_comment: "Norvi AE06-R Test Device"
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   norvi: !include templates/norvi-enet-ae06-r.yaml
 
@@ -23,25 +23,25 @@ packages:
 #   - pin: GPIO15
 #     update_interval: 5s
 
-# # https://esphome.io/components/sensor/
+# # https://esphome.io/components/sensor
 # sensor:
 
-#   # https://esphome.io/components/sensor/dallas_temp.html
+#   # https://esphome.io/components/sensor/dallas_temp
 #   - platform: dallasng # dallas_temp
 #     address: 0x1500000DC56AFC28
 #     name: Temperature
 #     id: temp
 #     # update_interval: 5s
-#     # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+#     # https://esphome.io/components/sensor#sliding-window-moving-average-filter
 #     filters:
 #       - filter_out: nan
 #       - sliding_window_moving_average:
 #           window_size: 3
 
-# https://esphome.io/components/binary_sensor/
+# https://esphome.io/components/binary_sensor
 binary_sensor:
 
-  # https://esphome.io/components/binary_sensor/gpio.html
+  # https://esphome.io/components/binary_sensor/gpio
   - platform: gpio
     name: "Input 1"
     id: input_1
@@ -96,7 +96,7 @@ switch:
 
   # TODO: GPIO15 affects input LED state?
 
-  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/gpio
   - platform: gpio
     name: "Test Switch"
     id: test_switch

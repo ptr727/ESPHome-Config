@@ -29,7 +29,7 @@ esphome:
   # Remove Apollo's `project:` block
   project: !remove
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   apollo: github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main
   time: !include time.yaml

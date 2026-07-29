@@ -1,7 +1,7 @@
 # Required substitutions:
 # device_name
 
-# https://esphome.io/components/button/
+# https://esphome.io/components/button
 button:
 
   # https://esphome.io/components/button/restart

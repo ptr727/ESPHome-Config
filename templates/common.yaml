@@ -7,7 +7,7 @@
 # wifi_domain
 # ota_password
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   api: !include api.yaml
   basic: !include basic.yaml

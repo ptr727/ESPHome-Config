@@ -129,7 +129,8 @@ jobs:
             run_all
           fi
           WORKFLOW='\.github/workflows/test-pull-request\.yml$'
-          if grep -qE "^(easystart/components/|easystart/test/|$WORKFLOW)" <<<"$DIFF"; then
+          # ble-notify-race-test.yaml is a root device config, so it needs its own pattern.
+          if grep -qE "^(easystart/components/|easystart/test/|ble-notify-race-test\.yaml$|$WORKFLOW)" <<<"$DIFF"; then
             echo "compile-test=true" >> "$GITHUB_OUTPUT"
           else
             echo "compile-test=false" >> "$GITHUB_OUTPUT"
@@ -147,7 +148,7 @@ jobs:
       - name: List template test configs step
         id: configs
         env:
-          UTILITY: api basic common debug ethernet-sensor logger ota rgb-led-status secrets temperature time wifi
+          UTILITY: api basic common debug ethernet-sensor logger max17048 ota rgb-led-status secrets temperature time wifi
         run: |
           set -euo pipefail
           missing=()
@@ -180,6 +181,14 @@ jobs:
       - name: Checkout code step
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # ble-notify-race-test.yaml resolves !secret through the board template, so it needs the dummy set.
+      # The encryption key is generated here, so no usable key is committed.
+      - name: Create dummy secrets step
+        run: |
+          set -euo pipefail
+          cp secrets._yaml secrets.yaml
+          sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" secrets.yaml
+
       - name: Compile easystart test config step
         run: |
           set -euo pipefail
@@ -194,6 +203,8 @@ jobs:
               /entrypoint/cache.sh
               esphome config /config/easystart/test/compile-test.yaml > /dev/null
               esphome compile /config/easystart/test/compile-test.yaml
+              esphome config /config/ble-notify-race-test.yaml > /dev/null
+              esphome compile /config/ble-notify-race-test.yaml
             '
 
   # Compile one example device per published template.

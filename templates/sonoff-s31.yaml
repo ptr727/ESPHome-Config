@@ -12,7 +12,7 @@
 # Relay: GPIO12 (Connected to Red LED)
 # Blue LED: GPIO13
 
-# https://esphome.io/components/esphome.html
+# https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
@@ -21,19 +21,19 @@ esphome:
 esp8266:
   board: esp01_1m
 
-# https://esphome.io/components/logger.html
+# https://esphome.io/components/logger
 logger:
   # Disable UART logging, it is used for the CSE7766
   baud_rate: 0
 
-# https://esphome.io/components/uart.html
+# https://esphome.io/components/uart
 uart:
   rx_pin: RX
   baud_rate: 4800
   # The CSE7766 transmits 8E1, so the parity must be declared to match.
   parity: EVEN
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   # UART is in use, do not log over UART
   api: !include api.yaml
@@ -43,14 +43,14 @@ packages:
   time: !include time.yaml
   wifi: !include wifi.yaml
 
-# https://esphome.io/components/binary_sensor/index.html
+# https://esphome.io/components/binary_sensor
 binary_sensor:
 
-  # https://esphome.io/components/binary_sensor/gpio.html
+  # https://esphome.io/components/binary_sensor/gpio
   - platform: gpio
     name: "Button"
     device_class: power
-    # https://esphome.io/guides/configuration-types.html#config-pin-schema
+    # https://esphome.io/guides/configuration-types#pin-schema
     pin:
       number: GPIO0
       inverted: true
@@ -61,10 +61,10 @@ binary_sensor:
     on_press:
       - switch.toggle: relay
 
-# https://esphome.io/components/switch/index.html
+# https://esphome.io/components/switch
 switch:
 
-  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/gpio
   - platform: gpio
     name: "Relay"
     id: relay
@@ -72,15 +72,15 @@ switch:
     # Off on power-on
     restore_mode: ALWAYS_OFF
 
-# https://esphome.io/components/status_led.html
+# https://esphome.io/components/status_led
 status_led:
   pin:
     number: GPIO13
 
-# https://esphome.io/components/sensor/index.html
+# https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/cse7766.html
+  # https://esphome.io/components/sensor/cse7766
   - platform: cse7766
     current:
       name: "Current"
@@ -96,7 +96,7 @@ sensor:
       filters:
         - throttle_average: 15s
 
-  # https://esphome.io/components/sensor/total_daily_energy.html
+  # https://esphome.io/components/sensor/total_daily_energy
   - platform: total_daily_energy
     name: "Total Daily Energy"
     power_id: wattage

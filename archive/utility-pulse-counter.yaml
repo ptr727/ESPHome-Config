@@ -1,35 +1,35 @@
 # https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-devkitc.html
-# https://esphome.io/devices/nodemcu_esp32.html
+# https://esphome.io/components/esp32
 # LED: GPIO27
 # Input 1 : GPIO32
 # Input 2 : GPIO33
 
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   device_name: utility-pulse-counter
   device_friendly_name: "Utility Pulse Counter"
 
-# https://esphome.io/components/esphome.html
+# https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   platform: ESP32
   board: nodemcu-32s
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   common: !include templates/common.yaml
 
-# https://esphome.io/components/status_led.html
+# https://esphome.io/components/status_led
 status_led:
   pin:
     number: GPIO27
     inverted: true
 
-# https://esphome.io/components/sensor/index.html
+# https://esphome.io/components/sensor
 sensor:
-  # https://esphome.io/components/sensor/pulse_meter.html
-  # https://esphome.io/components/sensor/pulse_counter.html
+  # https://esphome.io/components/sensor/pulse_meter
+  # https://esphome.io/components/sensor/pulse_counter
   # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
   # https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
   # https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
@@ -90,7 +90,7 @@ sensor:
       filters:
       - multiply: 10
 
-  # https://esphome.io/components/sensor/template.html
+  # https://esphome.io/components/sensor/template
   - platform: template
     name: "Water Meter Total (m³)"
     icon: 'mdi:water'

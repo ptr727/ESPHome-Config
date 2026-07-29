@@ -1,10 +1,10 @@
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   device_name: garage-gate-fan-controller
   device_friendly_name: "Garage Gate Fan Controller"
   fan_temperature_high: "28.0" # ~80F
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   norvi: !include templates/norvi-enet-ae06-r.yaml
 
@@ -20,27 +20,28 @@ esphome:
 # https://esphome.io/components/one_wire
 one_wire:
   # Use expansion port Pin6 GPIO15 for 1-wire protocol
+  # GPIO15 is a strapping pin, the 1-wire bus is wired and working, so the warning is acknowledged not silenced blindly.
   - platform: gpio
-    pin: GPIO15
-    # TODO: WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
-    # ignore_strapping_warning: true
+    pin:
+      number: GPIO15
+      ignore_strapping_warning: true
 
-# https://esphome.io/components/sensor/
+# https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/dallas_temp.html
+  # https://esphome.io/components/sensor/dallas_temp
   - platform: dallas_temp
     address: 0x1500000DC56AFC28
     name: Temperature
     id: temp
     update_interval: 15s
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    # https://esphome.io/components/sensor#sliding-window-moving-average-filter
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
           window_size: 3
 
-  # https://esphome.io/components/sensor/pulse_counter.html
+  # https://esphome.io/components/sensor/pulse_counter
   # Device class, icon, and accuracy are not inherited from main sensor, manually repeat
   # https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
   # https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
@@ -99,7 +100,7 @@ sensor:
       filters:
       - multiply: 10
 
-  # https://esphome.io/components/sensor/template.html
+  # https://esphome.io/components/sensor/template
   - platform: template
     name: "Water Meter Total (m³)"
     icon: mdi:water
@@ -125,7 +126,7 @@ sensor:
 # https://esphome.io/components/climate
 climate:
 
-  # https://esphome.io/components/climate/thermostat.html
+  # https://esphome.io/components/climate/thermostat
   - platform: thermostat
     name: "Thermostat Controller"
     id: thermo
@@ -148,7 +149,7 @@ climate:
       max_temperature: 40.0
       temperature_step: 0.5
 
-# https://esphome.io/components/display/ssd1306.html
+# https://esphome.io/components/display/ssd1306
 display:
   - id: !extend displayy
     lambda: |-

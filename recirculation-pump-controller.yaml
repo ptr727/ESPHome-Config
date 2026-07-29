@@ -1,4 +1,4 @@
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   device_name: recirculation-pump-controller
   device_friendly_name: "Recirculation Pump Controller"
@@ -7,7 +7,7 @@ substitutions:
   target_temperature_low: "35.0" # ~95F
   target_temperature_high: "45.0" # ~113F
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   sonoff_th10: !include templates/sonoff-th10.yaml
 
@@ -23,13 +23,13 @@ esphome:
 # https://esphome.io/components/sensor
 sensor:
 
-  # https://esphome.io/components/sensor/dallas_temp.html
+  # https://esphome.io/components/sensor/dallas_temp
   - platform: dallas_temp
     address: 0x05011455296AAA28
     name: "Recirculation Temperature"
     id: recirc_temp
     update_interval: 15s
-    # https://esphome.io/components/sensor/index.html#sliding-window-moving-average
+    # https://esphome.io/components/sensor#sliding-window-moving-average-filter
     filters:
       - filter_out: nan
       - sliding_window_moving_average:
@@ -65,7 +65,7 @@ sensor:
 # https://esphome.io/components/climate
 climate:
 
-  # https://esphome.io/components/climate/bang_bang.html
+  # https://esphome.io/components/climate/bang_bang
   - platform: bang_bang
     name: "Bang Bang Controller"
     id: bangbang
@@ -85,7 +85,7 @@ climate:
       max_temperature: 50.0
       temperature_step: 0.5
 
-# https://esphome.io/guides/automations.html#interval
+# https://esphome.io/components/interval
 interval:
 
   # Periodic recirc interval

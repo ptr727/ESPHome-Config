@@ -83,7 +83,7 @@ Every device template has an example configuration in [test][test] that CI compi
 #### Micro-Air EasyStart Soft-Starter
 
 - [Template][easystart-template] to attach a [Micro-Air EasyStart][microair-link] AC compressor soft-starter to a Bluetooth proxy as a `ble_client`, exposing live current, estimated power, line frequency, last-start peak, short-cycle delay, system state, running state, and start / fault / learned-start counters in Home Assistant, plus a BLE signal-strength diagnostic for the link.
-- Used by [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy], which sits near the HVAC units and attaches both compressors.
+- Used by [`hvac-compressor-sensor.yaml`][hvac-compressor-sensor], which sits outside next to the HVAC units and attaches both compressors.
 - The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/][easystart], see [easystart/README.md][easystart-readme] for details.
 
 ### Utility Templates
@@ -109,6 +109,13 @@ Shared building-block includes, composed via `packages:` by the device templates
 - [Template][rgb-led-status] for boards that have an addressable RGB LED but no plain status LED.
 - Serves as the [Status LED][esphome-components-status-led-link] component equivalent.
 
+#### MAX17048 Battery Fuel Gauge
+
+- [Template][max17048] for boards carrying the [MAX17048][analog-max17048-link] I2C fuel gauge, shared by the ProS3D and the Adafruit Feather. It needs only an `i2c` bus from the including board.
+- Exposes battery voltage, charge level, and discharge rate, plus a `Battery Gauge Reset` button.
+- The gauge fits its charge model once, at its own power-on, and it is powered from the cell rather than from the ESP32. A cell attached after boot is therefore measured against a stale model, and neither a reboot nor an OTA re-fits it. The button issues the QuickStart command that does, and it should be pressed with the cell resting, since a charging voltage biases the fit high.
+- A mains-powered device with no cell fitted can drop the gauge entirely, see the header of the [template][max17048].
+
 #### Espressif ESP32-S3-DevKitC-1 Devkit
 
 - [Template][esp32-s3-devkitc] for the [ESP32-S3-DevKitC-1][espressif-esp32-s3-devkitc-link] and clone boards.
@@ -132,13 +139,13 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 - [Template][adafruit-esp32-s3-feather] for the [Adafruit ESP32-S3 Feather][adafruit-product-5323-link] board.
 - Includes the on-chip temperature sensor and the RGB LED as status LED.
-- Includes the [MAX17048][analog-max17048-link] I2C battery charge monitor.
+- Includes the [MAX17048 fuel gauge helper][max17048].
 
 #### Unexpected Maker ProS3D Devkit
 
 - [Template][unexpectedmaker-pros3d] for the [Unexpected Maker ProS3D][unexpectedmaker-pros3d-link] board.
 - Includes the on-chip temperature sensor and the RGB LED as status LED.
-- Includes the [MAX17048][analog-max17048-link] I2C battery charge monitor and a USB power presence sensor.
+- Includes the [MAX17048 fuel gauge helper][max17048] and a USB power presence sensor.
 - Optional substitutions:
   - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
   - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
@@ -164,6 +171,14 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 
 - [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] and [`pantry-bluetooth-proxy.yaml`][pantry-bluetooth-proxy] use the [GL-S10 Bluetooth Proxy template][gls10-bluetooth-proxy].
 
+### HVAC Compressor Sensor (ProS3D)
+
+- [`hvac-compressor-sensor.yaml`][hvac-compressor-sensor] uses the [Unexpected Maker ProS3D template][unexpectedmaker-pros3d] and the [EasyStart template][easystart-template] once per module, reporting both HVAC compressors.
+- It is deliberately **not** a Bluetooth proxy. It runs no `bluetooth_proxy`, sets `esp32_ble: max_connections: 2` for its two `ble_client` entries, and scans passively, since it only ever connects to two known addresses and reads no advertisement payloads.
+- Sited outdoors beside the compressors because EasyStart BLE is very short range. From that position the modules read -53 to -66 dBm against the -85 dBm the office proxy managed indoors, and connections establish first time.
+- The modules power their radios down with the compressor, so every entity reading `unknown` and the status LED flashing is the normal idle state rather than a fault.
+- [`ble-notify-race-test.yaml`][ble-notify-race-test] sits beside it in the dashboard but is not a device. It is the reproduction case for the upstream ESPHome defect in [`ESPHOME-BLE-ISSUE.md`][ble-issue], kept ready to flash and CI-compiled so the defect can be demonstrated on demand against any peripheral with a notify characteristic, and it carries a component that is wrong on purpose.
+
 ### Garage Fan Thermostats
 
 - [`garage-door-fan-controller.yaml`][garage-door-fan-controller] (Sonoff TH10) and [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] (Norvi) control cool air ventilation fans in the garage based on temperature.
@@ -187,6 +202,20 @@ Per-device configs live in the repository root. Each sets `substitutions:` (devi
 - In VSCode open remote SSH workspace on the docker host, and open the workspace from config directory.
 
 ## Notes
+
+### Pending USB Reflash
+
+Three devices still run a bootloader older than ESP-IDF 5.2. OTA writes the app partition and never the bootloader, so only a serial flash clears it. Until then they log `Bootloader too old for OTA rollback and SRAM1 as IRAM (+40KB)` at every boot, have no OTA rollback, and cannot use the extra 40KB of IRAM. Setting `sram1_as_iram` before the reflash hard bricks the device, so that option waits.
+
+Nothing here is urgent. Each device works, and the cost is access rather than risk.
+
+| Device | Access needed |
+|---|---|
+| [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] | Open the case, flash via the UART pads, no USB port on the GL-S10 |
+| [`pantry-bluetooth-proxy.yaml`][pantry-bluetooth-proxy] | Same as above |
+| [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] | Mounted in an enclosure |
+
+The remaining ESP32 devices are clear: the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. The [garage door controller][garage-door-controller] is powered off and the plant sensors sleep on a 12 hour cycle, so none of them have been checked. The ESP8266 devices are unaffected.
 
 ### Issues
 
@@ -218,11 +247,15 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [garage-door-controller]: ./garage-door-controller.yaml
 [garage-door-fan-controller]: ./garage-door-fan-controller.yaml
 [garage-gate-fan-controller]: ./garage-gate-fan-controller.yaml
+[ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
+[ble-notify-race-test]: ./ble-notify-race-test.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gls10-bluetooth-proxy]: ./templates/gls10-bluetooth-proxy.yaml
+[hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
 [kincony-kc868-asr]: ./templates/kincony-kc868-asr.yaml
 [konnected-blaq]: ./templates/konnected-blaq.yaml
 [logger]: ./templates/logger.yaml
+[max17048]: ./templates/max17048.yaml
 [music-room-plant-sensor]: ./music-room-plant-sensor.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml

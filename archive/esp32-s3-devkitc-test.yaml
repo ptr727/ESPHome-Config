@@ -1,9 +1,9 @@
-# https://esphome.io/guides/configuration-types.html#substitutions
+# https://esphome.io/components/substitutions
 substitutions:
   device_name: esp32-s3-devkitc-test
   device_comment: "Espressif ESP32-S3 DevKitC Test Device"
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   n16r8v: !include templates/esp32-s3-wroom-2-n16r8v.yaml
   devkitc: !include templates/esp32-s3-devkitc.yaml

@@ -10,11 +10,11 @@
 # A consumer can also call script.execute on led_working_status_<color> or led_feedback_blink_<color>.
 # https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
 
-# https://esphome.io/guides/configuration-types.html#packages
+# https://esphome.io/components/packages
 packages:
   flo_r1der_status_led: github://Flo-R1der/ESPHome_RGB-Status-LED_Package/status_led_package.yaml@main
 
-# https://esphome.io/components/light/
+# https://esphome.io/components/light
 light:
 
   # https://esphome.io/components/light/esp32_rmt_led_strip
@@ -31,7 +31,7 @@ light:
     icon: mdi:led-outline
     entity_category: diagnostic
 
-    # https://esphome.io/components/light/#light-effects
+    # https://esphome.io/components/light#light-effects
     # Effect names match what the Flo-R1der package expects (case-sensitive).
     effects:
       - pulse:

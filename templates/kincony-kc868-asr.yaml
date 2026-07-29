@@ -58,7 +58,7 @@ esp32:
   framework:
     type: esp-idf
 
-# https://esphome.io/guides/configuration-types.html#local-packages
+# https://esphome.io/components/packages#local-packages
 packages:
   common: !include common.yaml
 
@@ -99,7 +99,7 @@ rtttl:
 # https://esphome.io/components/switch
 switch:
 
-  # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/gpio
   - platform: gpio
     name: "Relay 1"
     id: relay_1
@@ -115,10 +115,10 @@ switch:
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
 
-# https://esphome.io/components/light/
+# https://esphome.io/components/light
 light:
 
-  # https://esphome.io/components/light/
+  # https://esphome.io/components/light
   - platform: binary
     name: "LED"
     output: led

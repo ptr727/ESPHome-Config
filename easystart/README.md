@@ -132,7 +132,7 @@ See [PROTOCOL.md section 7][protocol] for the validation table.
   uv run python/easystart_monitor.py --name EasyStart_XXXX   # monitor one
   ```
 
-- Real device MACs are kept out of the repo, discover your own with `--discover` and store them only in the git-ignored ESPHome `secrets.yaml` (read by `office-bluetooth-proxy.yaml` via `!secret`).
+- Real device MACs are kept out of the repo, discover your own with `--discover` and store them only in the git-ignored ESPHome `secrets.yaml` (read by `hvac-compressor-sensor.yaml` via `!secret`).
 - Only one BLE central can connect at a time - close the phone app before running the monitor.
 
 #### Note: HCI snoop logs are filtered on stock Pixel
@@ -151,7 +151,7 @@ defaults 240 V / 1.0), line frequency, last-start peak, short-cycle delay, syste
 - [`components/easystart/__init__.py`][easystart-init] - ESPHome codegen / config schema (one instance per module).
 
 Wire it into a Bluetooth proxy with the reusable template [`../templates/easystart.yaml`][easystart-template] (include once per module, with `vars` for the MAC + label).
-A complete two-module example is [`../office-bluetooth-proxy.yaml`][office-bluetooth-proxy]. The office proxy sits near the HVAC units and attaches both compressors. Place the proxy close to the units: EasyStart BLE is very short range, it would not connect from across the room and needed the proxy relocated near the modules; an external-antenna ESP32 helps if the signal is marginal.
+A complete two-module example is [`../hvac-compressor-sensor.yaml`][hvac-compressor-sensor], a dedicated ProS3D sited at the units that attaches both compressors. Place the host close to the units: EasyStart BLE is very short range, it would not connect from across the room and needed the proxy relocated near the modules; an external-antenna ESP32 helps if the signal is marginal.
 
 The template also adds a **signal-strength diagnostic** per module, using ESPHome's built-in [`ble_client` RSSI sensor][esphome-ble-client-sensor-link] (`type: rssi`, `entity_category: diagnostic`, default 60s). It reads the RSSI of the **live connection** (`esp_ble_gap_read_rssi`), not of advertisements, which matters because a module stops advertising once connected. It publishes NAN on disconnect, so Home Assistant reads `unknown` rather than a stale value (which on its own does not separate "compressor off" from "out of range", since `running` is also derived from BLE presence). Its value is the **link margin while connected**: around -60 dBm is healthy, and approaching -90 dBm means the link is barely viable, which is what turns an intermittent "everything unavailable" into a diagnosable placement problem. The office proxy measured -93 dBm on a live connection, effectively at the sensitivity floor. Use it to site a proxy, dropping `easystart_rssi_update_interval` to a few seconds while walking the location.
 
@@ -161,6 +161,10 @@ Two connection notes learned on hardware:
 - The device's `api:` accepts a limited number of clients (5 on ESP32). Home Assistant and the ESPHome dashboard each hold one, so avoid leaving extra `esphome logs` sessions open or new clients get rejected.
 
 The frame decode is logged at INFO (the `state=... current=...` line) and the raw hex frames at DEBUG. This repo's shared `logger.yaml` runs at DEBUG, so both are visible in `esphome logs` with no per-device override.
+
+## Follow-Up Targets
+
+The [BLE reverse-engineering playbook][ble-re-playbook] is written to generalize past this project, and the next candidate for it is a **Goodnature A24 rat trap**. A unit is in hand, its BLE client is untested, and nothing about it is confirmed first-hand: whether it advertises useful state without a connection, whether counters survive a disconnect the way the EasyStart counters do, and whether the [community decode][goodnature-decode-link] still matches current firmware. Start with the playbook's advertisement capture before pulling an APK, since a trap that broadcasts its kill count needs no connection at all.
 
 ## References
 
@@ -189,8 +193,8 @@ See [LICENSE][license].
 [easystart-monitor]: ./python/easystart_monitor.py
 [easystart-template]: ../templates/easystart.yaml
 [esphome-integration]: #esphome-integration
+[hvac-compressor-sensor]: ../hvac-compressor-sensor.yaml
 [license]: ../LICENSE
-[office-bluetooth-proxy]: ../office-bluetooth-proxy.yaml
 [protocol]: ./PROTOCOL.md
 [pull-apk]: ./tools/pull-apk.sh
 [python-readme]: ./python/README.md
@@ -208,6 +212,7 @@ See [LICENSE][license].
 [github-ibotpeaches-apktool-link]: https://github.com/iBotPeaches/Apktool/releases/latest
 [github-keen-coffee-home-assistant-link]: https://github.com/Keen-coffee/home_assistant/blob/main/easyStart
 [github-skylot-jadx-link]: https://github.com/skylot/jadx/releases/latest
+[goodnature-decode-link]: https://gist.github.com/codyc1515/a6b93850ad81db06cde5e76244cf96f5#gistcomment-4587163
 [micro-air-support-documents-residential-link]: https://www.micro-air.com/support-documents/residential/current/EasyStart_HomeResidential_Installation_Guide.pdf
 [microair-products-easystart-flex-home-ac-soft-starter-link]: https://www.microair.net/products/easystart-flex-home-ac-soft-starter
 [oracle-java-technologies-link]: https://www.oracle.com/java/technologies/downloads/
