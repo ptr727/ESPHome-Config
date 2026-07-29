@@ -1,18 +1,5 @@
 #pragma once
-//
-// EasyStart / Micro-Air soft-starter -> ESPHome BLE client component.
-//
-// Reverse-engineered protocol: see ../../PROTOCOL.md. Transport is the Laird VSP service;
-// we write the ASCII command {"Cmd": ReadLive} to the write characteristic and parse the
-// little-endian binary frame that arrives as notifications on the notify characteristic.
-//
-// Status: validated on a flashed ESP32 (GL-S10 proxy, both modules); every decoded field matches
-// the live frames. Logs each raw notification frame at DEBUG and the decoded values at INFO.
-//
-// Wiring into an existing bluetooth-proxy ESP32: keep your `bluetooth_proxy:` /
-// `esp32_ble_tracker:` blocks; add a `ble_client:` for the module's MAC and this component.
-// The ble_client active connection uses one of the ESP32's connection slots. See the reusable
-// package templates/easystart.yaml and the example hvac-compressor-sensor.yaml.
+// The protocol is reverse engineered, see ../../PROTOCOL.md.
 
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
@@ -33,15 +20,14 @@ namespace espbt = esphome::esp32_ble_tracker;
 
 static const char *const TAG = "easystart";
 
-// Laird VSP service + characteristics (see PROTOCOL.md). Confirmed via nRF Connect:
-// e1 = NOTIFY, e2 = WRITE / WRITE-NO-RESPONSE.
+// Laird VSP service and characteristics, confirmed via nRF Connect.
 static const char *const SERVICE_UUID = "d973f2e0-b19e-11e2-9e96-0800200c9a66";
 static const char *const NOTIFY_UUID = "d973f2e1-b19e-11e2-9e96-0800200c9a66";  // module -> host
 static const char *const WRITE_UUID = "d973f2e2-b19e-11e2-9e96-0800200c9a66";   // host -> module
 
 static const char *const CMD_READ_LIVE = "{\"Cmd\": ReadLive}";
 
-// The live frame is 18 bytes; total-starts (u32) occupies the final offsets 0x0E-0x11.
+// The last field, total starts (u32), ends the frame at offset 0x11.
 static const size_t FRAME_MIN_LEN = 18;
 
 // System-state / fault code table (byte [2]).
@@ -99,8 +85,8 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
         this->write_handle_ = 0;
         this->notify_handle_ = 0;
         this->rx_buffer_.clear();
-        // The module powers its BLE radio down when the compressor is off, so a disconnect
-        // means the compressor is off. Mark running=false and the data stale/unavailable.
+        // The module powers its BLE radio down when the compressor is off.
+        // A disconnect therefore means off rather than a fault.
         this->publish_offline_();
         break;
       }
@@ -161,10 +147,9 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
   }
 
   void on_notify_(const uint8_t *data, uint16_t len) {
-    // A ReadLive poll yields two notifications: the binary live frame and an ASCII status
-    // marker like {"Sts": Success}. Ignore the text one; decode the binary frame. At default
-    // ATT MTU the frame arrives in one notification, but we still accumulate in case a small
-    // MTU splits it. rx_buffer_ is cleared at the start of each poll in update().
+    // A ReadLive poll yields two notifications, the binary live frame and an ASCII status marker.
+    // - Only the binary frame is decoded.
+    // - Bytes accumulate in case a small MTU splits the frame across notifications.
     if (len > 0 && data[0] == '{') {
       ESP_LOGD(TAG, "status: %.*s", len, (const char *) data);
       return;
@@ -189,7 +174,7 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
            ((uint32_t) this->rx_buffer_[lo + 2] << 16) | ((uint32_t) this->rx_buffer_[lo + 3] << 24);
   }
 
-  // Live frame layout (validated against the app decompile + live hardware, see PROTOCOL.md section 4):
+  // Live frame layout, see PROTOCOL.md section 4:
   //   [2] state  [3] learned  [4..5] current/10 A  [6..7] period (500000/p = Hz)
   //   [8..9] peak/10 A  [10..11] scpt  [12..13] faults  [14..17] total starts (u32)
   void parse_live_frame_() {
@@ -213,12 +198,10 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
     ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%u faults=%u", state_str, current_a, freq_hz,
              peak_a, total_starts, total_faults);
 
-    // "running" is driven by BLE connection state (radio only on while compressor runs), not by
-    // this frame - see publish_offline_() and the OPEN/DISCONNECT handlers.
+    // "running" is driven by BLE connection state, not by this frame.
     if (this->current_sensor_ != nullptr)
       this->current_sensor_->publish_state(current_a);
-    // Estimated power: the module reports single-leg current only (no voltage), so this is
-    // current * line_voltage * power_factor - an estimate, not a measured value.
+    // The module reports single-leg current and no voltage, so power is an estimate.
     if (this->power_sensor_ != nullptr)
       this->power_sensor_->publish_state(current_a * this->line_voltage_ * this->power_factor_);
     if (this->frequency_sensor_ != nullptr)
@@ -237,10 +220,9 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
       this->state_text_sensor_->publish_state(state_str);
   }
 
-  // Compressor off / module radio down: report not-running and blank the live measurements
-  // (current, power, frequency, peak) plus the state text. The cumulative counters (starts,
-  // faults, learned) and the short-cycle delay keep their last value, since they are not live
-  // readings and there is nothing fresher to show while disconnected.
+  // The module's radio is down, so nothing live has a current value.
+  // - Blank the live measurements and the state text.
+  // - Keep the cumulative counters and the delay, there is nothing fresher to show.
   void publish_offline_() {
     if (this->running_sensor_ != nullptr)
       this->running_sensor_->publish_state(false);

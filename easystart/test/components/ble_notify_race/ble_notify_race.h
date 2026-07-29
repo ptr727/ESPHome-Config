@@ -47,9 +47,8 @@ class BleNotifyRace : public Component, public ble_client::BLEClientNode {
           ESP_LOGW(TAG, "register_for_notify failed, err=%d", err);
           break;
         }
-        // The violation.
-        // The registration is still in flight, so reporting ESTABLISHED here lets ble_client free
-        // the GATT cache that the CCCD lookup still needs.
+        // The violation, the registration is still in flight.
+        // Reporting ESTABLISHED here lets ble_client free the cache the CCCD lookup needs.
         ESP_LOGI(TAG, "registered for notify on handle %d, reporting ESTABLISHED early", this->char_handle_);
         this->node_state = espbt::ClientState::ESTABLISHED;
         break;
