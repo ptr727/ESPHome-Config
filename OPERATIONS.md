@@ -229,6 +229,78 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
 - **Add temporary diagnostics to the core component this way too.** An `ESP_LOGW` inside the code under investigation settles a question that reading the source cannot, and the copy is deleted afterwards.
 - **Remember that `esphome upload` does not compile.** After a failed compile it happily flashes the previous binary, so a failed build followed by a successful upload means the device is running the *old* firmware. Check the compile result before reading anything into the device's behavior.
 
+## Contributing Upstream to ESPHome
+
+Core-component fixes are developed in the fork clone at `/home/pieter/esphome-esphome`, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork, so `git push origin <branch>` is what updates it and nothing is ever pushed to `esphome/esphome` directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
+
+### Staging on the Fork First
+
+There is **one** fork, renamed from `ptr727/esphome`, so the old name still redirects and `gh` resolves it happily. Do not conclude from that there are two forks. It carries two branch families per change:
+
+- **`fix/<topic>`** is the staging branch, with real working history, opened as a self-PR against the fork's own `dev`. This is where the Copilot round happens.
+- **`upstream-<topic>`** is the curated branch that is the actual head of the `esphome/esphome` PR, same tree as its `fix/` counterpart with squashed history.
+
+A change is committed to the `fix/*` branch and reviewed there before it touches the `upstream-*` branch. The fork PR is where Copilot comments without an audience, and it is the only place a bot review can be requested at all. Once the change survives that round, cherry-pick it onto `upstream-*` and push. Prefer adding commits on top of `upstream-*` over a force-push while codeowners are mid-review: ESPHome squash-merges anyway, so tidy history buys nothing and a force-push breaks their review anchors. The two branches carry different histories, so verify the trees agree rather than the commits:
+
+```shell
+git diff fix/<topic> upstream-<topic> --stat
+```
+
+### Fork CI Does Not Run the Real Linters
+
+On a fork's pull requests the lint and build jobs report `Run: skipping`, and `label` and `External component comment` fail outright because they need write tokens a fork does not have. Green-ish checks there mean nothing at all. Run the gates locally from the fork clone, in its venv:
+
+```shell
+source venv/bin/activate
+script/ci-custom.py
+script/build_codeowners.py --check
+script/build_language_schema.py --check
+script/generate-esp32-boards.py --check
+script/generate-rp2-boards.py --check
+script/ci_check_duplicate_test_ids.py
+script/ci_check_test_fixture_list_form.py
+script/clang-format --changed -i
+script/clang-tidy --all-headers --changed --environment esp32-idf-tidy
+script/clang-tidy --all-headers --changed --environment esp32-arduino-tidy
+script/test_build_components.py -c <component>,<component> -t esp32-idf
+```
+
+- **`clang-format` reports nothing and rewrites in place**, so confirm it produced no diff rather than reading its exit code as a pass.
+- **`clang-tidy-nosplit` is the CI job that covers ESP32**, not the obviously named `clang-tidy-single`, which greps for `USE_ARDUINO` and `USE_ESP8266` and matches zero files in an ESP32 change. The `esp32-idf-tidy` invocation above is what that job runs.
+- **The first clang-tidy run builds an ESP-IDF compile database**, about four minutes, and needs clang-tidy 22.1.8 on `PATH`. Later runs reuse the cache.
+- **`generate-rp2-boards.py --check` fails with a bare `CalledProcessError` when ruff is missing** from the venv, which reads as a real failure and is not. Install it with `uv pip install ruff`, since plain `pip` hits PEP 668 in a venv without pip.
+- **A `tests/components/<x>/test.*.yaml` fixture cannot be compiled directly.** It carries no `esphome:` section because the harness injects one, so go through `test_build_components.py`.
+- **`clang-format` does not reflow comments**, but the 120-column limit still applies to them. Check a long comment with `awk 'length > 120'` instead of assuming the formatter would have caught it.
+
+### The `gh` CLI Is Too Old for `gh pr edit`
+
+`gh` is 2.46.0 from the Debian package. `gh pr edit` fetches PR metadata including `projectCards`, a Projects-classic field GitHub has retired, and the API now answers that field with an error rather than null, so the command fails before writing anything:
+
+```text
+GraphQL: Projects (classic) is being deprecated in favor of the new Projects experience ... (repository.pullRequest.projectCards)
+```
+
+This is a client-version problem and nothing else. It is not the repo-scope rule in [`AGENTS.md`][agents] and not a change in the Copilot or agent instructions: writes aimed at the correct repo succeed, and a read-only probe of `projectCards` by itself reproduces the identical error. Edit a PR body through REST instead, always from a file:
+
+```shell
+gh api -X PATCH repos/<owner>/<repo>/pulls/<number> -F body=@body.md
+```
+
+The same age accounts for `gh pr checks --json` not existing; poll CI with `gh pr view <n> --json statusCheckRollup` instead. Upgrading `gh` past the Debian package retires both workarounds. Until then, treat any `gh` subcommand failure whose message names a GraphQL field as a version problem to route around, not as a permissions or policy signal, and **verify whether the write landed before retrying it**. In the failures seen so far the PR body was unchanged, so the error came from the lookup that precedes the write, but that is something to confirm each time rather than assume.
+
+### Bot Reviewers
+
+Upstream runs two automated reviewers, and they differ enough to need handling separately.
+
+- **Copilot** (`copilot-pull-request-reviewer`) posts inline threads, with logins that differ by API as [`AGENTS.md`][agents] describes. **Its low-confidence notes never become threads.** They are folded into a `<details>` block in the review body, so the comments endpoint returns nothing and a review reporting "generated no new comments" can still carry substantive objections. Read the review body itself, via `gh api repos/<o>/<r>/pulls/<n>/reviews`.
+- **esphbot** (Kōan, a Claude) posts a summary comment plus a formal review, quotes replies back point by point, and concedes with evidence when it is wrong. It re-reviews on push by itself, so there is nothing to trigger and nothing to nudge.
+- **A review cannot be requested on an upstream PR.** The `requestReviews` mutation answers `FORBIDDEN: ptr727 does not have the correct permissions to execute RequestReviews` on `esphome/esphome`, because an outside contributor cannot assign reviewers. It works on the fork, which is the only place it is needed.
+- **Confirm a review covers the current head by commit oid**, never by timestamp, filtering on author and oid together. A thread reply posts as a review authored by the maintainer at the head SHA, which otherwise reads as coverage.
+
+### Answering a Review
+
+Disagreement lands well when it carries evidence, and both bots have accepted well-supported pushback. Cite file and line as they read at the PR's base commit, not as they read in the working tree, since a diff shifts them. Quote the source that settles the point, and state plainly what was applied and what was declined. Check a style objection against the tree before accepting it: an ask for `override` beside `final` died against 54 bare `) final {` and zero `override final` in the codebase. Never build a comment body in a shell string, see [Repository Tooling Hazards][repository-tooling-hazards].
+
 ## Debugging
 
 The steps below run ESPHome outside the live instance, on a workstation, which is how a device gets flashed over USB and how a config gets debugged without touching the running controller.
@@ -305,6 +377,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 - **Markdown links are reference-style everywhere except [`AGENTS.md`][agents] and `.github/copilot-instructions.md`**, which keep inline links because they are agent-instruction files. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
+- **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
 - **Check an esphome.io link by page title, not HTTP status.** The site answers an unknown path with `200` and a `404 - Page Not Found | ESPHome` title, so a status-code sweep reports a dead link as healthy. The current link form carries no `.html` suffix and no trailing slash, the `guides/configuration-types` anchors have moved to the dedicated [`components/substitutions`][substitutions-link] and [`components/packages`][packages-link] pages, and the per-board pages live on [devices.esphome.io][devices-esphome-link]. An anchor is verified by fetching the page and matching the `id` attribute, since a renamed anchor silently lands the reader at the top of the page.
 
 ## Things to Avoid
@@ -328,6 +401,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
+[gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
 [max17048-template]: ./templates/max17048.yaml
 [readme]: ./README.md
 [repository-tooling-hazards]: #repository-tooling-hazards
@@ -346,7 +420,9 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [devices-esphome-link]: https://devices.esphome.io
 [esp-idf-framework-link]: https://esphome.io/components/esp32#esp-idf-framework
 [esphome-cli-link]: https://esphome.io/guides/cli
+[esphome-fork-link]: https://github.com/ptr727/esphome-esphome
 [esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
+[esphome-upstream-link]: https://github.com/esphome/esphome
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
 [option-zero-link]: https://github.com/Option-Zero/esphome-components
