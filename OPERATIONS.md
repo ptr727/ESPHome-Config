@@ -246,6 +246,9 @@ A change is committed to the `fix/*` branch and reviewed there before it touches
 git diff fix/<topic> upstream-<topic> --stat
 ```
 
+- **Keep the fork's own `dev` current before branching.** A `fix/*` branch cut from `upstream/dev` while the fork's `dev` lags shows every intervening upstream commit in the fork PR, which drowns the real change and makes a bot review worthless. Fast-forward first: `git fetch upstream dev && git checkout dev && git merge --ff-only upstream/dev && git push origin dev`.
+- **Moving the base branch does not always re-diff an open PR.** GitHub recomputes the merge base reliably when the *head* is pushed, not when the *base* moves, so a PR can keep showing the stale diff after the fix. `gh api repos/<o>/<r>/compare/<base>...<head>` reports the true `merge_base_commit` and file list; when that disagrees with `gh pr view --json changedFiles`, close and reopen the PR to force the recompute.
+
 ### Fork CI Does Not Run the Real Linters
 
 On a fork's pull requests the lint and build jobs report `Run: skipping`, and `label` and `External component comment` fail outright because they need write tokens a fork does not have. Green-ish checks there mean nothing at all. Run the gates locally from the fork clone, in its venv:
@@ -292,10 +295,28 @@ The same age accounts for `gh pr checks --json` not existing; poll CI with `gh p
 
 Upstream runs two automated reviewers, and they differ enough to need handling separately.
 
-- **Copilot** (`copilot-pull-request-reviewer`) posts inline threads, with logins that differ by API as [`AGENTS.md`][agents] describes. **Its low-confidence notes never become threads.** They are folded into a `<details>` block in the review body, so the comments endpoint returns nothing and a review reporting "generated no new comments" can still carry substantive objections. Read the review body itself, via `gh api repos/<o>/<r>/pulls/<n>/reviews`.
+- **Copilot** (`copilot-pull-request-reviewer`) posts inline threads. **Its low-confidence notes never become threads.** They are folded into a `<details>` block in the review body, so the comments endpoint returns nothing and a review reporting "generated no new comments" can still carry substantive objections. Read the review body itself, via `gh api repos/<o>/<r>/pulls/<n>/reviews`. In one round those suppressed notes were the only findings, and all of them were correct.
+- **Filtering REST reviews by the GraphQL login silently returns nothing.** REST reports `copilot-pull-request-reviewer[bot]`, GraphQL reports it without the suffix, so `select(.user.login=="copilot-pull-request-reviewer")` on a REST payload yields an empty list that reads as "no review yet" rather than as a bad filter. Match the API, and cross-check with `gh pr view --json reviews`, which uses the unsuffixed form.
+- **Never hand-complete a commit SHA when filtering.** A poll filtered on a full SHA reconstructed from a short one matched nothing and expired silently while the review had in fact landed. Take it from `git rev-parse`, the same rule the [`AGENTS.md`][agents] id policy applies to writes.
 - **esphbot** (Kōan, a Claude) posts a summary comment plus a formal review, quotes replies back point by point, and concedes with evidence when it is wrong. It re-reviews on push by itself, so there is nothing to trigger and nothing to nudge.
 - **A review cannot be requested on an upstream PR.** The `requestReviews` mutation answers `FORBIDDEN: ptr727 does not have the correct permissions to execute RequestReviews` on `esphome/esphome`, because an outside contributor cannot assign reviewers. It works on the fork, which is the only place it is needed.
 - **Confirm a review covers the current head by commit oid**, never by timestamp, filtering on author and oid together. A thread reply posts as a review authored by the maintainer at the head SHA, which otherwise reads as coverage.
+
+### The Repo's Own AGENTS.md Is the Style Authority
+
+ESPHome carries contributor rules in its own `AGENTS.md`, and they move. Grep it before arguing a style point, in either direction.
+
+- **Config validators need type hints**, `def validate_x(config: ConfigType) -> ConfigType:`, with `ConfigType` imported from `esphome.types`. Older validators in the same file often lack them; new code is still expected to have them.
+- **Prefer an existing validator from `config_validation.py`** over a hand-rolled one, composed in `cv.All(...)`. `cv.has_at_most_one_key` is the named choice for mutually-exclusive keys, but it tests key *presence*, so it does not fit a key carrying a schema default, which is always present after validation. When the shared one genuinely does not fit, say why in a comment at the validator, because a reviewer following the same rule will ask.
+- **A PR title must start with a `[tag]` prefix**, the component name or `[core]`, and the pull request template must be filled out without removing sections.
+
+### Negative Validation Belongs in a Component Test
+
+A schema rejection is testable, and `tests/component_tests/<component>/` is where it goes. `tests/component_tests/bk72xx_ble_tracker/test_scan_parameter_validation.py` is the model: accepted cases and rejected cases in separate blocks, rejections via `pytest.raises(cv.Invalid, match=...)`.
+
+- **Drive the full platform `CONFIG_SCHEMA`, not the validator function.** Testing the function alone still passes when someone unwires it from the `cv.All` chain, which is the regression worth catching. An autouse `reset_core` fixture clears entity state between tests, but names must still be unique within a single test.
+- **Confirm the test can fail.** Temporarily remove the validator from the chain and check that exactly the rejection tests fail. A test that passes both with and without the code under test is not coverage.
+- **The venv ships without the test dependencies.** `uv pip install pytest pytest-asyncio pytest-cov pytest-mock`, and run with `--no-cov` unless the coverage args in `pyproject.toml` are wanted.
 
 ### Answering a Review
 
