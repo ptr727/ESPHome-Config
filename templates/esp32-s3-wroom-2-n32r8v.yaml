@@ -1,3 +1,10 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/esp32-s3-devkitc.yaml@main
+#   board: github://ptr727/ESPHome-Config/templates/esp32-s3-wroom-2-n32r8v.yaml@main
+# - An overlay, not a standalone device, so it is composed on the devkit template.
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
 # ESP32-S3-WROOM-2-N32R8V
 # ESP32-S3R8V, 32MB Octal SPI Flash, 8MB Octal SPI PSRAM, 1.8V SPI
 # https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-2_datasheet_en.pdf

@@ -1,3 +1,8 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/aoycocr-x5p.yaml@main
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
 # Required substitutions:
 # device_name
 # device_friendly_name

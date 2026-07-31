@@ -1,3 +1,8 @@
+# External usage:
+# packages:
+#   ota: github://ptr727/ESPHome-Config/templates/ota.yaml@main
+# - Needs ota_password in a secrets.yaml beside the including config.
+
 # https://esphome.io/components/ota
 ota:
   - platform: esphome

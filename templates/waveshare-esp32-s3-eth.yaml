@@ -1,0 +1,111 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/waveshare-esp32-s3-eth.yaml@main
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Required substitutions:
+# device_name
+# device_friendly_name
+
+# Waveshare ESP32-S3-ETH
+# ESP32-S3R8, 16MB Quad Flash (W25Q128), 8MB Octal PSRAM
+
+# https://www.waveshare.com/esp32-s3-eth.htm
+# https://www.waveshare.com/wiki/ESP32-S3-ETH
+# https://files.waveshare.com/wiki/ESP32-S3-ETH/ESP32-S3-ETH-Schematic.pdf
+
+# USB-C is the chip's native USB, there is no UART bridge, so flashing needs no adapter.
+# The optional PoE module is IEEE 802.3af and passive, it claims no GPIO.
+
+# W5500 SPI Ethernet
+# GPIO13 : sclk
+# GPIO11 : mosi
+# GPIO12 : miso
+# GPIO14 : cs
+# GPIO9  : reset
+# GPIO10 : interrupt
+# - The ethernet component owns this bus outright, SPI based PHYs do not use the spi component.
+
+# GPIO21 : WS2812 RGB LED
+# GPIO0  : BOOT button
+
+# Antenna
+# The ceramic antenna is selected by a resistor and the IPEX Gen 1 connector by moving it.
+# There is no antenna select GPIO, so nothing here configures it.
+
+# TF card slot, SPI
+# GPIO7 : sck
+# GPIO6 : mosi
+# GPIO5 : miso
+# GPIO4 : cs
+# - ESPHome has no SD card component, so nothing here configures it.
+# - https://github.com/esphome/feature-requests/issues/513
+
+# Camera interface, DVP, OV5640 compatible
+# GPIO1  : vsync
+# GPIO2  : href
+# GPIO3  : xclk
+# GPIO39 : pclk
+# GPIO48 : siod
+# GPIO47 : sioc
+# GPIO18 : d7
+# GPIO15 : d6
+# GPIO38 : d5
+# GPIO40 : d4
+# GPIO42 : d3
+# GPIO46 : d2
+# GPIO45 : d1
+# GPIO41 : d0
+# - Recorded for anyone fitting a camera, this template configures none of it.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  rgb_led_pin: GPIO21
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+# https://esphome.io/components/esp32
+esp32:
+  # A bare ESP32-S3R8 with external 16MB flash, which is the DevKitC-1 profile, there is no WROOM module fitted.
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
+  board: esp32-s3-devkitc-1
+
+  # The board definition does not set this, ESPHome defaults to 4MB.
+  flash_size: 16MB
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/components/psram
+# The R8 part carries 8MB in package, so octal, and ESPHome has no default mode on the S3.
+psram:
+  mode: octal
+  speed: 80MHz
+
+# The ethernet component conflicts with wifi, so common.yaml cannot be used here.
+# https://esphome.io/components/packages#local-packages
+packages:
+  api: !include api.yaml
+  basic: !include basic.yaml
+  debug: !include debug.yaml
+  ethernetsensor: !include ethernet-sensor.yaml
+  logger: !include logger.yaml
+  ota: !include ota.yaml
+  rgbledstatus: !include rgb-led-status.yaml
+  temperature: !include temperature.yaml
+  time: !include time.yaml
+
+# The device sets no domain, so it is reachable only by whatever DHCP registered for it.
+# https://esphome.io/components/ethernet
+ethernet:
+  type: W5500
+  clk_pin: GPIO13
+  mosi_pin: GPIO11
+  miso_pin: GPIO12
+  cs_pin: GPIO14
+  interrupt_pin: GPIO10
+  reset_pin: GPIO9

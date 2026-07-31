@@ -1,3 +1,7 @@
+# External usage:
+# packages:
+#   max17048: github://ptr727/ESPHome-Config/templates/max17048.yaml@main
+
 # Requires an i2c bus on the including board.
 
 # MAX17048

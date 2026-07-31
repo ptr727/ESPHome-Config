@@ -4,6 +4,35 @@ How to work in this repository: reaching the ESPHome CLI, validating and flashin
 
 `AGENTS.md` is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
 
+## Keeping This File Current
+
+An operational discovery is written down as part of the change that surfaced it, never left in a session note or an agent's memory. This is the local routing for the self-improvement rule in [`AGENTS.md`][agents], which owns the principle.
+
+- **A mechanism that stopped working, and whatever replaced it**, goes in the section that owns the subject. Record the replacement and the reason the old route failed, so the next agent does not retry it.
+- **A procedure carried out for the first time** gets a section describing how, not that it happened. Write the recipe someone would follow, and name the command or the file rather than narrating the session.
+- **A fact established by running something** is recorded with what proved it, since a claim nobody can re-derive gets doubted and re-tested. Prefer the observed output over an assertion.
+- **A defect in the carried fleet content** - `AGENTS.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`, `repo-config/`, `spec/`, `AUDIT.md` - is reported upstream rather than patched here, because a local edit registers as drift and fails the audit. Filing that report is a **cross-repository write and needs the maintainer's explicit permission for that specific repository in the current session**, per [Repository Boundaries and Write Safety][agents-write-safety]. Ask, do not assume.
+- **Nothing here is a changelog.** State the current mechanism in the present tense, per the documentation rules in `AGENTS.md`. The before-and-after belongs in the commit message.
+
+## External Package Usage
+
+Templates are consumed two ways. Inside this repository a device config composes them with a local `!include`, which is what [`test/`][test] exercises. Outside it, an adopter composes them as a remote `github://` package, and every template opens with an `External usage:` comment block carrying that form plus whatever it needs from the including config.
+
+The mechanics below were confirmed against ESPHome 2026.7.3 by validating a scratch config that pulled [`templates/common.yaml`][common-template] from `@main`.
+
+- **The package is cloned, not read from the working tree.** `esphome config` logs `INFO Cloning https://github.com/ptr727/ESPHome-Config.git@main` and resolves the files under `/cache/data/packages/<hash>/`. A relative `!include` inside a template therefore resolves against that cache, so sibling includes such as `common.yaml` pulling `wifi.yaml` work unchanged.
+- **`!secret` falls back to the consuming config's own directory.** Resolution tries the package's `templates/secrets.yaml` first, whose `<<: !include ../secrets.yaml` fails because the repository root `secrets.yaml` is git-ignored, then tries a `secrets.yaml` beside the including config. An adopter supplies their own under the names in [`secrets._yaml`][secrets-example], and both paths appear in the error when neither exists.
+- **`test/` cannot use the remote form**, and the reason is the clone above. A `github://` package fetches the named ref rather than the working tree, so a compile test written that way would build `@main`'s copy of a template and pass while the change under test is broken. It also cannot work for a template that does not exist on the ref yet. Local `!include` is the only form that gates a diff.
+
+Four templates deviate from the plain shorthand, and each says so in its own block:
+
+- [`easystart.yaml`][easystart-template] is parameterized, so it takes the `url` / `ref` / `files` form with `vars` rather than the one-line shorthand.
+- The `esp32-s3-wroom-*` board definitions are overlays, so they are composed on [`esp32-s3-devkitc.yaml`][devkitc-template] as a second package entry.
+- [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
+- [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
+
+Renaming or moving a template breaks every one of these blocks and the [`README.md`][readme] paths, and nothing in CI notices, because the local test config is renamed alongside it and stays green. Re-check the block whenever a template's filename changes.
+
 ## Documenting a Device
 
 This is a public repository whose primary audience is people reusing the templates, and it is also the live config directory of one specific home. Two human-facing docs keep those apart, and a change that adds prose picks between them before it picks a section.
@@ -138,6 +167,24 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The status LED convention is deliberate.** The `status_led` pin is intentionally not inverted, so a lit globe LED means healthy and a flashing one means a warning or error, which is the reverse of what upstream's own `gl-s10.yaml` produces. A sync with upstream must not "fix" it.
 - **Its GPIO0 and GPIO5 strapping warnings cannot be silenced**, see [Strapping Pin Warnings][strapping-pin-warnings].
 
+### Waveshare ESP32-S3-ETH
+
+[`templates/waveshare-esp32-s3-eth.yaml`][waveshare-template] is a board template, so a device config composing it supplies its own job, the way [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] adds `esp32_ble_tracker` and `bluetooth_proxy` on top.
+
+- **It cannot include `common.yaml`.** The `ethernet` component declares `CONFLICTS_WITH = ["wifi"]`, and `common.yaml` carries [`wifi.yaml`][wifi-template], so the template composes the individual includes instead. Anything else added to the tree that pulls in a `wifi:` key breaks it, which is the reason [`rgb-led-status.yaml`][rgb-led-status-template] carries its own status logic rather than the upstream package, see [RGB LED Status][rgb-led-status].
+- **The W5500 pins carry no strapping warnings.** None of GPIO9 through GPIO14 is an ESP32-S3 strapping pin, unlike the GL-S10, so validation output for this board should be clean and a new warning means something actually changed.
+- **The `ethernet` component owns its SPI bus outright.** An SPI based PHY does not go through the `spi` component, so those four pins cannot be shared, and the TF card slot on GPIO4 through GPIO7 is a separate bus.
+- **The antenna is a solder change, not a config one.** Moving the resistor from the ceramic antenna to the IPEX Gen 1 connector has no GPIO behind it, so there is no equivalent of the ProS3D's `external_antenna` switch to flip.
+- **PSRAM is octal.** The ESP32-S3R8 part carries 8MB in package. Waveshare's own `IO_Test` demo contradicts this by listing GPIO33 through GPIO37 as free GPIO, and those pins are the octal PSRAM bus. Trust the part number and the boot banner over the demo.
+
+### RGB LED Status
+
+[`templates/rgb-led-status.yaml`][rgb-led-status-template] derives from [Flo-R1der's package][flo-r1der-link] but does not import it, because that version binds its state to `wifi:` `on_connect` triggers and so cannot run on an Ethernet board.
+
+- **The status source is polled, deliberately.** ESPHome has a `wifi:` `on_connect` and an `ethernet:` `on_connect` but no network-level trigger, and YAML has no conditionals, so no single event-driven form covers both interfaces. A 1s `interval` edge-detects instead and runs the script only on a change.
+- **`network::is_connected()` is the interface-agnostic helper.** It resolves Ethernet, modem, WiFi, and OpenThread behind their own `USE_*` defines, so the C++ already does the conditional compilation that the YAML cannot. Its header is in the generated `src/esphome.h` for both WiFi and Ethernet builds, so a lambda needs no include. Do not "fix" this back to a `wifi:` trigger.
+- **It is remotely consumable**, needing only the `rgb_led_pin` substitution and the including config's own `api:`, so it must stay free of repo-local `!include` entries.
+
 ### Bootloader Age and USB Flashing
 
 An ESP32 flashed before ESP-IDF 5.2 keeps that bootloader through every OTA, because OTA writes the app partition and never the bootloader. ESPHome checks it at boot with `esp_ota_get_bootloader_description()` and warns when the call fails:
@@ -148,7 +195,8 @@ An ESP32 flashed before ESP-IDF 5.2 keeps that bootloader through every OTA, bec
 
 - **Every ESP32 variant can report it**, only the wording differs, and the classic ESP32 adds the SRAM1 clause. It is not an ESP8266 concern.
 - **Never enable `sram1_as_iram` before the USB flash lands.** ESPHome's own source notes that combination hard bricks the device, recovering only by USB reflash. Take the USB flash first, then the option.
-- **A device confirms itself fixed on the next boot** by dropping the warning, and `safe_mode` moves from `Bootloader rollback: not supported` to a supported state.
+- **A device confirms itself fixed on the next boot** by dropping the warning. The absence of the warning is the test, not the `safe_mode` line below it.
+- **`Bootloader rollback: support unknown` is the normal state after a serial flash**, and is not a fault. `safe_mode.cpp` reports it whenever the running partition is `ESP_OTA_IMG_NEW`, which is what `esptool` leaves behind, and only an OTA moves the partition to `ESP_OTA_IMG_PENDING_VERIFY` and the line to `supported`. A freshly USB-flashed device therefore reads `support unknown` with a current bootloader, which is a different state from the old-bootloader `not supported`.
 - Checking one means attaching to its logs and restarting it, since the banner prints once at boot. A deep-sleeping device cannot be checked outside its wake window.
 
 ### MAX17048 Fuel Gauge
@@ -160,6 +208,9 @@ The gauge is a ModelGauge part, so it infers state of charge by fitting cell vol
 - **With no cell attached the SOC and rate readings are meaningless**, and the numbers do not look obviously broken forever. The charger oscillates between charge and terminate with nothing to hold the rail, which shows as a fast-blinking charge LED and a bouncing voltage that can exceed LiPo float. SOC saturates above 100 percent and then decays for hours, passing through entirely plausible values on the way down.
 - **The `Battery Gauge Reset` button forces the re-fit** by writing the QuickStart bit `0x4000` to the MODE register `0x06`, reaching the chip through `id(battery_gauge)->write_byte_16(...)` because `MAX17048Component` inherits `i2c::I2CDevice` publicly. A successful press shows as a single-sample discontinuity in SOC plus the rate register collapsing toward zero.
 - **Press it with the cell resting.** QuickStart fits from the instantaneous terminal voltage, which charge current elevates above the true open-circuit voltage, so a press taken while charging reads optimistic.
+- **A long state string is a float32 artifact, not a missing rounding**, and a `round` filter makes it worse. The gauge reports state of charge in 1/256 steps, so `4.12890625` is exactly `1057/256` and survives the API's 32-bit float intact. Rounding that to `4.13` lands on a value binary32 cannot represent, and Home Assistant's double-precision expansion then prints `4.13000011444092`.
+- **`accuracy_decimals` reaches Home Assistant as `suggested_display_precision`** and the frontend honors it, so the dashboard already shows two decimals. It is an entity-registry option rather than a state attribute, so read it with the entity registry and do not conclude from its absence in the state attributes that it was never sent.
+- **A template reading the raw state bypasses all of that.** A `Battery low ... (4.12890625%)` notification is a defect in the notifying template, which rounds with a Jinja `| round(2)`, not in the device config.
 - **A mains-powered device drops the gauge by removing both ids**, `- id: !remove battery_gauge` under `sensor:` and `- id: !remove battery_gauge_reset` under `button:`. Removing only the sensor fails validation, because the button's lambda still references the gauge id. The `external_components` entry survives either way and instantiates nothing.
 
 ### SmartHome CeilSense
@@ -411,26 +462,38 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 <!-- Repo -->
 
+[agents-write-safety]: ./AGENTS.md#repository-boundaries-and-write-safety
 [agents]: ./AGENTS.md
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
+[common-template]: ./templates/common.yaml
 [configure-sh]: ./repo-config/configure.sh
 [devices]: ./DEVICES.md
+[devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
+[easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
 [max17048-template]: ./templates/max17048.yaml
+[norvi-template]: ./templates/norvi-enet-ae06-r.yaml
+[office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md
 [repository-tooling-hazards]: #repository-tooling-hazards
+[rgb-led-status-template]: ./templates/rgb-led-status.yaml
+[rgb-led-status]: #rgb-led-status
+[secrets-example]: ./secrets._yaml
+[secrets-template]: ./templates/secrets.yaml
 [strapping-pin-warnings]: #strapping-pin-warnings
 [template-notes]: #template-notes
 [templates]: ./templates/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
+[test]: ./test/
 [vscode-setup]: #vscode-setup
+[waveshare-template]: ./templates/waveshare-esp32-s3-eth.yaml
 [wifi-template]: ./templates/wifi.yaml
 [workflow]: ./WORKFLOW.md
 
@@ -445,6 +508,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [esphome-upstream-link]: https://github.com/esphome/esphome
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
+[flo-r1der-link]: https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
 [option-zero-link]: https://github.com/Option-Zero/esphome-components
 [packages-link]: https://esphome.io/components/packages

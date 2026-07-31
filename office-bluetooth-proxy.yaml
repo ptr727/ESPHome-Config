@@ -3,4 +3,13 @@ substitutions:
   device_friendly_name: "Office Bluetooth Proxy"
 
 packages:
-  gls10: !include templates/gls10-bluetooth-proxy.yaml
+  waveshare: !include templates/waveshare-esp32-s3-eth.yaml
+
+# https://esphome.io/components/esp32_ble_tracker
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+
+# https://esphome.io/components/bluetooth_proxy
+bluetooth_proxy:
+  active: true

@@ -1,3 +1,8 @@
+# External usage:
+# packages:
+#   ethernetsensor: github://ptr727/ESPHome-Config/templates/ethernet-sensor.yaml@main
+# - Needs an ethernet component on the including config.
+
 # Required substitutions:
 # device_name
 

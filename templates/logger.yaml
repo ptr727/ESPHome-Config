@@ -1,3 +1,7 @@
+# External usage:
+# packages:
+#   logger: github://ptr727/ESPHome-Config/templates/logger.yaml@main
+
 # https://esphome.io/components/logger
 logger:
   level: debug # none, error, warn, info, debug, verbose, very_verbose
