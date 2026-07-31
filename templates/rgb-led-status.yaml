@@ -1,7 +1,7 @@
 # External usage:
 # packages:
 #   rgbledstatus: github://ptr727/ESPHome-Config/templates/rgb-led-status.yaml@main
-# - Needs an api component on the including config, which drives the connected color.
+# - Contributes an api block for the connected color, so supply the encryption key, for example by including api.yaml.
 
 # Required substitutions:
 # device_name

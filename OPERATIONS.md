@@ -183,7 +183,8 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 
 - **The status source is polled, deliberately.** ESPHome has a `wifi:` `on_connect` and an `ethernet:` `on_connect` but no network-level trigger, and YAML has no conditionals, so no single event-driven form covers both interfaces. A 1s `interval` edge-detects instead and runs the script only on a change.
 - **`network::is_connected()` is the interface-agnostic helper.** It resolves Ethernet, modem, WiFi, and OpenThread behind their own `USE_*` defines, so the C++ already does the conditional compilation that the YAML cannot. Its header is in the generated `src/esphome.h` for both WiFi and Ethernet builds, so a lambda needs no include. Do not "fix" this back to a `wifi:` trigger.
-- **It is remotely consumable**, needing only the `rgb_led_pin` substitution and the including config's own `api:`, so it must stay free of repo-local `!include` entries.
+- **It is remotely consumable**, needing only the `rgb_led_pin` substitution, so it must stay free of repo-local `!include` entries.
+- **It contributes its own `api:` block** for the `on_client_connected` triggers, which enables the API server rather than requiring one. A config composing this package alone validates with an unencrypted API, so an encryption key comes from `api.yaml` or from the composing config.
 
 ### Bootloader Age and USB Flashing
 

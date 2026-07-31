@@ -113,7 +113,8 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Drives the LED from boot, network, and API state: green for a connected API client, white for a network link with no client, yellow for booted with no link, red for still booting.
 - Interface agnostic, it reads ESPHome's own [network helper][github-esphome-network-util-link] rather than binding to WiFi, so it works on a WiFi board, an Ethernet board, or one carrying both.
 - A consumer can claim the LED itself with `script.execute` on `led_working_status` (red, green, blue, effect) or `led_feedback_blink` (red, green, blue, count).
-- Needs only the `rgb_led_pin` substitution and the including config's own `api`, so besides a local `!include` it also composes as a remote package from `github://ptr727/ESPHome-Config/templates/rgb-led-status.yaml@main`.
+- Needs only the `rgb_led_pin` substitution, so besides a local `!include` it also composes as a remote package from `github://ptr727/ESPHome-Config/templates/rgb-led-status.yaml@main`.
+- Contributes an `api` block of its own, carrying the triggers that drive the connected color. A config composing it without [`api.yaml`][api] or an equivalent still enables the API server, and without an `encryption` key that server is unencrypted, so supply one.
 
 #### MAX17048 Battery Fuel Gauge
 
