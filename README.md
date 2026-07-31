@@ -12,7 +12,9 @@ A [collection][templates] of utility and device-specific configuration templates
 
 Note that for devices with native ESPHome factory firmware, I opt to strip out the generic project and [Improv][improv-wifi-link] configuration in favor of a custom configuration specific to my environment. This also cuts down on resource utilization by removing unused features.
 
-Every device template has an example configuration in [test][test] that CI compiles against the current ESPHome release, so a published template is known to build. The examples also serve as minimal usage samples.
+Every device template has an example configuration in [test][test] that CI compiles against the current ESPHome release, so a published template is known to build. The examples also serve as minimal usage samples, composing the template with a local `!include`.
+
+Every template also opens with an `External usage:` comment block showing how to compose it from outside this repository as a remote `github://` package, along with whatever that particular template needs from the including config. Relative includes resolve inside the fetched package, and `!secret` falls back to a `secrets.yaml` beside the including config, so an adopter supplies their own secrets under the names in [`secrets._yaml`][secrets-example].
 
 ### Device Templates
 
@@ -108,6 +110,11 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 - [Template][rgb-led-status] for boards that have an addressable RGB LED but no plain status LED.
 - Serves as the [Status LED][esphome-components-status-led-link] component equivalent.
+- Drives the LED from boot, network, and API state: green for a connected API client, white for a network link with no client, yellow for booted with no link, red for still booting.
+- Interface agnostic, it reads ESPHome's own [network helper][github-esphome-network-util-link] rather than binding to WiFi, so it works on a WiFi board, an Ethernet board, or one carrying both.
+- A consumer can claim the LED itself with `script.execute` on `led_working_status` (red, green, blue, effect) or `led_feedback_blink` (red, green, blue, count).
+- Needs only the `rgb_led_pin` substitution, so besides a local `!include` it also composes as a remote package from `github://ptr727/ESPHome-Config/templates/rgb-led-status.yaml@main`.
+- Contributes an `api` block of its own, carrying the triggers that drive the connected color. A config composing it without [`api.yaml`][api] or an equivalent still enables the API server, and without an `encryption` key that server is unencrypted, so supply one.
 
 #### MAX17048 Battery Fuel Gauge
 
@@ -149,6 +156,19 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Optional substitutions:
   - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
   - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
+
+#### Waveshare ESP32-S3-ETH Board
+
+- [Template][waveshare-esp32-s3-eth] for the [Waveshare ESP32-S3-ETH][waveshare-esp32-s3-eth-link] board, an ESP32-S3R8 with 16MB Quad Flash and 8MB Octal PSRAM.
+- Wired networking through the onboard [W5500][waveshare-esp32-s3-eth-wiki-link] SPI Ethernet controller, with an optional IEEE 802.3af PoE module that claims no GPIO.
+- Includes the on-chip temperature sensor and the RGB LED as status LED.
+- Configures `ethernet` rather than `wifi`. The two [cannot be used together][esphome-components-ethernet-link], so this template composes the `api` / `basic` / `debug` / `logger` / `ota` / `time` includes directly instead of [`common.yaml`][common], which carries [`wifi.yaml`][wifi].
+- Sets no `domain`, so the device is reachable only by whatever address DHCP registered for it.
+- Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter and no case opening is needed for the first flash or a later bootloader refresh.
+- The onboard ceramic antenna is selected by a resistor, and reaching the IPEX Gen 1 connector means moving it. There is no antenna select GPIO, so this is a soldering change rather than a config one.
+- Documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured:
+  - The camera DVP pins, for anyone fitting an OV5640.
+  - The TF card slot, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
 
 ## Devices
 
@@ -206,6 +226,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [ota]: ./templates/ota.yaml
 [rgb-led-status]: ./templates/rgb-led-status.yaml
 [rocket-astra]: ./templates/rocket-astra.yaml
+[secrets-example]: ./secrets._yaml
 [secrets]: ./templates/secrets.yaml
 [smarthome-ceilsense]: ./templates/smarthome-ceilsense.yaml
 [sonoff-s31]: ./templates/sonoff-s31.yaml
@@ -215,6 +236,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [test]: ./test/
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
+[waveshare-esp32-s3-eth]: ./templates/waveshare-esp32-s3-eth.yaml
 [wemos-lolin32-lite]: ./templates/wemos-lolin32-lite.yaml
 [wifi]: ./templates/wifi.yaml
 
@@ -234,9 +256,12 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [discord-dbwxp5r3-link]: https://discord.gg/dbwxp5R3
 [docker-hub-esphome-link]: https://hub.docker.com/r/esphome/esphome
 [efun-sh331w-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
+[esphome-components-ethernet-link]: https://esphome.io/components/ethernet/
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
 [espressif-esp32-s3-devkitc-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 [github-apolloautomation-plt-1-link]: https://github.com/ApolloAutomation/PLT-1/blob/main/Integrations/ESPHome/PLT-1B.yaml
+[github-esphome-feature-requests-513-link]: https://github.com/esphome/feature-requests/issues/513
+[github-esphome-network-util-link]: https://github.com/esphome/esphome/blob/dev/esphome/components/network/util.h
 [github-konnected-io-konnected-esphome-link]: https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
 [github-ptr727-esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [github-smarthomeshop-ceilsense-link]: https://github.com/smarthomeshop/ceilsense/blob/main/ceilsense-v1/ceilsense-complete-wifi-ld2412.yaml
@@ -260,4 +285,6 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [tasmota-sonoff-th-link]: https://tasmota.github.io/docs/devices/Sonoff-TH/
 [templates-sonoff-thr316-link]: https://templates.blakadder.com/sonoff_THR316.html
 [unexpectedmaker-pros3d-link]: https://esp32s3.com/pros3.html
+[waveshare-esp32-s3-eth-link]: https://www.waveshare.com/esp32-s3-eth.htm
+[waveshare-esp32-s3-eth-wiki-link]: https://www.waveshare.com/wiki/ESP32-S3-ETH
 [web-web-20191002041532-link]: https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite

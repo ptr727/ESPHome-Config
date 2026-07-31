@@ -1,3 +1,7 @@
+# External usage:
+# packages:
+#   temperature: github://ptr727/ESPHome-Config/templates/temperature.yaml@main
+
 # Required substitutions:
 # device_name
 

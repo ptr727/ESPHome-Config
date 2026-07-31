@@ -1,3 +1,8 @@
+# External usage:
+# packages:
+#   rgbledstatus: github://ptr727/ESPHome-Config/templates/rgb-led-status.yaml@main
+# - Contributes an api block for the connected color, so supply the encryption key, for example by including api.yaml.
+
 # Required substitutions:
 # device_name
 # rgb_led_pin, e.g. GPIO38
@@ -6,20 +11,88 @@
 # system_status_led_brightness (default "50%")
 # blink_on_off_time            (default "200ms")
 
-# The package drives boot, WiFi, and API state colors on its own.
-# A consumer can also call script.execute on led_working_status_<color> or led_feedback_blink_<color>.
-# https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
+# The package drives boot, network, and API state colors on its own.
+# A consumer can also call script.execute on led_working_status or led_feedback_blink.
 
-# https://esphome.io/components/packages
-packages:
-  flo_r1der_status_led: github://Flo-R1der/ESPHome_RGB-Status-LED_Package/status_led_package.yaml@main
+# Status colors, all steady, highest state reached wins.
+# - Green : an API client is connected, the device is fully up.
+# - White : the network is up but no API client has connected, so Home Assistant is not talking to it.
+# - Yellow: boot finished with no network, so check cabling, DHCP, or WiFi credentials.
+# - Red   : still booting, and red that never leaves is a boot loop.
+
+# Red is held for 500ms even on a clean boot, so a healthy device flashes red once before settling.
+# A device cycling red to yellow and back is rebooting rather than failing to connect.
+
+# The status colors never blink, so any blinking comes from a consumer calling a script.
+# - led_working_status holds a color and an effect until the next status change or call.
+# - led_feedback_blink flashes a color a set number of times, then leaves the LED off until the next status change.
+# - Effect names are Fast Pulse, Slow Pulse, and Breath.
+
+# The status ladder and script surface come from Flo-R1der's package.
+# https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
+# That version binds to wifi on_connect, which cannot run alongside ethernet, so this one polls the network helper instead.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  system_status_led_brightness: "50%"
+  blink_on_off_time: "200ms"
+
+# https://esphome.io/components/globals
+globals:
+  - id: boot_done
+    type: bool
+    initial_value: "false"
+  - id: network_ok
+    type: bool
+    initial_value: "false"
+  - id: api_ok
+    type: bool
+    initial_value: "false"
+
+# https://esphome.io/components/esphome
+esphome:
+  on_boot:
+    - priority: 700
+      then:
+        - script.execute: led_system_status
+    - priority: -10
+      then:
+        # The delay holds the boot color long enough to recognize a boot loop.
+        - delay: 500ms
+        - lambda: id(boot_done) = true;
+        - script.execute: led_system_status
+
+# https://esphome.io/components/api
+api:
+  on_client_connected:
+    then:
+      - lambda: id(api_ok) = true;
+      - script.execute: led_system_status
+  on_client_disconnected:
+    then:
+      - lambda: id(api_ok) = false;
+      - script.execute: led_system_status
+
+# ESPHome has no network-level connect trigger, so poll the interface-agnostic helper.
+# It resolves WiFi, Ethernet, modem, and OpenThread behind their own defines.
+# https://github.com/esphome/esphome/blob/dev/esphome/components/network/util.h
+# https://esphome.io/components/interval
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          const bool connected = network::is_connected();
+          if (connected != id(network_ok)) {
+            id(network_ok) = connected;
+            id(led_system_status)->execute();
+          }
 
 # https://esphome.io/components/light
 light:
 
   # https://esphome.io/components/light/esp32_rmt_led_strip
   - platform: esp32_rmt_led_strip
-    id: system_status_led  # required name for Flo-R1der package
+    id: system_status_led
     name: "Status LED"
     pin: ${rgb_led_pin}
     rgb_order: GRB
@@ -32,7 +105,6 @@ light:
     entity_category: diagnostic
 
     # https://esphome.io/components/light#light-effects
-    # Effect names match what the Flo-R1der package expects (case-sensitive).
     effects:
       - pulse:
           name: "Fast Pulse"
@@ -46,3 +118,99 @@ light:
           name: "Breath"
           update_interval: 2.5s
           max_brightness: ${system_status_led_brightness}
+
+# https://esphome.io/components/script
+script:
+
+  # Highest matching state wins, so the checks run most significant first.
+  - id: led_system_status
+    mode: restart
+    then:
+
+      # An API client is connected, green.
+      - if:
+          condition:
+            lambda: return id(api_ok);
+          then:
+            - light.turn_on:
+                id: system_status_led
+                red: 0%
+                green: 100%
+                blue: 10%
+                brightness: ${system_status_led_brightness}
+                effect: none
+            - script.stop: led_system_status
+
+      # The network is up but no API client, white.
+      - if:
+          condition:
+            lambda: return id(network_ok);
+          then:
+            - light.turn_on:
+                id: system_status_led
+                red: 70%
+                green: 70%
+                blue: 70%
+                brightness: ${system_status_led_brightness}
+                effect: none
+            - script.stop: led_system_status
+
+      # Booted with no network, yellow.
+      - if:
+          condition:
+            lambda: return id(boot_done);
+          then:
+            - light.turn_on:
+                id: system_status_led
+                red: 80%
+                green: 80%
+                blue: 0%
+                brightness: ${system_status_led_brightness}
+                effect: none
+            - script.stop: led_system_status
+
+      # Still booting, red.
+      - light.turn_on:
+          id: system_status_led
+          red: 100%
+          green: 0%
+          blue: 0%
+          brightness: ${system_status_led_brightness}
+          effect: none
+
+  # A working status holds until something else claims the LED, including the status script above.
+  - id: led_working_status
+    parameters:
+      red: float
+      green: float
+      blue: float
+      effect: string
+    then:
+      - light.turn_on:
+          id: system_status_led
+          red: !lambda return red;
+          green: !lambda return green;
+          blue: !lambda return blue;
+          brightness: ${system_status_led_brightness}
+          effect: !lambda return effect;
+
+  # A feedback blink ends on its own, leaving the LED off until the status script runs again.
+  - id: led_feedback_blink
+    parameters:
+      red: float
+      green: float
+      blue: float
+      count: int
+    then:
+      - repeat:
+          count: !lambda return count;
+          then:
+            - light.turn_on:
+                id: system_status_led
+                red: !lambda return red;
+                green: !lambda return green;
+                blue: !lambda return blue;
+                brightness: ${system_status_led_brightness}
+            - delay: ${blink_on_off_time}
+            - light.turn_off: system_status_led
+            - delay: ${blink_on_off_time}

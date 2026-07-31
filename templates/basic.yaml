@@ -1,3 +1,7 @@
+# External usage:
+# packages:
+#   basic: github://ptr727/ESPHome-Config/templates/basic.yaml@main
+
 # Required substitutions:
 # device_name
 

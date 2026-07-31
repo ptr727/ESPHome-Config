@@ -4,6 +4,36 @@ How to work in this repository: reaching the ESPHome CLI, validating and flashin
 
 `AGENTS.md` is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
 
+## Keeping This File Current
+
+An operational discovery is written down as part of the change that surfaced it, never left in a session note or an agent's memory. This is the local routing for the self-improvement rule in [`AGENTS.md`][agents], which owns the principle.
+
+- **A mechanism that stopped working, and whatever replaced it**, goes in the section that owns the subject. Record the replacement and the reason the old route failed, so the next agent does not retry it.
+- **A procedure carried out for the first time** gets a section describing how, not that it happened. Write the recipe someone would follow, and name the command or the file rather than narrating the session.
+- **A fact established by running something** is recorded with what proved it, since a claim nobody can re-derive gets doubted and re-tested. Prefer the observed output over an assertion.
+- **A defect in the carried fleet content** - `AGENTS.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`, `repo-config/`, `spec/`, `AUDIT.md` - is reported upstream rather than patched here, because a local edit registers as drift and fails the audit. Filing that report is a **cross-repository write and needs the maintainer's explicit permission for that specific repository in the current session**, per [Repository Boundaries and Write Safety][agents-write-safety]. Ask, do not assume.
+- **Nothing here is a changelog.** State the current mechanism in the present tense, per the documentation rules in `AGENTS.md`. The before-and-after belongs in the commit message.
+- **`git blame` does not establish who wrote a line.** Agent commits carry the maintainer's `noreply` identity by policy, so blame attributes agent-authored prose to the maintainer just as it does their own. The `AGENTS.md` carve-out for Unicode the developer deliberately typed cannot be claimed from blame output, and a review flagging non-ASCII is answered by removing it rather than by defending it with an authorship claim the repository cannot support.
+
+## External Package Usage
+
+Templates are consumed two ways. Inside this repository a device config composes them with a local `!include`, which is what [`test/`][test] exercises. Outside it, an adopter composes them as a remote `github://` package, and every template opens with an `External usage:` comment block carrying that form plus whatever it needs from the including config.
+
+The mechanics below were confirmed against ESPHome 2026.7.3 by validating a scratch config that pulled [`templates/common.yaml`][common-template] from `@main`.
+
+- **The package is cloned, not read from the working tree.** `esphome config` logs `INFO Cloning https://github.com/ptr727/ESPHome-Config.git@main` and resolves the files under `/cache/data/packages/<hash>/`. A relative `!include` inside a template therefore resolves against that cache, so sibling includes such as `common.yaml` pulling `wifi.yaml` work unchanged.
+- **`!secret` falls back to the consuming config's own directory.** Resolution tries the package's `templates/secrets.yaml` first, whose `<<: !include ../secrets.yaml` fails because the repository root `secrets.yaml` is git-ignored, then tries a `secrets.yaml` beside the including config. An adopter supplies their own under the names in [`secrets._yaml`][secrets-example], and both paths appear in the error when neither exists.
+- **`test/` cannot use the remote form**, and the reason is the clone above. A `github://` package fetches the named ref rather than the working tree, so a compile test written that way would build `@main`'s copy of a template and pass while the change under test is broken. It also cannot work for a template that does not exist on the ref yet. Local `!include` is the only form that gates a diff.
+
+Four templates deviate from the plain shorthand, and each says so in its own block:
+
+- [`easystart.yaml`][easystart-template] is parameterized, so it takes the `url` / `ref` / `files` form with `vars` rather than the one-line shorthand.
+- The `esp32-s3-wroom-*` board definitions are overlays, so they are composed on [`esp32-s3-devkitc.yaml`][devkitc-template] as a second package entry.
+- [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
+- [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
+
+Renaming or moving a template breaks every one of these blocks and the [`README.md`][readme] paths, and nothing in CI notices, because the local test config is renamed alongside it and stays green. Re-check the block whenever a template's filename changes.
+
 ## Documenting a Device
 
 This is a public repository whose primary audience is people reusing the templates, and it is also the live config directory of one specific home. Two human-facing docs keep those apart, and a change that adds prose picks between them before it picks a section.
@@ -138,6 +168,25 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The status LED convention is deliberate.** The `status_led` pin is intentionally not inverted, so a lit globe LED means healthy and a flashing one means a warning or error, which is the reverse of what upstream's own `gl-s10.yaml` produces. A sync with upstream must not "fix" it.
 - **Its GPIO0 and GPIO5 strapping warnings cannot be silenced**, see [Strapping Pin Warnings][strapping-pin-warnings].
 
+### Waveshare ESP32-S3-ETH
+
+[`templates/waveshare-esp32-s3-eth.yaml`][waveshare-template] is a board template, so a device config composing it supplies its own job, the way [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] adds `esp32_ble_tracker` and `bluetooth_proxy` on top.
+
+- **It cannot include `common.yaml`.** The `ethernet` component declares `CONFLICTS_WITH = ["wifi"]`, and `common.yaml` carries [`wifi.yaml`][wifi-template], so the template composes the individual includes instead. Anything else added to the tree that pulls in a `wifi:` key breaks it, which is the reason [`rgb-led-status.yaml`][rgb-led-status-template] carries its own status logic rather than the upstream package, see [RGB LED Status][rgb-led-status].
+- **The W5500 pins carry no strapping warnings.** None of GPIO9 through GPIO14 is an ESP32-S3 strapping pin, unlike the GL-S10, so validation output for this board should be clean and a new warning means something actually changed.
+- **The `ethernet` component owns its SPI bus outright.** An SPI based PHY does not go through the `spi` component, so those four pins cannot be shared, and the TF card slot on GPIO4 through GPIO7 is a separate bus.
+- **The antenna is a solder change, not a config one.** Moving the resistor from the ceramic antenna to the IPEX Gen 1 connector has no GPIO behind it, so there is no equivalent of the ProS3D's `external_antenna` switch to flip.
+- **PSRAM is octal.** The ESP32-S3R8 part carries 8MB in package. Waveshare's own `IO_Test` demo contradicts this by listing GPIO33 through GPIO37 as free GPIO, and those pins are the octal PSRAM bus. Trust the part number and the boot banner over the demo.
+
+### RGB LED Status
+
+[`templates/rgb-led-status.yaml`][rgb-led-status-template] derives from [Flo-R1der's package][flo-r1der-link] but does not import it, because that version binds its state to `wifi:` `on_connect` triggers and so cannot run on an Ethernet board.
+
+- **The status source is polled, deliberately.** ESPHome has a `wifi:` `on_connect` and an `ethernet:` `on_connect` but no network-level trigger, and YAML has no conditionals, so no single event-driven form covers both interfaces. A 1s `interval` edge-detects instead and runs the script only on a change.
+- **`network::is_connected()` is the interface-agnostic helper.** It resolves Ethernet, modem, WiFi, and OpenThread behind their own `USE_*` defines, so the C++ already does the conditional compilation that the YAML cannot. Its header is in the generated `src/esphome.h` for both WiFi and Ethernet builds, so a lambda needs no include. Do not "fix" this back to a `wifi:` trigger.
+- **It is remotely consumable**, needing only the `rgb_led_pin` substitution, so it must stay free of repo-local `!include` entries.
+- **It contributes its own `api:` block** for the `on_client_connected` triggers, which enables the API server rather than requiring one. A config composing this package alone validates with an unencrypted API, so an encryption key comes from `api.yaml` or from the composing config.
+
 ### Bootloader Age and USB Flashing
 
 An ESP32 flashed before ESP-IDF 5.2 keeps that bootloader through every OTA, because OTA writes the app partition and never the bootloader. ESPHome checks it at boot with `esp_ota_get_bootloader_description()` and warns when the call fails:
@@ -148,7 +197,8 @@ An ESP32 flashed before ESP-IDF 5.2 keeps that bootloader through every OTA, bec
 
 - **Every ESP32 variant can report it**, only the wording differs, and the classic ESP32 adds the SRAM1 clause. It is not an ESP8266 concern.
 - **Never enable `sram1_as_iram` before the USB flash lands.** ESPHome's own source notes that combination hard bricks the device, recovering only by USB reflash. Take the USB flash first, then the option.
-- **A device confirms itself fixed on the next boot** by dropping the warning, and `safe_mode` moves from `Bootloader rollback: not supported` to a supported state.
+- **A device confirms itself fixed on the next boot** by dropping the warning. The absence of the warning is the test, not the `safe_mode` line below it.
+- **`Bootloader rollback: support unknown` is the normal state after a serial flash**, and is not a fault. `safe_mode.cpp` reports it whenever the running partition is `ESP_OTA_IMG_NEW`, which is what `esptool` leaves behind, and only an OTA moves the partition to `ESP_OTA_IMG_PENDING_VERIFY` and the line to `supported`. A freshly USB-flashed device therefore reads `support unknown` with a current bootloader, which is a different state from the old-bootloader `not supported`.
 - Checking one means attaching to its logs and restarting it, since the banner prints once at boot. A deep-sleeping device cannot be checked outside its wake window.
 
 ### MAX17048 Fuel Gauge
@@ -160,6 +210,9 @@ The gauge is a ModelGauge part, so it infers state of charge by fitting cell vol
 - **With no cell attached the SOC and rate readings are meaningless**, and the numbers do not look obviously broken forever. The charger oscillates between charge and terminate with nothing to hold the rail, which shows as a fast-blinking charge LED and a bouncing voltage that can exceed LiPo float. SOC saturates above 100 percent and then decays for hours, passing through entirely plausible values on the way down.
 - **The `Battery Gauge Reset` button forces the re-fit** by writing the QuickStart bit `0x4000` to the MODE register `0x06`, reaching the chip through `id(battery_gauge)->write_byte_16(...)` because `MAX17048Component` inherits `i2c::I2CDevice` publicly. A successful press shows as a single-sample discontinuity in SOC plus the rate register collapsing toward zero.
 - **Press it with the cell resting.** QuickStart fits from the instantaneous terminal voltage, which charge current elevates above the true open-circuit voltage, so a press taken while charging reads optimistic.
+- **A long state string is a float32 artifact, not a missing rounding**, and a `round` filter makes it worse. The gauge reports state of charge in 1/256 steps, so `4.12890625` is exactly `1057/256` and survives the API's 32-bit float intact. Rounding that to `4.13` lands on a value binary32 cannot represent, and Home Assistant's double-precision expansion then prints `4.13000011444092`.
+- **`accuracy_decimals` reaches Home Assistant as `suggested_display_precision`** and the frontend honors it, so the dashboard already shows two decimals. It is an entity-registry option rather than a state attribute, so read it with the entity registry and do not conclude from its absence in the state attributes that it was never sent.
+- **A template reading the raw state bypasses all of that.** A `Battery low ... (4.12890625%)` notification is a defect in the notifying template, which rounds with a Jinja `| round(2)`, not in the device config.
 - **A mains-powered device drops the gauge by removing both ids**, `- id: !remove battery_gauge` under `sensor:` and `- id: !remove battery_gauge_reset` under `button:`. Removing only the sensor fails validation, because the button's lambda still references the gauge id. The `external_components` entry survives either way and instantiates nothing.
 
 ### SmartHome CeilSense
@@ -228,6 +281,99 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
 - **A local source is better for iterating**, since it needs no push per attempt. Copy the components out of the image into a path under `/config` and patch them there, then point `type: local` at the parent directory. Copy whole component directories: a stray `.cpp` landing beside the wrong headers fails the build with a confusing missing-header error rather than a path error.
 - **Add temporary diagnostics to the core component this way too.** An `ESP_LOGW` inside the code under investigation settles a question that reading the source cannot, and the copy is deleted afterwards.
 - **Remember that `esphome upload` does not compile.** After a failed compile it happily flashes the previous binary, so a failed build followed by a successful upload means the device is running the *old* firmware. Check the compile result before reading anything into the device's behavior.
+
+## Contributing Upstream to ESPHome
+
+Core-component fixes are developed in the fork clone at `/home/pieter/esphome-esphome`, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork, so `git push origin <branch>` is what updates it and nothing is ever pushed to `esphome/esphome` directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
+
+### Staging on the Fork First
+
+There is **one** fork, renamed from `ptr727/esphome`, so the old name still redirects and `gh` resolves it happily. Do not conclude from that there are two forks. It carries two branch families per change:
+
+- **`fix/<topic>`** is the staging branch, with real working history, opened as a self-PR against the fork's own `dev`. This is where the Copilot round happens.
+- **`upstream-<topic>`** is the curated branch that is the actual head of the `esphome/esphome` PR, same tree as its `fix/` counterpart with squashed history.
+
+A change is committed to the `fix/*` branch and reviewed there before it touches the `upstream-*` branch. The fork PR is where Copilot comments without an audience, and it is the only place a bot review can be requested at all. Once the change survives that round, cherry-pick it onto `upstream-*` and push. Prefer adding commits on top of `upstream-*` over a force-push while codeowners are mid-review: ESPHome squash-merges anyway, so tidy history buys nothing and a force-push breaks their review anchors. The two branches carry different histories, so verify the trees agree rather than the commits:
+
+```shell
+git diff fix/<topic> upstream-<topic> --stat
+```
+
+- **Keep the fork's own `dev` current before branching.** A `fix/*` branch cut from `upstream/dev` while the fork's `dev` lags shows every intervening upstream commit in the fork PR, which drowns the real change and makes a bot review worthless. Fast-forward first: `git fetch upstream dev && git checkout dev && git merge --ff-only upstream/dev && git push origin dev`.
+- **Moving the base branch does not always re-diff an open PR.** GitHub recomputes the merge base reliably when the *head* is pushed, not when the *base* moves, so a PR can keep showing the stale diff after the fix. `gh api repos/<o>/<r>/compare/<base>...<head>` reports the true `merge_base_commit` and file list; when that disagrees with `gh pr view --json changedFiles`, close and reopen the PR to force the recompute.
+
+### Fork CI Does Not Run the Real Linters
+
+On a fork's pull requests the lint and build jobs report `Run: skipping`, and `label` and `External component comment` fail outright because they need write tokens a fork does not have. Green-ish checks there mean nothing at all. Run the gates locally from the fork clone, in its venv:
+
+```shell
+source venv/bin/activate
+script/ci-custom.py
+script/build_codeowners.py --check
+script/build_language_schema.py --check
+script/generate-esp32-boards.py --check
+script/generate-rp2-boards.py --check
+script/ci_check_duplicate_test_ids.py
+script/ci_check_test_fixture_list_form.py
+script/clang-format --changed -i
+script/clang-tidy --all-headers --changed --environment esp32-idf-tidy
+script/clang-tidy --all-headers --changed --environment esp32-arduino-tidy
+script/test_build_components.py -c <component>,<component> -t esp32-idf
+```
+
+- **`clang-format` reports nothing and rewrites in place**, so confirm it produced no diff rather than reading its exit code as a pass.
+- **`clang-tidy-nosplit` is the CI job that covers ESP32**, not the obviously named `clang-tidy-single`, which greps for `USE_ARDUINO` and `USE_ESP8266` and matches zero files in an ESP32 change. The `esp32-idf-tidy` invocation above is what that job runs.
+- **The first clang-tidy run builds an ESP-IDF compile database**, about four minutes, and needs clang-tidy 22.1.8 on `PATH`. Later runs reuse the cache.
+- **`generate-rp2-boards.py --check` fails with a bare `CalledProcessError` when ruff is missing** from the venv, which reads as a real failure and is not. Install it with `uv pip install ruff`, since plain `pip` hits PEP 668 in a venv without pip.
+- **A `tests/components/<x>/test.*.yaml` fixture cannot be compiled directly.** It carries no `esphome:` section because the harness injects one, so go through `test_build_components.py`.
+- **`clang-format` does not reflow comments**, but the 120-column limit still applies to them. Check a long comment with `awk 'length > 120'` instead of assuming the formatter would have caught it.
+
+### The `gh` CLI Is Too Old for `gh pr edit`
+
+`gh` is 2.46.0 from the Debian package. `gh pr edit` fetches PR metadata including `projectCards`, a Projects-classic field GitHub has retired, and the API now answers that field with an error rather than null, so the command fails before writing anything:
+
+```text
+GraphQL: Projects (classic) is being deprecated in favor of the new Projects experience ... (repository.pullRequest.projectCards)
+```
+
+This is a client-version problem and nothing else. It is not the repo-scope rule in [`AGENTS.md`][agents] and not a change in the Copilot or agent instructions: writes aimed at the correct repo succeed, and a read-only probe of `projectCards` by itself reproduces the identical error. Edit a PR body through REST instead, always from a file:
+
+```shell
+gh api -X PATCH repos/<owner>/<repo>/pulls/<number> -F body=@body.md
+```
+
+The same age accounts for `gh pr checks --json` not existing; poll CI with `gh pr view <n> --json statusCheckRollup` instead. Upgrading `gh` past the Debian package retires both workarounds. Until then, treat any `gh` subcommand failure whose message names a GraphQL field as a version problem to route around, not as a permissions or policy signal, and **verify whether the write landed before retrying it**. In the failures seen so far the PR body was unchanged, so the error came from the lookup that precedes the write, but that is something to confirm each time rather than assume.
+
+### Bot Reviewers
+
+Upstream runs two automated reviewers, and they differ enough to need handling separately.
+
+- **Copilot** (`copilot-pull-request-reviewer`) posts inline threads. **Its low-confidence notes never become threads.** They are folded into a `<details>` block in the review body, so the comments endpoint returns nothing and a review reporting "generated no new comments" can still carry substantive objections. Read the review body itself, via `gh api repos/<o>/<r>/pulls/<n>/reviews`. In one round those suppressed notes were the only findings, and all of them were correct.
+- **Filtering REST reviews by the GraphQL login silently returns nothing.** REST reports `copilot-pull-request-reviewer[bot]`, GraphQL reports it without the suffix, so `select(.user.login=="copilot-pull-request-reviewer")` on a REST payload yields an empty list that reads as "no review yet" rather than as a bad filter. Match the API, and cross-check with `gh pr view --json reviews`, which uses the unsuffixed form.
+- **Never hand-complete a commit SHA when filtering.** A poll filtered on a full SHA reconstructed from a short one matched nothing and expired silently while the review had in fact landed. Take it from `git rev-parse`, the same rule the [`AGENTS.md`][agents] id policy applies to writes.
+- **esphbot** posts a summary comment plus a formal review, quotes replies back point by point, and concedes with evidence when it is wrong. It re-reviews on push by itself, so there is nothing to trigger and nothing to nudge.
+- **A review cannot be requested on an upstream PR.** The `requestReviews` mutation answers `FORBIDDEN: ptr727 does not have the correct permissions to execute RequestReviews` on `esphome/esphome`, because an outside contributor cannot assign reviewers. It works on the fork, which is the only place it is needed.
+- **Confirm a review covers the current head by commit oid**, never by timestamp, filtering on author and oid together. A thread reply posts as a review authored by the maintainer at the head SHA, which otherwise reads as coverage.
+
+### The Repo's Own AGENTS.md Is the Style Authority
+
+ESPHome carries contributor rules in its own `AGENTS.md`, and they move. Grep it before arguing a style point, in either direction.
+
+- **Config validators need type hints**, `def validate_x(config: ConfigType) -> ConfigType:`, with `ConfigType` imported from `esphome.types`. Older validators in the same file often lack them; new code is still expected to have them.
+- **Prefer an existing validator from `config_validation.py`** over a hand-rolled one, composed in `cv.All(...)`. `cv.has_at_most_one_key` is the named choice for mutually-exclusive keys, but it tests key *presence*, so it does not fit a key carrying a schema default, which is always present after validation. When the shared one genuinely does not fit, say why in a comment at the validator, because a reviewer following the same rule will ask.
+- **A PR title must start with a `[tag]` prefix**, the component name or `[core]`, and the pull request template must be filled out without removing sections.
+
+### Negative Validation Belongs in a Component Test
+
+A schema rejection is testable, and `tests/component_tests/<component>/` is where it goes. `tests/component_tests/bk72xx_ble_tracker/test_scan_parameter_validation.py` is the model: accepted cases and rejected cases in separate blocks, rejections via `pytest.raises(cv.Invalid, match=...)`.
+
+- **Drive the full platform `CONFIG_SCHEMA`, not the validator function.** Testing the function alone still passes when someone unwires it from the `cv.All` chain, which is the regression worth catching. An autouse `reset_core` fixture clears entity state between tests, but names must still be unique within a single test.
+- **Confirm the test can fail.** Temporarily remove the validator from the chain and check that exactly the rejection tests fail. A test that passes both with and without the code under test is not coverage.
+- **The venv ships without the test dependencies.** `uv pip install pytest pytest-asyncio pytest-cov pytest-mock`, and run with `--no-cov` unless the coverage args in `pyproject.toml` are wanted.
+
+### Answering a Review
+
+Disagreement lands well when it carries evidence, and both bots have accepted well-supported pushback. Cite file and line as they read at the PR's base commit, not as they read in the working tree, since a diff shifts them. Quote the source that settles the point, and state plainly what was applied and what was declined. Check a style objection against the tree before accepting it: an ask for `override` beside `final` died against 54 bare `) final {` and zero `override final` in the codebase. Never build a comment body in a shell string, see [Repository Tooling Hazards][repository-tooling-hazards].
 
 ## Debugging
 
@@ -305,6 +451,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 - **Markdown links are reference-style everywhere except [`AGENTS.md`][agents] and `.github/copilot-instructions.md`**, which keep inline links because they are agent-instruction files. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
+- **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
 - **Check an esphome.io link by page title, not HTTP status.** The site answers an unknown path with `200` and a `404 - Page Not Found | ESPHome` title, so a status-code sweep reports a dead link as healthy. The current link form carries no `.html` suffix and no trailing slash, the `guides/configuration-types` anchors have moved to the dedicated [`components/substitutions`][substitutions-link] and [`components/packages`][packages-link] pages, and the per-board pages live on [devices.esphome.io][devices-esphome-link]. An anchor is verified by fetching the page and matching the `id` attribute, since a renamed anchor silently lands the reader at the top of the page.
 
 ## Things to Avoid
@@ -317,25 +464,38 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 <!-- Repo -->
 
+[agents-write-safety]: ./AGENTS.md#repository-boundaries-and-write-safety
 [agents]: ./AGENTS.md
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
+[common-template]: ./templates/common.yaml
 [configure-sh]: ./repo-config/configure.sh
 [devices]: ./DEVICES.md
+[devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
+[easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
+[gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
 [max17048-template]: ./templates/max17048.yaml
+[norvi-template]: ./templates/norvi-enet-ae06-r.yaml
+[office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md
 [repository-tooling-hazards]: #repository-tooling-hazards
+[rgb-led-status-template]: ./templates/rgb-led-status.yaml
+[rgb-led-status]: #rgb-led-status
+[secrets-example]: ./secrets._yaml
+[secrets-template]: ./templates/secrets.yaml
 [strapping-pin-warnings]: #strapping-pin-warnings
 [template-notes]: #template-notes
 [templates]: ./templates/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
+[test]: ./test/
 [vscode-setup]: #vscode-setup
+[waveshare-template]: ./templates/waveshare-esp32-s3-eth.yaml
 [wifi-template]: ./templates/wifi.yaml
 [workflow]: ./WORKFLOW.md
 
@@ -346,8 +506,11 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [devices-esphome-link]: https://devices.esphome.io
 [esp-idf-framework-link]: https://esphome.io/components/esp32#esp-idf-framework
 [esphome-cli-link]: https://esphome.io/guides/cli
+[esphome-fork-link]: https://github.com/ptr727/esphome-esphome
 [esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
+[esphome-upstream-link]: https://github.com/esphome/esphome
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
+[flo-r1der-link]: https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
 [option-zero-link]: https://github.com/Option-Zero/esphome-components
 [packages-link]: https://esphome.io/components/packages

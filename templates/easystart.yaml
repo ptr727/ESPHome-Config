@@ -1,3 +1,16 @@
+# External usage:
+# packages:
+#   easystart_1:
+#     url: https://github.com/ptr727/ESPHome-Config
+#     ref: main
+#     files:
+#       - path: templates/easystart.yaml
+#         vars:
+#           easystart_id: easystart_1
+#           easystart_mac: "AA:BB:CC:DD:EE:01"
+#           easystart_label: "Compressor 1"
+# - Needs the easystart external component and a board running esp32_ble_tracker, see test/easystart.yaml.
+
 # Required substitutions:
 # easystart_id
 # easystart_mac

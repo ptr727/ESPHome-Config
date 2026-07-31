@@ -1,3 +1,8 @@
+# External usage:
+# packages:
+#   wifi: github://ptr727/ESPHome-Config/templates/wifi.yaml@main
+# - Needs wifi_ssid, wifi_password, and wifi_domain in a secrets.yaml beside the including config.
+
 # Required substitutions:
 # device_name
 

@@ -1,3 +1,8 @@
+# External usage:
+# packages:
+#   api: github://ptr727/ESPHome-Config/templates/api.yaml@main
+# - Needs api_encryption_key in a secrets.yaml beside the including config.
+
 # https://esphome.io/components/api
 substitutions:
   # Override per-device where a reboot loop is more dangerous than a stale Home Assistant connection.

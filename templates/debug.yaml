@@ -1,3 +1,7 @@
+# External usage:
+# packages:
+#   debug: github://ptr727/ESPHome-Config/templates/debug.yaml@main
+
 # Required substitutions:
 # device_name
 

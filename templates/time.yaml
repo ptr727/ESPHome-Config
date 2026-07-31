@@ -1,3 +1,7 @@
+# External usage:
+# packages:
+#   time: github://ptr727/ESPHome-Config/templates/time.yaml@main
+
 # https://esphome.io/components/time
 time:
 
