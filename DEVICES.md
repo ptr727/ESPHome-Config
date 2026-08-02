@@ -28,6 +28,8 @@ Each per-device config lives in the repository root, one per physical device. Ea
 
 - [`hvac-compressor-sensor.yaml`][hvac-compressor-sensor] uses the [Unexpected Maker ProS3D template][unexpectedmaker-pros3d] and the [EasyStart template][easystart-template] once per module, reporting both HVAC compressors.
 - It is deliberately **not** a Bluetooth proxy. It runs no `bluetooth_proxy`, sets `esp32_ble: max_connections: 2` for its two `ble_client` entries, and scans passively, since it only ever connects to two known addresses and reads no advertisement payloads.
+- It is installed outside beside the two compressors, on the u.FL antenna (`external_antenna_restore_mode: ALWAYS_ON`).
+- Each module powers its BLE radio only while its compressor runs, so between cycles the live measurements read `unknown` and the RSSI diagnostic drops out. That is the module losing power, not a link fault.
 
 ## Garage Fan Thermostats
 
