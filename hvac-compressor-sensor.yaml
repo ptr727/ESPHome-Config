@@ -4,7 +4,7 @@ substitutions:
   device_friendly_name: "HVAC Compressor Sensor"
   # ALWAYS_ON = u.FL connector
   # ALWAYS_OFF = onboard antenna
-  external_antenna_restore_mode: ALWAYS_OFF
+  external_antenna_restore_mode: ALWAYS_ON
 
 # https://esphome.io/components/packages
 packages:
@@ -39,3 +39,13 @@ esp32_ble:
 esp32_ble_tracker:
   scan_parameters:
     active: false
+
+# Mains powered off USB, no cell on the JST connector.
+# The MAX17048 reads a floating VBAT, so drop the gauge and the reset button that references it.
+# https://esphome.io/components/sensor
+sensor:
+  - id: !remove battery_gauge
+
+# https://esphome.io/components/button
+button:
+  - id: !remove battery_gauge_reset
