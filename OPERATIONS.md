@@ -119,7 +119,7 @@ Do not raise `api: max_connections` to paper over leaked sessions. Five is plent
 A pin ESPHome considers a strapping pin warns at every validation. Where the wiring is fixed by the board and known good, silence it at the pin rather than letting the noise train you to ignore validation output.
 
 - **`ignore_strapping_warning: true` belongs inside the pin schema**, so the shorthand `pin: GPIO15` has to expand to a `pin:` mapping with `number:` first. Placing the key beside `pin:` is accepted by no schema and silences nothing, which is the usual reason it "does not work".
-- **A component that takes a bare pin number cannot be silenced at all.** `ethernet` validates `mdc_pin`, `mdio_pin`, `power_pin`, and `clk.pin` with `pins.internal_gpio_pin_number`, which is an integer, not a pin schema, so there is nowhere for the flag to go. The GL-S10's GPIO0 and GPIO5 warnings are permanent for that reason and are not a config defect.
+- **A component that takes a bare pin number still accepts the pin mapping.** `ethernet` validates `mdc_pin`, `mdio_pin`, `power_pin`, and `clk.pin` with `pins.internal_gpio_pin_number`, and `esp32_camera` validates `data_pins` and `external_clock.pin` the same way. That validator rejects only `mode` and `inverted`, then runs the full pin schema and returns just the number, so expanding the pin to a `number:` mapping carrying `ignore_strapping_warning: true` validates and silences the warning.
 - **A pin owned by an upstream package** warns from that package's own schema, so silencing it means overriding the upstream pin rather than editing this repo's YAML.
 
 ## Verifying Component Knobs
@@ -166,17 +166,27 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 
 - **The board has no PSRAM.** GL-iNet's datasheet and the community pages claim 8MB, and the hardware does not have it. Treat the 8MB figure as wrong for this board revision and do not add `psram:` back.
 - **The status LED convention is deliberate.** The `status_led` pin is intentionally not inverted, so a lit globe LED means healthy and a flashing one means a warning or error, which is the reverse of what upstream's own `gl-s10.yaml` produces. A sync with upstream must not "fix" it.
-- **Its GPIO0 and GPIO5 strapping warnings cannot be silenced**, see [Strapping Pin Warnings][strapping-pin-warnings].
+- **Its GPIO0 and GPIO5 strapping warnings are silenced at the pin**, since the `ethernet` clock and power wiring is fixed by the board, see [Strapping Pin Warnings][strapping-pin-warnings].
 
 ### Waveshare ESP32-S3-ETH
 
 [`templates/waveshare-esp32-s3-eth.yaml`][waveshare-template] is a board template, so a device config composing it supplies its own job, the way [`office-bluetooth-proxy.yaml`][office-bluetooth-proxy] adds `esp32_ble_tracker` and `bluetooth_proxy` on top.
 
 - **It cannot include `common.yaml`.** The `ethernet` component declares `CONFLICTS_WITH = ["wifi"]`, and `common.yaml` carries [`wifi.yaml`][wifi-template], so the template composes the individual includes instead. Anything else added to the tree that pulls in a `wifi:` key breaks it, which is the reason [`rgb-led-status.yaml`][rgb-led-status-template] carries its own status logic rather than the upstream package, see [RGB LED Status][rgb-led-status].
-- **The W5500 pins carry no strapping warnings.** None of GPIO9 through GPIO14 is an ESP32-S3 strapping pin, unlike the GL-S10, so validation output for this board should be clean and a new warning means something actually changed.
+- **The W5500 pins carry no strapping warnings.** None of GPIO9 through GPIO14 is an ESP32-S3 strapping pin, so validation output for this board should be clean and a new warning means something actually changed.
 - **The `ethernet` component owns its SPI bus outright.** An SPI based PHY does not go through the `spi` component, so those four pins cannot be shared, and the TF card slot on GPIO4 through GPIO7 is a separate bus.
 - **The antenna is a solder change, not a config one.** Moving the resistor from the ceramic antenna to the IPEX Gen 1 connector has no GPIO behind it, so there is no equivalent of the ProS3D's `external_antenna` switch to flip.
 - **PSRAM is octal.** The ESP32-S3R8 part carries 8MB in package. Waveshare's own `IO_Test` demo contradicts this by listing GPIO33 through GPIO37 as free GPIO, and those pins are the octal PSRAM bus. Trust the part number and the boot banner over the demo.
+
+### Waveshare ESP32-S3-ETH Camera
+
+[`templates/waveshare-esp32-s3-eth-camera.yaml`][waveshare-camera-template] is an overlay on the board template above, composed as a second `packages:` entry the way the WROOM module templates compose onto [`esp32-s3-devkitc.yaml`][devkitc-template].
+
+- **The power down pin is GPIO8, and Waveshare's pin table omits it.** Without `power_down_pin: GPIO8` the sensor never leaves power down, `esp_camera_init` returns `ESP_ERR_NOT_FOUND`, and `esp32_camera` marks itself failed. This is the first thing to check on any camera failure on this board. The board exposes no camera reset pin.
+- **The sensor's register bus is a dedicated `i2c:` list entry**, `id: camera_i2c` on GPIO48 and GPIO47, referenced by `i2c_id`. The `i2c_pins:` shorthand is deprecated and is rejected outright once any `i2c:` block exists anywhere in the merged config, so it is a trap that fires when a device later adds a sensor. It is a list entry rather than the mapping shorthand because `i2c` sets `MULTI_CONF`, and a list merges with a device's own bus where a mapping collides with it.
+- **GPIO3, GPIO45, and GPIO46 are strapping pins on the camera bus**, silenced at the pin, see [Strapping Pin Warnings][strapping-pin-warnings].
+- **The OV2640 tops out at UXGA.** The larger entries in ESPHome's `FRAME_SIZES` are OV5640 sizes, and the widely copied community config for this board sets `QHD`, a size the OV2640 cannot produce. That same config uses `i2c_pins:` and puts a `switch:` on GPIO8 beside `power_down_pin: GPIO8`, which fails the pin reuse check. Do not re-derive from it.
+- **Exposure is left at the ESPHome defaults.** The overlay is a board template and exposure is a property of the room, so a dark image is tuned at the device. The real indoor cause is `agc_gain_ceiling` defaulting to `2X`, not the auto exposure.
 
 ### RGB LED Status
 
@@ -495,6 +505,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [test-workflow]: ./.github/workflows/test-pull-request.yml
 [test]: ./test/
 [vscode-setup]: #vscode-setup
+[waveshare-camera-template]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-template]: ./templates/waveshare-esp32-s3-eth.yaml
 [wifi-template]: ./templates/wifi.yaml
 [workflow]: ./WORKFLOW.md

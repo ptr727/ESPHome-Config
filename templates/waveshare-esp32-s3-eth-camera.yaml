@@ -1,0 +1,70 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/waveshare-esp32-s3-eth.yaml@main
+#   camera: github://ptr727/ESPHome-Config/templates/waveshare-esp32-s3-eth-camera.yaml@main
+# - An overlay, not a standalone device, so it is composed on the board template.
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Optional substitutions:
+# camera_resolution (SVGA)
+
+# Waveshare ESP32-S3-ETH DVP camera
+# Camera overlay for waveshare-esp32-s3-eth.yaml, which wires the board and claims none of the camera pins.
+# Written against the OV2640 module, the same connector takes an OV5640.
+
+# https://www.waveshare.com/wiki/ESP32-S3-ETH
+# https://files.waveshare.com/wiki/ESP32-S3-ETH/ESP32-S3-ETH-Schematic.pdf
+
+# GPIO8 holds the sensor in power down and is absent from Waveshare's own pin table.
+# Without it esp_camera_init returns ESP_ERR_NOT_FOUND and the component marks itself failed.
+# The board exposes no camera reset pin.
+
+# The OV2640 tops out at UXGA, the larger ESPHome frame sizes are OV5640 sizes.
+
+# Exposure is a property of the room rather than of the board, so nothing here overrides the ESPHome defaults.
+# Tune a dark image at the device, in order:
+# - agc_gain_ceiling 8X or 16X, since the 2X default caps the gain too low for indoors.
+# - ae_level 1 or 2 to bias the auto exposure brighter.
+# - aec2 to enable the DSP night mode exposure.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  camera_resolution: SVGA
+
+# The camera reads the sensor's registers over this bus, and no ESPHome device sits on it.
+# A list entry rather than the mapping shorthand, so a device adding its own bus merges instead of colliding.
+# https://esphome.io/components/i2c
+i2c:
+  - id: camera_i2c
+    sda: GPIO48
+    scl: GPIO47
+
+    # The sensor answers only once the driver releases power down, so a scan here finds nothing and reads as a fault.
+    scan: false
+
+# The frame buffer lives in PSRAM, which the board template configures as octal 8MB.
+# https://esphome.io/components/esp32_camera
+esp32_camera:
+  name: "Camera"
+  data_pins:
+    - GPIO41
+    - number: GPIO45 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
+    - number: GPIO46 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
+    - GPIO42
+    - GPIO40
+    - GPIO38
+    - GPIO15
+    - GPIO18
+  vsync_pin: GPIO1
+  href_pin: GPIO2
+  pixel_clock_pin: GPIO39
+  external_clock:
+    pin:
+      number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
+    frequency: 20MHz
+  i2c_id: camera_i2c
+  power_down_pin: GPIO8
+  resolution: ${camera_resolution}

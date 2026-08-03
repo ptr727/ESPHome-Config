@@ -68,12 +68,14 @@ ethernet:
   mdc_pin: GPIO23
   mdio_pin: GPIO18
   clk:
-    pin: GPIO0
+    pin:
+      number: GPIO0 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
     mode: CLK_EXT_IN
   phy_addr: 1
-  # GPIO0 and GPIO5 are strapping pins and warn at validation.
-  # The ethernet schema takes bare pin numbers, so ignore_strapping_warning has nowhere to attach here.
-  power_pin: GPIO5
+  power_pin:
+    number: GPIO5 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+    ignore_strapping_warning: true
 
 # https://esphome.io/components/esp32_ble_tracker
 esp32_ble_tracker:
