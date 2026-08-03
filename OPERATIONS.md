@@ -178,6 +178,16 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The antenna is a solder change, not a config one.** Moving the resistor from the ceramic antenna to the IPEX Gen 1 connector has no GPIO behind it, so there is no equivalent of the ProS3D's `external_antenna` switch to flip.
 - **PSRAM is octal.** The ESP32-S3R8 part carries 8MB in package. Waveshare's own `IO_Test` demo contradicts this by listing GPIO33 through GPIO37 as free GPIO, and those pins are the octal PSRAM bus. Trust the part number and the boot banner over the demo.
 
+### Waveshare ESP32-S3-ETH Camera
+
+[`templates/waveshare-esp32-s3-eth-camera.yaml`][waveshare-camera-template] is an overlay on the board template above, composed as a second `packages:` entry the way the WROOM module templates compose onto [`esp32-s3-devkitc.yaml`][devkitc-template].
+
+- **The power down pin is GPIO8, and Waveshare's pin table omits it.** Without `power_down_pin: GPIO8` the sensor never leaves power down, `esp_camera_init` returns `ESP_ERR_NOT_FOUND`, and `esp32_camera` marks itself failed. This is the first thing to check on any camera failure on this board. The board exposes no camera reset pin.
+- **The sensor's register bus is a dedicated `i2c:` list entry**, `id: camera_i2c` on GPIO48 and GPIO47, referenced by `i2c_id`. The `i2c_pins:` shorthand is deprecated and is rejected outright once any `i2c:` block exists anywhere in the merged config, so it is a trap that fires when a device later adds a sensor. It is a list entry rather than the mapping shorthand because `i2c` sets `MULTI_CONF`, and a list merges with a device's own bus where a mapping collides with it.
+- **GPIO3, GPIO45, and GPIO46 are strapping pins on the camera bus**, silenced at the pin, see [Strapping Pin Warnings][strapping-pin-warnings].
+- **The OV2640 tops out at UXGA.** The larger entries in ESPHome's `FRAME_SIZES` are OV5640 sizes, and the widely copied community config for this board sets `QHD`, a size the OV2640 cannot produce. That same config uses `i2c_pins:` and puts a `switch:` on GPIO8 beside `power_down_pin: GPIO8`, which fails the pin reuse check. Do not re-derive from it.
+- **Exposure is left at the ESPHome defaults.** The overlay is a board template and exposure is a property of the room, so a dark image is tuned at the device. The real indoor cause is `agc_gain_ceiling` defaulting to `2X`, not the auto exposure.
+
 ### RGB LED Status
 
 [`templates/rgb-led-status.yaml`][rgb-led-status-template] derives from [Flo-R1der's package][flo-r1der-link] but does not import it, because that version binds its state to `wifi:` `on_connect` triggers and so cannot run on an Ethernet board.
@@ -495,6 +505,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [test-workflow]: ./.github/workflows/test-pull-request.yml
 [test]: ./test/
 [vscode-setup]: #vscode-setup
+[waveshare-camera-template]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-template]: ./templates/waveshare-esp32-s3-eth.yaml
 [wifi-template]: ./templates/wifi.yaml
 [workflow]: ./WORKFLOW.md

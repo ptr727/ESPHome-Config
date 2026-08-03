@@ -166,9 +166,10 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Sets no `domain`, so the device is reachable only by whatever address DHCP registered for it.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter and no case opening is needed for the first flash or a later bootloader refresh.
 - The onboard ceramic antenna is selected by a resistor, and reaching the IPEX Gen 1 connector means moving it. There is no antenna select GPIO, so this is a soldering change rather than a config one.
-- Documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured:
-  - The camera DVP pins, for anyone fitting an OV5640.
-  - The TF card slot, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
+- An optional [camera overlay][waveshare-esp32-s3-eth-camera] configures the DVP interface for a fitted OV2640 module, composed as a second `packages:` entry on top of this template. It sets `power_down_pin: GPIO8`, which the board wires to the module's power down input and without which the camera does not initialize.
+  - Optional substitutions:
+    - `camera_resolution`: `SVGA` (800x600) by default. The OV2640 tops out at `UXGA` (1600x1200), and the larger sizes in the ESPHome list are OV5640 sizes.
+- The TF card slot is documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
 
 ## Devices
 
@@ -236,6 +237,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [test]: ./test/
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
+[waveshare-esp32-s3-eth-camera]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-esp32-s3-eth]: ./templates/waveshare-esp32-s3-eth.yaml
 [wemos-lolin32-lite]: ./templates/wemos-lolin32-lite.yaml
 [wifi]: ./templates/wifi.yaml

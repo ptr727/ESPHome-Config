@@ -41,13 +41,14 @@
 # - ESPHome has no SD card component, so nothing here configures it.
 # - https://github.com/esphome/feature-requests/issues/513
 
-# Camera interface, DVP, OV5640 compatible
+# Camera interface, DVP, OV2640 or OV5640
 # GPIO1  : vsync
 # GPIO2  : href
 # GPIO3  : xclk
 # GPIO39 : pclk
 # GPIO48 : siod
 # GPIO47 : sioc
+# GPIO8  : power down
 # GPIO18 : d7
 # GPIO15 : d6
 # GPIO38 : d5
@@ -56,7 +57,8 @@
 # GPIO46 : d2
 # GPIO45 : d1
 # GPIO41 : d0
-# - Recorded for anyone fitting a camera, this template configures none of it.
+# - Configured by the optional waveshare-esp32-s3-eth-camera.yaml overlay, this template claims none of it.
+# - GPIO8 is absent from Waveshare's own pin table, and the camera does not initialize without it.
 
 # https://esphome.io/components/substitutions
 substitutions:
