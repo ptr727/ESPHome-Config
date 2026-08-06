@@ -186,7 +186,8 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The sensor's register bus is a dedicated `i2c:` list entry**, `id: camera_i2c` on GPIO48 and GPIO47, referenced by `i2c_id`. The `i2c_pins:` shorthand is deprecated and is rejected outright once any `i2c:` block exists anywhere in the merged config, so it is a trap that fires when a device later adds a sensor. It is a list entry rather than the mapping shorthand because `i2c` sets `MULTI_CONF`, and a list merges with a device's own bus where a mapping collides with it.
 - **GPIO3, GPIO45, and GPIO46 are strapping pins on the camera bus**, silenced at the pin, see [Strapping Pin Warnings][strapping-pin-warnings].
 - **The OV2640 tops out at UXGA.** The larger entries in ESPHome's `FRAME_SIZES` are OV5640 sizes, and the widely copied community config for this board sets `QHD`, a size the OV2640 cannot produce. That same config uses `i2c_pins:` and puts a `switch:` on GPIO8 beside `power_down_pin: GPIO8`, which fails the pin reuse check. Do not re-derive from it.
-- **Exposure is left at the ESPHome defaults.** The overlay is a board template and exposure is a property of the room, so a dark image is tuned at the device. The real indoor cause is `agc_gain_ceiling` defaulting to `2X`, not the auto exposure.
+- **Exposure is left at the ESPHome defaults.** The overlay is a board template and exposure is a property of the room, so a dark image is tuned at the device. Community reports for this board blame `agc_gain_ceiling` defaulting to `2X` rather than the auto exposure, and nothing here has measured that, so treat it as a starting point rather than as a finding.
+- **Take the protective film off the lens before judging an image.** The bench frame that prompted the exposure note above was dark for that reason and for no other, which is worth eliminating first since every other explanation costs a reflash.
 
 ### RGB LED Status
 
@@ -194,8 +195,10 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 
 - **The status source is polled, deliberately.** ESPHome has a `wifi:` `on_connect` and an `ethernet:` `on_connect` but no network-level trigger, and YAML has no conditionals, so no single event-driven form covers both interfaces. A 1s `interval` edge-detects instead and runs the script only on a change.
 - **`network::is_connected()` is the interface-agnostic helper.** It resolves Ethernet, modem, WiFi, and OpenThread behind their own `USE_*` defines, so the C++ already does the conditional compilation that the YAML cannot. Its header is in the generated `src/esphome.h` for both WiFi and Ethernet builds, so a lambda needs no include. Do not "fix" this back to a `wifi:` trigger.
+- **The API state is read live, never latched into a global.** `api:` accepts `max_connections` clients, so a flag set by `on_client_connected` and cleared by `on_client_disconnected` goes false the moment any one of them leaves and stays false while Home Assistant is still connected. That is a white LED on a device Home Assistant reports online, and the earlier version of this template had exactly that bug. The `api.connected` condition reads `APIServer::is_connected()`, the live connection count, and upstream fires the disconnect trigger *after* removing the client so the condition sees the true state from inside it. The two triggers stay, but only to re-run the script.
+- **Any second client is enough to trip it**, a leaked `esphome logs` session included, so see [Logs and the API Connection Cap][api-connection-cap] for reaping them.
 - **It is remotely consumable**, needing only the `rgb_led_pin` substitution, so it must stay free of repo-local `!include` entries.
-- **It contributes its own `api:` block** for the `on_client_connected` triggers, which enables the API server rather than requiring one. A config composing this package alone validates with an unencrypted API, so an encryption key comes from `api.yaml` or from the composing config.
+- **It contributes its own `api:` block** for the client triggers and the `api.connected` condition, which enables the API server rather than requiring one. A config composing this package alone validates with an unencrypted API, so an encryption key comes from `api.yaml` or from the composing config.
 
 ### Bootloader Age and USB Flashing
 
@@ -462,6 +465,8 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
 - **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
+- **A pull request targeting `develop` runs no CI at all.** The workflow triggers are `push` on `develop`, `pull_request` on `main`, and `workflow_dispatch`, so a feature branch aimed at `develop` matches none of them and sits with an empty check list rather than a pending one. That follows from the operational model, where `develop` takes direct signed commits and the push is what runs advisory CI. Dispatch the run by hand when a feature branch needs gating: `gh workflow run test-pull-request.yml --ref <branch>`.
+- **A compile job that fails in about 18 seconds is a registry timeout, not a template defect.** The compile jobs pull the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image, and a slow Docker Hub kills the job with `registry-1.docker.io ... context deadline exceeded` before any ESPHome work starts. A real esp-idf compile runs for minutes, so the duration tells the two apart at a glance. Re-run the job rather than reading the template for a fault that is not there.
 - **Check an esphome.io link by page title, not HTTP status.** The site answers an unknown path with `200` and a `404 - Page Not Found | ESPHome` title, so a status-code sweep reports a dead link as healthy. The current link form carries no `.html` suffix and no trailing slash, the `guides/configuration-types` anchors have moved to the dedicated [`components/substitutions`][substitutions-link] and [`components/packages`][packages-link] pages, and the per-board pages live on [devices.esphome.io][devices-esphome-link]. An anchor is verified by fetching the page and matching the `id` attribute, since a renamed anchor silently lands the reader at the top of the page.
 
 ## Things to Avoid
@@ -476,6 +481,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 [agents-write-safety]: ./AGENTS.md#repository-boundaries-and-write-safety
 [agents]: ./AGENTS.md
+[api-connection-cap]: #logs-and-the-api-connection-cap
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
