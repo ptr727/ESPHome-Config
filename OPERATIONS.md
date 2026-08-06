@@ -195,8 +195,10 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 
 - **The status source is polled, deliberately.** ESPHome has a `wifi:` `on_connect` and an `ethernet:` `on_connect` but no network-level trigger, and YAML has no conditionals, so no single event-driven form covers both interfaces. A 1s `interval` edge-detects instead and runs the script only on a change.
 - **`network::is_connected()` is the interface-agnostic helper.** It resolves Ethernet, modem, WiFi, and OpenThread behind their own `USE_*` defines, so the C++ already does the conditional compilation that the YAML cannot. Its header is in the generated `src/esphome.h` for both WiFi and Ethernet builds, so a lambda needs no include. Do not "fix" this back to a `wifi:` trigger.
+- **The API state is read live, never latched into a global.** `api:` accepts `max_connections` clients, so a flag set by `on_client_connected` and cleared by `on_client_disconnected` goes false the moment any one of them leaves and stays false while Home Assistant is still connected. That is a white LED on a device Home Assistant reports online, and the earlier version of this template had exactly that bug. The `api.connected` condition reads `APIServer::is_connected()`, the live connection count, and upstream fires the disconnect trigger *after* removing the client so the condition sees the true state from inside it. The two triggers stay, but only to re-run the script.
+- **Any second client is enough to trip it**, a leaked `esphome logs` session included, so see [Logs and the API Connection Cap][api-connection-cap] for reaping them.
 - **It is remotely consumable**, needing only the `rgb_led_pin` substitution, so it must stay free of repo-local `!include` entries.
-- **It contributes its own `api:` block** for the `on_client_connected` triggers, which enables the API server rather than requiring one. A config composing this package alone validates with an unencrypted API, so an encryption key comes from `api.yaml` or from the composing config.
+- **It contributes its own `api:` block** for the client triggers and the `api.connected` condition, which enables the API server rather than requiring one. A config composing this package alone validates with an unencrypted API, so an encryption key comes from `api.yaml` or from the composing config.
 
 ### Bootloader Age and USB Flashing
 
@@ -479,6 +481,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 [agents-write-safety]: ./AGENTS.md#repository-boundaries-and-write-safety
 [agents]: ./AGENTS.md
+[api-connection-cap]: #logs-and-the-api-connection-cap
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
