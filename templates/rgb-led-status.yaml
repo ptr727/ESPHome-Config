@@ -16,7 +16,7 @@
 
 # Status colors, all steady, highest state reached wins.
 # - Green : an API client is connected, the device is fully up.
-# - White : the network is up but no API client has connected, so Home Assistant is not talking to it.
+# - White : the network is up but no API client is connected, so Home Assistant is not talking to it.
 # - Yellow: boot finished with no network, so check cabling, DHCP, or WiFi credentials.
 # - Red   : still booting, and red that never leaves is a boot loop.
 
@@ -45,9 +45,6 @@ globals:
   - id: network_ok
     type: bool
     initial_value: "false"
-  - id: api_ok
-    type: bool
-    initial_value: "false"
 
 # https://esphome.io/components/esphome
 esphome:
@@ -62,15 +59,15 @@ esphome:
         - lambda: id(boot_done) = true;
         - script.execute: led_system_status
 
+# The server accepts several clients at once, so the triggers only prompt a re-evaluation.
+# A latched flag would clear on any one client leaving while the others still hold the color.
 # https://esphome.io/components/api
 api:
   on_client_connected:
     then:
-      - lambda: id(api_ok) = true;
       - script.execute: led_system_status
   on_client_disconnected:
     then:
-      - lambda: id(api_ok) = false;
       - script.execute: led_system_status
 
 # ESPHome has no network-level connect trigger, so poll the interface-agnostic helper.
@@ -130,7 +127,7 @@ script:
       # An API client is connected, green.
       - if:
           condition:
-            lambda: return id(api_ok);
+            api.connected:
           then:
             - light.turn_on:
                 id: system_status_led
