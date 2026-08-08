@@ -4,3 +4,176 @@ substitutions:
 
 packages:
   ceilsense: !include templates/smarthome-ceilsense.yaml
+
+# https://esphome.io/components/sensor/ld2412
+# Per-gate energy for siting work, the vendor package exposes gate 0 only.
+# Disabled by default so the 1 Hz stream stays out of the recorder until a tuning session enables it.
+sensor:
+  - platform: ld2412
+    gate_1:
+      move_energy:
+        name: "Gate 1 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 1 Still Energy"
+        disabled_by_default: true
+    gate_2:
+      move_energy:
+        name: "Gate 2 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 2 Still Energy"
+        disabled_by_default: true
+    gate_3:
+      move_energy:
+        name: "Gate 3 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 3 Still Energy"
+        disabled_by_default: true
+    gate_4:
+      move_energy:
+        name: "Gate 4 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 4 Still Energy"
+        disabled_by_default: true
+    gate_5:
+      move_energy:
+        name: "Gate 5 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 5 Still Energy"
+        disabled_by_default: true
+    gate_6:
+      move_energy:
+        name: "Gate 6 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 6 Still Energy"
+        disabled_by_default: true
+    gate_7:
+      move_energy:
+        name: "Gate 7 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 7 Still Energy"
+        disabled_by_default: true
+    gate_8:
+      move_energy:
+        name: "Gate 8 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 8 Still Energy"
+        disabled_by_default: true
+    gate_9:
+      move_energy:
+        name: "Gate 9 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 9 Still Energy"
+        disabled_by_default: true
+    gate_10:
+      move_energy:
+        name: "Gate 10 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 10 Still Energy"
+        disabled_by_default: true
+    gate_11:
+      move_energy:
+        name: "Gate 11 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 11 Still Energy"
+        disabled_by_default: true
+    gate_12:
+      move_energy:
+        name: "Gate 12 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 12 Still Energy"
+        disabled_by_default: true
+    gate_13:
+      move_energy:
+        name: "Gate 13 Move Energy"
+        disabled_by_default: true
+      still_energy:
+        name: "Gate 13 Still Energy"
+        disabled_by_default: true
+
+# https://esphome.io/components/number/ld2412
+# Per-gate sensitivity, the only way to mute a distance band, and unexposed by the vendor package.
+# All fourteen gates are declared because a threshold write sends the whole array and dereferences every entry.
+number:
+  - platform: ld2412
+    gate_0:
+      move_threshold:
+        name: "Gate 0 Move Threshold"
+      still_threshold:
+        name: "Gate 0 Still Threshold"
+    gate_1:
+      move_threshold:
+        name: "Gate 1 Move Threshold"
+      still_threshold:
+        name: "Gate 1 Still Threshold"
+    gate_2:
+      move_threshold:
+        name: "Gate 2 Move Threshold"
+      still_threshold:
+        name: "Gate 2 Still Threshold"
+    gate_3:
+      move_threshold:
+        name: "Gate 3 Move Threshold"
+      still_threshold:
+        name: "Gate 3 Still Threshold"
+    gate_4:
+      move_threshold:
+        name: "Gate 4 Move Threshold"
+      still_threshold:
+        name: "Gate 4 Still Threshold"
+    gate_5:
+      move_threshold:
+        name: "Gate 5 Move Threshold"
+      still_threshold:
+        name: "Gate 5 Still Threshold"
+    gate_6:
+      move_threshold:
+        name: "Gate 6 Move Threshold"
+      still_threshold:
+        name: "Gate 6 Still Threshold"
+    gate_7:
+      move_threshold:
+        name: "Gate 7 Move Threshold"
+      still_threshold:
+        name: "Gate 7 Still Threshold"
+    gate_8:
+      move_threshold:
+        name: "Gate 8 Move Threshold"
+      still_threshold:
+        name: "Gate 8 Still Threshold"
+    gate_9:
+      move_threshold:
+        name: "Gate 9 Move Threshold"
+      still_threshold:
+        name: "Gate 9 Still Threshold"
+    gate_10:
+      move_threshold:
+        name: "Gate 10 Move Threshold"
+      still_threshold:
+        name: "Gate 10 Still Threshold"
+    gate_11:
+      move_threshold:
+        name: "Gate 11 Move Threshold"
+      still_threshold:
+        name: "Gate 11 Still Threshold"
+    gate_12:
+      move_threshold:
+        name: "Gate 12 Move Threshold"
+      still_threshold:
+        name: "Gate 12 Still Threshold"
+    gate_13:
+      move_threshold:
+        name: "Gate 13 Move Threshold"
+      still_threshold:
+        name: "Gate 13 Still Threshold"

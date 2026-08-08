@@ -11,6 +11,10 @@ Each per-device config lives in the repository root, one per physical device. Ea
 ## Garage Presence and Air Sensor
 
 - [`garage-presence-sensor.yaml`][garage-presence-sensor] uses the [SmartHomeShop CeilSense template][smarthome-ceilsense] for presence, CO2, temperature, humidity, lux, and pressure in the garage.
+- It is mounted in the center of the garage ceiling. The room is small in radar terms: nothing in it is further than 4.2 m slant range from the sensor, the two side doors sit at 3.9 m and 4.2 m, and the main door center at 3.0 m.
+- The main garage door is glass, which 24 GHz radar passes through, so the sensor sees the driveway and the street beyond it. Bounding the radar to the room is what keeps outside movement out of the presence state.
+- The LD2412 runs `0.5m` distance resolution with `Maximum Distance Gate` 10, reporting out to 5.5 m and discarding everything past it. That covers the whole room with roughly a meter of margin, and the main door opening still reads at saturated move energy. See [LD2412 Siting and Tuning][operations-ld2412-siting-and-tuning].
+- The device config declares all fourteen gate move and still thresholds, which the vendor package leaves unexposed, so a single distance band can be desensitized from Home Assistant without another flash. It also declares the per-gate energy sensors, disabled by default because they publish at 1 Hz each, and enabled only for a tuning session.
 
 ## Garage Door Controller
 
@@ -71,6 +75,7 @@ The remaining ESP32 devices are clear: the [garage presence sensor][garage-prese
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [operations-bootloader-age-and-usb-flashing]: ./OPERATIONS.md#bootloader-age-and-usb-flashing
+[operations-ld2412-siting-and-tuning]: ./OPERATIONS.md#ld2412-siting-and-tuning
 [pantry-bluetooth-proxy]: ./pantry-bluetooth-proxy.yaml
 [patio-plant-sensor]: ./patio-plant-sensor.yaml
 [recirculation-pump-controller]: ./recirculation-pump-controller.yaml
