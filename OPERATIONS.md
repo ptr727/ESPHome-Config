@@ -281,7 +281,7 @@ This directory is the `/config` mount of the running `esphome` container. Device
 
 ## Reverse Engineering and External Tooling
 
-BLE and device reverse-engineering work, the Micro-Air EasyStart soft-starter for one, follows [`easystart/BLE-RE-PLAYBOOK.md`][ble-re-playbook]: the agent drives adb, apktool, and jadx and decodes the protocol, while the human only plugs in the phone and runs the BLE monitor. Project-specific notes stay in the project folder, in [`easystart/AGENTS.md`][easystart-agents] and [`easystart/PROTOCOL.md`][easystart-protocol].
+BLE and device reverse-engineering work, the Micro-Air EasyStart soft-starter for one, follows [`easystart/BLE-RE-PLAYBOOK.md`][ble-re-playbook]: the agent drives adb, apktool, and jadx and decodes the protocol, while the human only plugs in the phone and runs the BLE monitor. Project-specific notes stay in the project folder, in [`easystart/PROTOCOL.md`][easystart-protocol].
 
 When a CLI tool is needed, look for it first on `PATH`, then in package-manager directories, then for a local copy already in the repository. When it is missing, self-source the official GitHub release or vendor zip locally. Do not auto-run `winget install` or another system package manager: sourcing a portable zip or jar is fine, mutating installed system packages is not. Ask the maintainer when a tool cannot be found or sourced.
 
@@ -509,7 +509,6 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [configure-sh]: ./repo-config/configure.sh
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
-[easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml

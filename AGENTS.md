@@ -367,7 +367,7 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - Root `*.yaml` - the deployed per-device configs, one per physical device, each composed from templates via `packages:`, and described in `DEVICES.md`. `secrets.yaml` is the live secret store and is not committed, while [`secrets._yaml`](./secrets._yaml) is its committed template.
 - [`templates/`](./templates/) - the shared device and utility templates the device configs include, plus [`templates/Utils.h`](./templates/Utils.h) for the lambda helpers.
 - [`test/`](./test/) - one minimal example device config per published template. CI compiles these against the current ESPHome release, so a published template is known to build, and they double as usage samples.
-- [`easystart/`](./easystart/) - the Micro-Air EasyStart soft-starter project: the ESPHome external component, its protocol and reverse-engineering notes, the standalone BLE monitor utility under `easystart/python`, and its own nested `AGENTS.md`.
+- [`easystart/`](./easystart/) - the Micro-Air EasyStart soft-starter project: the ESPHome external component, its protocol and reverse-engineering notes, and the standalone BLE monitor utility under `easystart/python`.
 - [`archive/`](./archive/) - retired device configs kept for reference, neither built nor validated.
 - [`repo-config/`](./repo-config/) - branch rulesets and the apply script, kept out of `.github/` (which is Actions-owned).
 - [`spec/`](./spec/) - the machine-readable secret-name ground truth this repo's audit checks against.
