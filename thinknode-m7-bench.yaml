@@ -1,0 +1,188 @@
+# One flash that answers both open hardware questions, because every ESPHome flash costs a repartition here.
+# Ethernet runs in polling mode rather than on the interrupt, which is the CH390 path the upstream PR cannot yet claim.
+# The LR11xx GetVersion probe reads the radio's identity from a stack that assumes nothing about which part is fitted.
+# Restore meshcore with its merged image at 0x0 afterwards, since this replaces the partition table.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  device_name: thinknode-m7-bench
+  device_friendly_name: "ThinkNode M7 Bench"
+
+# https://esphome.io/components/packages
+# ESPHome owns the partition table now, so an OTA is safe here and every later bench flash goes over the wire.
+packages:
+  ota: !include templates/ota.yaml
+
+# Elecrow ThinkNode M7
+# Ethernet is the CH390 on SPI2, and the radio is an LR11xx on SPI3, so the two buses never contend.
+# GPIO47 : eth sclk    GPIO48 : eth mosi   GPIO14 : eth miso   GPIO21 : eth cs
+# GPIO11 : lora sclk   GPIO10 : lora mosi  GPIO9  : lora miso  GPIO12 : lora nss
+# GPIO13 : lora busy   GPIO39 : lora reset, active low
+# - GPIO45, the ethernet interrupt, is deliberately unused here so polling carries the traffic.
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  on_boot:
+    # Release the radio's reset and let it boot before the first command.
+    priority: -100
+    then:
+      - output.turn_off: lora_reset
+      - delay: 20ms
+      - output.turn_on: lora_reset
+      - delay: 500ms
+
+# https://esphome.io/components/esp32
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/components/psram
+psram:
+  mode: octal
+  speed: 80MHz
+
+# https://esphome.io/components/logger
+logger:
+  level: debug # none, error, warn, info, debug, verbose, very_verbose
+  hardware_uart: UART0 # UART0, USB_CDC, USB_SERIAL_JTAG
+
+# https://esphome.io/components/external_components
+external_components:
+  - source:
+      type: local
+      path: ch390/components
+    components: [ethernet]
+
+# https://esphome.io/components/ethernet
+# polling_interval replaces interrupt_pin, so a link and a DHCP lease here prove the polling path end to end.
+# Verified on hardware 2026-08-09, GPIO45 left unwired.
+# - Latency is base + uniform[0, polling_interval], so mean RTT is base + interval/2.
+# - Measured at 50ms: min 3.20ms, mean 26.59ms, max 51.87ms, mdev 14.22ms against a predicted 14.43 for uniform width 50.
+# - Base is about 3ms, matching a W5500 on the same LAN, so the driver itself costs nothing beyond the poll wait.
+# - Sample RTT with a ping interval that is not a multiple of polling_interval, or every probe lands on the same poll phase.
+# A 2x2 over mode and clock_speed, 10000 full MTU frames each, found no defect specific to polling.
+# - ICMP loss ran 0.03 to 0.18 percent in every cell and is lwIP queue behaviour under flood, not a CH390 fault.
+# - Interrupt mode lost more than polling in the 20MHz pair, so loss does not track the mode.
+# - Driver level "frame read from module failed" is rare, sporadic, and did not reproduce on its own config.
+# The schema default of 26.67MHz was added to that matrix on 2026-08-10, by omitting clock_speed entirely.
+# - Polling lost 0.12 and 0.03 percent over two runs, interrupt 0.09 percent, all inside the 0.03 to 0.18 spread above.
+# - CH390DS1 v1.8 tables 9-4 and 9-5 give SCK as 50MHz typical and 72MHz maximum at VDDIO 3.3V, no minimum stated.
+# - The sheet is at https://www.wch-ic.com/downloads/CH390DS1_PDF.html, and its site needs a browser rather than curl.
+# - So the 26.67MHz default is in spec and the shared schema's 80MHz ceiling is not, which the upstream PR now caps.
+# - dump_config prints "Clock Speed: 26 MHz" for it, since it truncates to whole MHz.
+ethernet:
+  type: CH390
+  clk_pin: GPIO47
+  mosi_pin: GPIO48
+  miso_pin: GPIO14
+  cs_pin: GPIO21
+  polling_interval: 10ms
+  clock_speed: 20MHz
+  domain: !secret wifi_domain
+
+# https://esphome.io/components/mdns
+# Disabled so a name resolves only through the DHCP registered record.
+mdns:
+  disabled: true
+
+# https://esphome.io/components/spi
+# SPI3, because the ethernet component takes SPI2 and the two would otherwise collide.
+spi:
+  id: lora_bus
+  clk_pin: GPIO11
+  mosi_pin: GPIO10
+  miso_pin: GPIO9
+  interface: spi3
+
+# https://esphome.io/components/spi_device
+# LR11xx is SPI mode 0, MSB first, and 1MHz keeps a first read well inside spec.
+spi_device:
+  - id: lora_chip
+    spi_id: lora_bus
+    cs_pin: GPIO12
+    data_rate: 1MHz
+    spi_mode: mode0
+
+# https://esphome.io/components/output
+output:
+
+  # https://esphome.io/components/output/gpio
+  # NRESET is active low, so on is the released state.
+  - platform: gpio
+    id: lora_reset
+    pin: GPIO39
+
+# https://esphome.io/components/binary_sensor
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio
+  # BUSY high means the radio has not finished the previous command.
+  - platform: gpio
+    name: "LoRa Busy"
+    id: lora_busy
+    pin: GPIO13
+
+  # https://esphome.io/components/binary_sensor/gpio
+  # The front button, GPIO4 active low with a pullup, per Meshtastic's ELECROW-ThinkNode-M7 variant.
+  # A deliberate hold restarts rather than a tap, so a brush against the case cannot reboot a run mid measurement.
+  - platform: gpio
+    name: "Button"
+    id: user_button
+    pin:
+      number: GPIO4
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_click:
+      min_length: 1s
+      max_length: 5s
+      then:
+        - button.press: restart_device
+
+# https://esphome.io/components/button
+button:
+
+  # https://esphome.io/components/button/restart
+  # A software restart, so it reboots the running image and never enters the bootloader.
+  - platform: restart
+    name: "Restart"
+    id: restart_device
+
+# https://esphome.io/components/text_sensor
+text_sensor:
+
+  # https://esphome.io/components/text_sensor/ethernet_info
+  # These print on connect, which is the polling-mode result.
+  - platform: ethernet_info
+    ip_address:
+      name: "IP Address"
+    mac_address:
+      name: "MAC Address"
+
+# https://esphome.io/components/interval
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          // LR11xx splits a command from its response: write the opcode, drop CS, wait, then read.
+          // The read returns a stat byte first, then hw, type, and the two firmware bytes.
+          uint8_t rsp[5] = {0};
+          id(lora_chip)->enable();
+          id(lora_chip)->write_byte(0x01);
+          id(lora_chip)->write_byte(0x01);
+          id(lora_chip)->disable();
+          delayMicroseconds(500);
+          id(lora_chip)->enable();
+          for (int i = 0; i < 5; i++) {
+            rsp[i] = id(lora_chip)->read_byte();
+          }
+          id(lora_chip)->disable();
+          ESP_LOGI("loraid", "stat 0x%02X  hw 0x%02X  type 0x%02X  fw 0x%02X%02X  busy %d", rsp[0], rsp[1], rsp[2],
+                   rsp[3], rsp[4], id(lora_busy).state);

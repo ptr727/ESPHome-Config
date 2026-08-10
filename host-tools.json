@@ -1,0 +1,4 @@
+{
+    "note": "This repository's additions to the fleet host contract, layered over it tighten-only: an entry may add a tool, raise a floor, or turn an optional tool required, and may not relax any of the three. The list is empty because every tool this repository's procedures need is already in the fleet declaration at its own floor. The three that might look like exceptions are not. The ESPHome CLI is reached through the running container rather than installed on the host, so it is covered by docker. The C++ style check runs clang-format from a pinned image, so clang-format is likewise never a host tool here. The Python lint runs through uvx, which uv already provides. The file is carried empty rather than omitted so the declaration sits where a reader finds it instead of somewhere they have to know to look.",
+    "tools": []
+}
