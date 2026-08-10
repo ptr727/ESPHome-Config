@@ -371,5 +371,6 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`archive/`](./archive/) - retired device configs kept for reference, neither built nor validated.
 - [`repo-config/`](./repo-config/) - branch rulesets and the apply script, kept out of `.github/` (which is Actions-owned).
 - [`spec/`](./spec/) - the machine-readable secret-name ground truth this repo's audit checks against.
+- [`host-tools.json`](./host-tools.json) - what a development host needs beyond the fleet baseline, layered over it tighten-only. Empty here, because every tool this repo's procedures need is already declared at its own floor.
 - [`.devcontainer/`](./.devcontainer/) - the offline debugging container described above.
 - [`.github/workflows/`](./.github/workflows/) - lint plus change-gated compile tests, and the source-only release.
