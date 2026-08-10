@@ -70,6 +70,12 @@ external_components:
 # - ICMP loss ran 0.03 to 0.18 percent in every cell and is lwIP queue behaviour under flood, not a CH390 fault.
 # - Interrupt mode lost more than polling in the 20MHz pair, so loss does not track the mode.
 # - Driver level "frame read from module failed" is rare, sporadic, and did not reproduce on its own config.
+# The schema default of 26.67MHz was added to that matrix on 2026-08-10, by omitting clock_speed entirely.
+# - Polling lost 0.12 and 0.03 percent over two runs, interrupt 0.09 percent, all inside the 0.03 to 0.18 spread above.
+# - CH390DS1 v1.8 tables 9-4 and 9-5 give SCK as 50MHz typical and 72MHz maximum at VDDIO 3.3V, no minimum stated.
+# - The sheet is at https://www.wch-ic.com/downloads/CH390DS1_PDF.html, and its site needs a browser rather than curl.
+# - So the 26.67MHz default is in spec and the shared schema's 80MHz ceiling is not, which the upstream PR now caps.
+# - dump_config prints "Clock Speed: 26 MHz" for it, since it truncates to whole MHz.
 ethernet:
   type: CH390
   clk_pin: GPIO47
