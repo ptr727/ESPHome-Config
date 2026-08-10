@@ -21,11 +21,18 @@ diff <(jq -S . repo-config/settings.json) <(jq -S . <<<"$live") \
 
 ## Rulesets
 
-Diff each live ruleset against the committed expected payload with a normalized comparison (sort the order-insensitive `rules[]` and `bypass_actors[]` before diffing so a reordered but equivalent ruleset does not read as drift). This operational carry keeps its `develop` payload at [`repo-config/operational/develop.json`][repo-config-develop].
+Diff each live ruleset against the committed expected payload with a normalized comparison (sort the order-insensitive `rules[]` on each rule's whole content before diffing, so a reordered but equivalent ruleset does not read as drift). The compared subset is `name`, `target`, `enforcement`, `conditions` and `rules`, and `bypass_actors` sits deliberately outside it, which is the same subset and the same sort key the fleet-wide audit uses. Who may bypass a ruleset is a per-repository human decision taken in the UI, no payload declares one, and the fleet's ruleset tooling treats it that way in both modes, writing the live list back unchanged when it applies a payload and reporting it without asserting when it checks one. Comparing it here would contradict that and report a ruleset finding against this repository for having any bypass actor at all, which is the field's normal state rather than a deviation. This operational carry keeps its `develop` payload at [`repo-config/operational/develop.json`][repo-config-develop].
 
 ```sh
 repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-norm='{name,target,enforcement,bypass_actors,conditions,rules} | .rules|=sort_by(.type) | .bypass_actors|=sort_by(.actor_id)'
+# bypass_actors stays outside the projection, since no payload declares one and jq cannot sort the null that leaves.
+# Rules sort on each rule's whole content, matching the key the fleet-wide audit sorts by.
+# Sorting on .type alone leaves two rules of one type in input order, so a reordered pair would read as drift.
+# canon sorts keys at every depth before serializing, because the committed payload is written key-sorted and the API returns its own order, so a bare tojson gives the same rule two different sort keys.
+# It recurses rather than calling walk/1, which the declared jq floor does make available, because the recursion costs nothing and compiles below the floor as well.
+# A host on jq 1.5 would not degrade on walk, it would fail to compile the filter and report drift on every ruleset it never compared, which is what the fleet's ruleset tooling defines its own recursion to avoid.
+canon='def canon: . as $in | if type == "object" then reduce (keys_unsorted|sort)[] as $k ({}; . + { ($k): ($in[$k]|canon) }) elif type == "array" then map(canon) else . end;'
+norm="$canon"'{name,target,enforcement,conditions,rules} | .rules|=sort_by(canon|tojson)'
 # Paginate so later-page rulesets count: --paginate with --jq '.[]' emits one JSON object per ruleset
 # across all pages; jq -s re-assembles them into the single array the selections below expect.
 rulesets=$(gh api --paginate "repos/$repo/rulesets" --jq '.[]' | jq -s '.')
@@ -37,7 +44,7 @@ for b in develop main; do
   [ "$count" -eq 1 ] || { echo "$b: expected exactly 1 ruleset, found $count (defect/drift)"; continue; }
   id=$(jq --arg n "$b" '.[] | select(.name==$n) | .id' <<<"$rulesets")
   diff <(jq -S "$norm" "$file") \
-       <(gh api "repos/$repo/rulesets/$id" --jq '{name,target,enforcement,bypass_actors,conditions,rules}' | jq -S "$norm") \
+       <(gh api "repos/$repo/rulesets/$id" --jq '{name,target,enforcement,conditions,rules}' | jq -S "$norm") \
     && echo "$b: in sync" || echo "$b: DRIFT"
 done
 ```
