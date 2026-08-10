@@ -1,0 +1,145 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/elecrow-thinknode-m7.yaml@main
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Required substitutions:
+# device_name
+# device_friendly_name
+
+# Required external components:
+# ethernet, from the patched copy in ch390/components, which adds the CH390 type ESPHome lacks.
+# - The including config declares it, because a local path resolves against that config's own directory.
+# - Upstream as esphome/esphome#18226, and the block goes away once that merges and ships in a release.
+# - Not `source: github://pr#18226`: that component is based on dev and imports get_network_priority from the
+#   core network component, which the installed release lacks, and external_components shadows ethernet only.
+
+# Elecrow ThinkNode M7
+# ESP32-S3 QFN56 rev v0.2, 8MB Quad Flash, 8MB Octal PSRAM, 40MHz crystal
+
+# Board tested: hardware verified 2026-08-09, link up and DHCP lease acquired
+
+# WCH CH343 USB-UART bridge on UART0, so there is no native USB CDC and flashing needs no adapter.
+
+# WCH CH390 SPI Ethernet, MAC and PHY in one part, 10/100
+# GPIO47 : sclk
+# GPIO48 : mosi
+# GPIO14 : miso
+# GPIO21 : cs
+# GPIO45 : interrupt
+# - The part reports vendor 0x1C00 and product 0x9151, so the DM9051 driver rejects it on its ID check.
+# - The board declares no reset pin, so none is configured.
+
+# GPIO3  : Status LED (Green) : ESPHome status, lit is healthy and flashing is a warning or error
+# GPIO46 : LoRa TX LED (Blue) : declared as an output and left for the radio to drive
+
+# GPIO4 : User button, an ADC ladder rather than a discrete input, so it is exposed as a voltage
+# - Read it to characterise the ladder before treating any threshold as a button press.
+
+# GPIO17 : i2c sda
+# GPIO18 : i2c scl
+# - The bus takes an optional RTC at 0x68, 0x52, 0x51, or 0x32, and scans clean when none is fitted.
+
+# Semtech LR1110 LoRa on the board's default SPI bus, deliberately not configured
+# GPIO11 : sclk
+# GPIO9  : miso
+# GPIO10 : mosi
+# GPIO12 : nss
+# GPIO13 : busy
+# GPIO38 : dio1
+# GPIO39 : reset, active low
+# - ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
+# - The RF switch is on the radio's own DIO5 and DIO6 rather than ESP32 pins, and TCXO is on DIO3 at 1.8V.
+# - This is a second bus, so anything claiming it must not assume the ethernet SPI interface.
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+# https://esphome.io/components/esp32
+esp32:
+  # A bare ESP32-S3 with external flash, which is the DevKitC-1 profile, there is no WROOM module fitted.
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
+  board: esp32-s3-devkitc-1
+
+  # The board definition does not set this, ESPHome defaults to 4MB.
+  flash_size: 8MB
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/components/psram
+# The part carries 8MB in package, so octal, and ESPHome has no default mode on the S3.
+psram:
+  mode: octal
+  speed: 80MHz
+
+# The ethernet component conflicts with wifi, so common.yaml cannot be used here.
+# https://esphome.io/components/packages#local-packages
+packages:
+  api: !include api.yaml
+  basic: !include basic.yaml
+  debug: !include debug.yaml
+  ethernetsensor: !include ethernet-sensor.yaml
+  logger: !include logger.yaml
+  ota: !include ota.yaml
+  temperature: !include temperature.yaml
+  time: !include time.yaml
+
+# Match the port the board is programmed through, UART0 is the CH343 bridge.
+# https://esphome.io/components/logger
+logger:
+  hardware_uart: UART0 # UART0, USB_CDC, USB_SERIAL_JTAG
+
+# The device sets no domain, so it is reachable only by whatever DHCP registered for it.
+# https://esphome.io/components/ethernet
+ethernet:
+  type: CH390
+  clk_pin: GPIO47
+  mosi_pin: GPIO48
+  miso_pin: GPIO14
+  cs_pin: GPIO21
+  interrupt_pin: GPIO45
+  clock_speed: 20MHz
+
+# https://esphome.io/components/status_led
+# The LED is active low and the pin is deliberately not inverted, so lit means healthy.
+# An ethernet disconnect raises a component warning, which flashes this LED.
+status_led:
+  pin:
+    number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+    ignore_strapping_warning: true
+
+# https://esphome.io/components/i2c
+i2c:
+  sda: GPIO17
+  scl: GPIO18
+  scan: true
+
+# https://esphome.io/components/output
+output:
+
+  # https://esphome.io/components/output/gpio
+  # Claimed by the radio, so the board template only declares it.
+  - platform: gpio
+    id: led_lora
+    pin:
+      number: GPIO46 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      inverted: true
+      ignore_strapping_warning: true
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # https://esphome.io/components/sensor/adc
+  # The user button is an ADC ladder with no documented threshold, so report the raw voltage.
+  - platform: adc
+    name: "User Button Voltage"
+    id: user_button_voltage
+    pin: GPIO4
+    attenuation: 12db
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: 60s
