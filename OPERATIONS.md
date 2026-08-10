@@ -100,9 +100,14 @@ To see a device's boot banner and `dump_config`, attach first and then restart i
 Run at most one short logs session at a time and clean up leftovers. The container has no `kill` or `pkill` binary, so use the `sh` builtin over `/proc`:
 
 ```shell
-docker exec esphome sh -c 'for d in /proc/[0-9]*; do tr "\0" " " <"$d/cmdline" 2>/dev/null \
-  | grep -q "esphome logs" && kill -9 "${d#/proc/}"; done'
+docker exec esphome sh -c 'self=$$; for d in /proc/[0-9]*; do
+  p=${d#/proc/}; [ "$p" = "$self" ] && continue
+  c=$(tr "\0" " " <"$d/cmdline" 2>/dev/null)
+  case "$c" in *"esphome logs"*) [ "${c#*sh -c}" = "$c" ] && kill -9 "$p" ;; esac
+done'
 ```
+
+**The reaper must exclude itself.** Its own `sh -c` argument contains the string it scans for, so a naive `grep -q "esphome logs"` over every `/proc/*/cmdline` matches the scanning shell. That inflates the session count, which reads as a cap problem that is not there, and it is actively destructive in a keep-the-newest variant: the scanning shell is always the newest process, so "keep the highest PID" keeps the reaper and kills the live capture. Skipping the current PID and any `sh -c` wrapper is what makes the count and the kill correct.
 
 Do not raise `api: max_connections` to paper over leaked sessions. Five is plenty for Home Assistant, the dashboard, and one agent, with spares.
 
@@ -238,6 +243,19 @@ From `base.yaml` the template then strips the cloud and project machinery: the `
 
 [`garage-presence-sensor.yaml`][garage-presence-sensor] consumes it. It tracks `@main` on a `0.9.0-beta` upstream, so an upstream id rename surfaces as a `Source for removal not found` error at `esphome config`. Re-check the removed ids when that appears, or pin a `@<sha>`. This trades the vendor's maintained variant entry point for hand-assembling its parts, so when upstream restructures `base.yaml` or the packages, re-diff against the current `ceilsense-complete-wifi-ld2412.yaml` to see what changed.
 
+### LD2412 Siting and Tuning
+
+The CeilSense carries an LD2412 24 GHz radar, and every control it offers is expressed in **gates** rather than meters. Distance resolution sets the gate width, so changing it silently redefines what every other control means.
+
+- **Fourteen gates, always, and resolution picks the width.** `0.2m` reaches 2.8 m, `0.5m` reaches 7.0 m, `0.75m` reaches 10.5 m. Choose the narrowest width that still covers the room. A wider gate buys range the room does not have and spends spatial resolution to get it.
+- **Measure the room before touching a threshold.** Measure slant range, sensor face to object, because that is the path the radar reports, and a floor-plan distance is not it. A reported return beyond the largest dimension of the room is not in the room, and no amount of threshold tuning makes it real.
+- **Bound the radar to the room with `Maximum Distance Gate`.** It is the cheapest control, it needs no firmware change, and it applies to the moving and still paths alike. Reach past the walls and the sensor reports what is past them, because drywall and glass are both effectively transparent at 24 GHz. A glass garage door does not stop the sightline at the door.
+- **Changing `Distance Resolution` invalidates any background correction.** The learn is stored per gate, so re-binning leaves it describing bands that no longer exist. Run `Start Dynamic Background Correction` **after** a resolution change, never before. A stale background shows up as a strong still target at a range where nothing is, and it clears the moment a valid learn replaces it.
+- **Dynamic background correction needs a static scene for the whole learn**, which runs 50 to 90 seconds. It subtracts static clutter, so it never cancels a moving target, and a learn taken while something moved is worse than no learn at all. Attach to the logs and confirm no moving-target events fall inside the window rather than assuming the room was still.
+- **Separate a nuisance from a real target by energy, not by distance.** A real target inside the room saturates move energy at 100 percent, while a nuisance sits in a narrow band well below it. A per-gate move threshold placed between the two removes the nuisance with margin, where a distance cut would cost real coverage.
+- **The vendor package exposes no gate thresholds at all**, so tuning one costs a firmware change. The template carries the vendor entity set, and a device that needs thresholds declares them in its own config.
+- **Declare all fourteen gates or none.** `LD2412Component::set_gate_threshold()` writes the whole array and dereferences every entry, and its early-out tests `.empty()` on a `std::array`, which is never true. A partial declaration leaves null entries and crashes the device on the first threshold write.
+
 ## Linting the Python Utility
 
 The EasyStart BLE monitor under `easystart/python` is a lint-only subtree: ruff gates CI, and pyright is editor parity via Pylance. There is no packaged project, no lockfile, and no test suite, so the script runs and lints through `uvx` with no install step. Use the ruff version pinned in [`test-pull-request.yml`][test-workflow] so a local run matches CI:
@@ -263,7 +281,7 @@ This directory is the `/config` mount of the running `esphome` container. Device
 
 ## Reverse Engineering and External Tooling
 
-BLE and device reverse-engineering work, the Micro-Air EasyStart soft-starter for one, follows [`easystart/BLE-RE-PLAYBOOK.md`][ble-re-playbook]: the agent drives adb, apktool, and jadx and decodes the protocol, while the human only plugs in the phone and runs the BLE monitor. Project-specific notes stay in the project folder, in [`easystart/AGENTS.md`][easystart-agents] and [`easystart/PROTOCOL.md`][easystart-protocol].
+BLE and device reverse-engineering work, the Micro-Air EasyStart soft-starter for one, follows [`easystart/BLE-RE-PLAYBOOK.md`][ble-re-playbook]: the agent drives adb, apktool, and jadx and decodes the protocol, while the human only plugs in the phone and runs the BLE monitor. Project-specific notes stay in the project folder, in [`easystart/PROTOCOL.md`][easystart-protocol].
 
 When a CLI tool is needed, look for it first on `PATH`, then in package-manager directories, then for a local copy already in the repository. When it is missing, self-source the official GitHub release or vendor zip locally. Do not auto-run `winget install` or another system package manager: sourcing a portable zip or jar is fine, mutating installed system packages is not. Ask the maintainer when a tool cannot be found or sourced.
 
@@ -491,7 +509,6 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [configure-sh]: ./repo-config/configure.sh
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
-[easystart-agents]: ./easystart/AGENTS.md
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
