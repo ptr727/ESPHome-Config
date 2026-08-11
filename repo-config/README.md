@@ -34,8 +34,11 @@ for name in develop main; do
   count=$(jq --arg n "$name" '[.[] | select(.name==$n)] | length' <<<"$rulesets")
   [ "$count" -eq 1 ] || { echo "expected exactly 1 ruleset named $name, found $count (drift)" >&2; exit 1; }
   id=$(jq --arg n "$name" '.[] | select(.name==$n) | .id' <<<"$rulesets")
+  # bypass_actors is deliberately not projected, matching what the payloads declare.
+  # Including it would write the live bypass list back into the committed file and reintroduce
+  # the very field these payloads stopped carrying, so a regeneration must not restore it.
   gh api "repos/$repo/rulesets/$id" \
-    --jq '{name, target, enforcement, bypass_actors, conditions, rules}' \
+    --jq '{name, target, enforcement, conditions, rules}' \
     | jq -S --indent 4 '.' > "$out"
 done
 ```
