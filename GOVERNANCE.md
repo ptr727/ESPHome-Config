@@ -427,14 +427,14 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`AGENTS.md`](./AGENTS.md), the agent entry point, carrying the bootstrap, the context and delegation rules, and the map to the sections below.
 - [`GOVERNANCE.md`](./GOVERNANCE.md), [`CODESTYLE.md`](./CODESTYLE.md), [`WORKFLOW.md`](./WORKFLOW.md), [`AUDIT.md`](./AUDIT.md), the governance and audit docs, where this file is the cross-cutting-rules authority.
 - [`OPERATIONS.md`](./OPERATIONS.md), the ESPHome operational authority: reaching the CLI, validating and flashing, the template and vendor-firmware patterns, and the tooling hazards. Read it before editing any YAML under this tree.
-- [`README.md`](./README.md) and [`DEVICES.md`](./DEVICES.md) - the human-facing docs, not governance. `README.md` is the template catalogue written for anyone reusing one, `DEVICES.md` the maintainer's deployed fleet and its maintenance state.
-- Root `*.yaml` - the deployed per-device configs, one per physical device, each composed from templates via `packages:`, and described in `DEVICES.md`. `secrets.yaml` is the live secret store and is not committed, while [`secrets._yaml`](./secrets._yaml) is its committed template.
-- [`templates/`](./templates/) - the shared device and utility templates the device configs include, plus [`templates/Utils.h`](./templates/Utils.h) for the lambda helpers.
-- [`test/`](./test/) - one minimal example device config per published template. CI compiles these against the current ESPHome release, so a published template is known to build, and they double as usage samples.
-- [`easystart/`](./easystart/) - the Micro-Air EasyStart soft-starter project: the ESPHome external component, its protocol and reverse-engineering notes, and the standalone BLE monitor utility under `easystart/python`.
-- [`archive/`](./archive/) - retired device configs kept for reference, neither built nor validated.
+- [`README.md`](./README.md) and [`DEVICES.md`](./DEVICES.md), the human-facing docs rather than governance. `README.md` is the template catalog written for anyone reusing one, and `DEVICES.md` the maintainer's deployed fleet and its maintenance state.
+- Root `*.yaml`, the deployed per-device configs, one per physical device, each composed from templates via `packages:`, and described in `DEVICES.md`. `secrets.yaml` is the live secret store and is not committed, while [`secrets._yaml`](./secrets._yaml) is its committed template.
+- [`templates/`](./templates/), the shared device and utility templates the device configs include, plus [`templates/Utils.h`](./templates/Utils.h) for the lambda helpers.
+- [`test/`](./test/), one minimal example device config per published template. CI compiles these against the current ESPHome release, so a published template is known to build, and they double as usage samples.
+- [`easystart/`](./easystart/), the Micro-Air EasyStart soft-starter project: the ESPHome external component, its protocol and reverse-engineering notes, and the standalone BLE monitor utility under `easystart/python`.
+- [`archive/`](./archive/), retired device configs kept for reference, neither built nor validated.
 - [`repo-config/`](./repo-config/), the branch ruleset payloads and the general-settings payload, kept out of `.github/` (which is Actions-owned). The script that applies them is hub-hosted rather than carried here.
-- [`spec/`](./spec/) - the machine-readable secret-name ground truth this repo's audit checks against.
-- [`host-tools.json`](./host-tools.json) - what a development host needs beyond the fleet baseline, layered over it tighten-only. Empty here, because every tool this repo's procedures need is already declared at its own floor.
-- [`.devcontainer/`](./.devcontainer/) - the offline debugging container described above.
-- [`.github/workflows/`](./.github/workflows/) - lint plus change-gated compile tests, and the source-only release.
+- [`spec/`](./spec/), the machine-readable secret-name ground truth this repo's audit checks against.
+- [`host-tools.json`](./host-tools.json), what a development host needs beyond the fleet baseline, layered over it tighten-only. Empty here, because every tool this repo's procedures need is already declared at its own floor.
+- [`.devcontainer/`](./.devcontainer/), the offline debugging container described above.
+- [`.github/workflows/`](./.github/workflows/), lint plus change-gated compile tests, and the source-only release.
