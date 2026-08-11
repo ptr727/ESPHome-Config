@@ -1,18 +1,18 @@
 # ESPHome Operations
 
-How to work in this repository: reaching the ESPHome CLI, validating and flashing a change, the template and vendor-firmware patterns, the tooling hazards, and the traps that have cost time before. [`AGENTS.md`][agents] carries the cross-cutting rules every repository in the fleet shares. Read this file before editing any YAML under this tree, and read [Repository Tooling Hazards][repository-tooling-hazards] before driving `gh` or the repo-config script.
+How to work in this repository: reaching the ESPHome CLI, validating and flashing a change, the template and vendor-firmware patterns, the tooling hazards, and the traps that have cost time before. [`GOVERNANCE.md`][governance] carries the cross-cutting rules every repository in the fleet shares, and [`AGENTS.md`][agents] is the entry point that maps a task to the section governing it. Read this file before editing any YAML under this tree, and read [Repository Tooling Hazards][repository-tooling-hazards] before driving `gh` or the repo-config script.
 
-`AGENTS.md` is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
+[`GOVERNANCE.md`][governance] is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
 
 ## Keeping This File Current
 
-An operational discovery is written down as part of the change that surfaced it, never left in a session note or an agent's memory. This is the local routing for the self-improvement rule in [`AGENTS.md`][agents], which owns the principle.
+An operational discovery is written down as part of the change that surfaced it, never left in a session note or an agent's memory. This is the local routing for the self-improvement rule in [`GOVERNANCE.md`][governance], which owns the principle.
 
 - **A mechanism that stopped working, and whatever replaced it**, goes in the section that owns the subject. Record the replacement and the reason the old route failed, so the next agent does not retry it.
 - **A procedure carried out for the first time** gets a section describing how, not that it happened. Write the recipe someone would follow, and name the command or the file rather than narrating the session.
 - **A fact established by running something** is recorded with what proved it, since a claim nobody can re-derive gets doubted and re-tested. Prefer the observed output over an assertion.
-- **A defect in the carried fleet content** - `AGENTS.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`, `repo-config/`, `spec/`, `AUDIT.md` - is reported upstream rather than patched here, because a local edit registers as drift and fails the audit. Filing that report is a **cross-repository write and needs the maintainer's explicit permission for that specific repository in the current session**, per [Repository Boundaries and Write Safety][agents-write-safety]. Ask, do not assume.
-- **Nothing here is a changelog.** State the current mechanism in the present tense, per the documentation rules in `AGENTS.md`. The before-and-after belongs in the commit message.
+- **A defect in the carried fleet content** (`AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`, `repo-config/`, `spec/`, and `AUDIT.md`) is reported upstream rather than patched here, because a local edit registers as drift and fails the audit. Filing that report is a **cross-repository write and needs the maintainer's explicit permission for that specific repository in the current session**, per [Repository Boundaries and Write Safety][governance-write-safety]. Ask, do not assume.
+- **Nothing here is a changelog.** State the current mechanism in the present tense, per the documentation rules in `GOVERNANCE.md`. The before-and-after belongs in the commit message.
 - **`git blame` does not establish who wrote a line.** Agent commits carry the maintainer's `noreply` identity by policy, so blame attributes agent-authored prose to the maintainer just as it does their own. The `AGENTS.md` carve-out for Unicode the developer deliberately typed cannot be claimed from blame output, and a review flagging non-ASCII is answered by removing it rather than by defending it with an authorship claim the repository cannot support.
 
 ## External Package Usage
@@ -267,7 +267,7 @@ uvx ruff@0.15.22 format --check .
 uvx pyright .
 ```
 
-The generic linters - editorconfig-checker, actionlint, markdownlint, and cspell - are the fleet set, invoked as documented in [`AGENTS.md`][agents] under "Running the Linters Locally". ESPHome config and compile validation is separate, covered above.
+The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell) are the fleet set, invoked as documented in [`GOVERNANCE.md`][governance] under "Running the Linters Locally". ESPHome config and compile validation is separate, covered above.
 
 ## Device Builder Auto-Commits
 
@@ -367,7 +367,7 @@ script/test_build_components.py -c <component>,<component> -t esp32-idf
 GraphQL: Projects (classic) is being deprecated in favor of the new Projects experience ... (repository.pullRequest.projectCards)
 ```
 
-This is a client-version problem and nothing else. It is not the repo-scope rule in [`AGENTS.md`][agents] and not a change in the Copilot or agent instructions: writes aimed at the correct repo succeed, and a read-only probe of `projectCards` by itself reproduces the identical error. Edit a PR body through REST instead, always from a file:
+This is a client-version problem and nothing else. It is not the repo-scope rule in [`GOVERNANCE.md`][governance] and not a change in the Copilot or agent instructions: writes aimed at the correct repo succeed, and a read-only probe of `projectCards` by itself reproduces the identical error. Edit a PR body through REST instead, always from a file:
 
 ```shell
 gh api -X PATCH repos/<owner>/<repo>/pulls/<number> -F body=@body.md
@@ -381,7 +381,7 @@ Upstream runs two automated reviewers, and they differ enough to need handling s
 
 - **Copilot** (`copilot-pull-request-reviewer`) posts inline threads. **Its low-confidence notes never become threads.** They are folded into a `<details>` block in the review body, so the comments endpoint returns nothing and a review reporting "generated no new comments" can still carry substantive objections. Read the review body itself, via `gh api repos/<o>/<r>/pulls/<n>/reviews`. In one round those suppressed notes were the only findings, and all of them were correct.
 - **Filtering REST reviews by the GraphQL login silently returns nothing.** REST reports `copilot-pull-request-reviewer[bot]`, GraphQL reports it without the suffix, so `select(.user.login=="copilot-pull-request-reviewer")` on a REST payload yields an empty list that reads as "no review yet" rather than as a bad filter. Match the API, and cross-check with `gh pr view --json reviews`, which uses the unsuffixed form.
-- **Never hand-complete a commit SHA when filtering.** A poll filtered on a full SHA reconstructed from a short one matched nothing and expired silently while the review had in fact landed. Take it from `git rev-parse`, the same rule the [`AGENTS.md`][agents] id policy applies to writes.
+- **Never hand-complete a commit SHA when filtering.** A poll filtered on a full SHA reconstructed from a short one matched nothing and expired silently while the review had in fact landed. Take it from `git rev-parse`, the same rule the [`GOVERNANCE.md`][governance] id policy applies to writes.
 - **esphbot** posts a summary comment plus a formal review, quotes replies back point by point, and concedes with evidence when it is wrong. It re-reviews on push by itself, so there is nothing to trigger and nothing to nudge.
 - **A review cannot be requested on an upstream PR.** The `requestReviews` mutation answers `FORBIDDEN: ptr727 does not have the correct permissions to execute RequestReviews` on `esphome/esphome`, because an outside contributor cannot assign reviewers. It works on the fork, which is the only place it is needed.
 - **Confirm a review covers the current head by commit oid**, never by timestamp, filtering on author and oid together. A thread reply posts as a review authored by the maintainer at the head SHA, which otherwise reads as coverage.
@@ -479,7 +479,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 - **Never build a GitHub comment or reply body inside a double-quoted shell string.** Write it to a file and pass `--body-file`, or `-F body=@file` on a REST call. Backticks in a double-quoted string are command substitution, so a body that mentions a path in code formatting **executes that path**. This is not theoretical: a review reply naming the ruleset apply script in code formatting **executed** it, back when this repository carried its own copy, and that script writes by default, so the posted comment came out with its code spans replaced by command output. Escaping each backtick works and is one missed backslash from repeating the incident. The hazard is the shell's, not that script's, so it survives the copy being retired.
 - **The ruleset apply script writes unless told otherwise, and it is hub-hosted rather than carried here.** Run it from a hub checkout and name this repository explicitly, since it otherwise targets whichever repository the shell is sitting in. Its default mode PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass its `check` mode for read-only validation, which is what you almost always want. The payloads it compares against are the committed [`repo-config/`][repo-config] files.
-- **Markdown links are reference-style everywhere except [`AGENTS.md`][agents] and `.github/copilot-instructions.md`**, which keep inline links because they are agent-instruction files. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
+- **This file uses reference-style links, and it is the one file in this repository that should not.** The fleet rule allows four agent-instruction files to keep inline links, [`AGENTS.md`][agents], [`GOVERNANCE.md`][governance], this one, and `.github/copilot-instructions.md`, on the grounds that they are read one section at a time so a definition at the foot of the file is never reached. The other three take that allowance and this one does not, which is a divergence to close deliberately rather than incidentally. Every other Markdown file in the repository is reference-style by the rule rather than by exception. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
 - **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
@@ -497,7 +497,6 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 <!-- Repo -->
 
-[agents-write-safety]: ./AGENTS.md#repository-boundaries-and-write-safety
 [agents]: ./AGENTS.md
 [api-connection-cap]: #logs-and-the-api-connection-cap
 [apollo-template]: ./templates/apollo-plt-1b.yaml
@@ -512,21 +511,23 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
+[governance]: ./GOVERNANCE.md
+[governance-write-safety]: ./GOVERNANCE.md#repository-boundaries-and-write-safety
 [max17048-template]: ./templates/max17048.yaml
 [norvi-template]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md
 [repo-config]: ./repo-config/
 [repository-tooling-hazards]: #repository-tooling-hazards
-[rgb-led-status-template]: ./templates/rgb-led-status.yaml
 [rgb-led-status]: #rgb-led-status
+[rgb-led-status-template]: ./templates/rgb-led-status.yaml
 [secrets-example]: ./secrets._yaml
 [secrets-template]: ./templates/secrets.yaml
 [strapping-pin-warnings]: #strapping-pin-warnings
 [template-notes]: #template-notes
 [templates]: ./templates/
-[test-workflow]: ./.github/workflows/test-pull-request.yml
 [test]: ./test/
+[test-workflow]: ./.github/workflows/test-pull-request.yml
 [vscode-setup]: #vscode-setup
 [waveshare-camera-template]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-template]: ./templates/waveshare-esp32-s3-eth.yaml
