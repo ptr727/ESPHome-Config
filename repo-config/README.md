@@ -2,9 +2,10 @@
 
 Repository and branch configuration held as committed files, kept out of `.github/` (which holds the GitHub-consumed configuration - workflows, Dependabot). This mirrors the layout the fleet repos use.
 
-- `main.json` plus one `develop` variant - the branch rulesets as the writable API subset (`name`, `target`, `enforcement`, `bypass_actors`, `conditions`, `rules`). The `develop` payload is `develop.json` (`release` repos) or `operational/develop.json` (`operational` repos); this repo is operational, so it carries `operational/develop.json`. These are the canonical expected payloads that the audit (`AUDIT.md`) diffs the live rulesets against.
-- `operational/develop.json` - the `develop` ruleset for **operational** repos (registry `workflowModel: operational`): direct signed pushes, no PR gate. Present at the hub and in operational carries only - a carried `release` repo does not have it. See "Rulesets" below.
-- `configure.sh` - applies the rulesets to a repository via the GitHub API (create or full-payload update, idempotent). Run `repo-config/configure.sh [owner/repo] [release|operational]`; the model may also be passed as the sole argument (`repo-config/configure.sh operational`). With no registry present it infers the model from which `develop` payload is carried (here, `operational`), and an ambiguous layout (both or neither payload) aborts rather than guesses.
+- `main.json` plus one `develop` variant, the branch rulesets as the writable API subset (`name`, `target`, `enforcement`, `conditions`, `rules`). The `develop` payload is `develop.json` (`release` repos) or `operational/develop.json` (`operational` repos), and this repo is operational, so it carries `operational/develop.json`. These are the canonical expected payloads that the audit (`AUDIT.md`) diffs the live rulesets against. `bypass_actors` is deliberately outside the subset: who may bypass a ruleset is a human decision taken in the UI, so no payload declares one and the tooling preserves whatever is live.
+- `operational/develop.json`, the `develop` ruleset for **operational** repos (registry `workflowModel: operational`), taking direct signed pushes with no PR gate. Present in operational carries only, since a `release` repo does not have it. Read the dropped rules as an allowance rather than a prohibition, since a PR into `develop` remains legal and its lint result is reported rather than required. See "Rulesets" below.
+
+The script that applies these payloads is **hub-hosted and run from a hub checkout, not carried here**. It holds nothing per-repo and is one copy for the fleet, and it resolves every payload path against its own directory rather than against the target repo, so a run compares this repo against the hub's payloads and never reads the copies above. Name the target repository explicitly, since the command otherwise defaults to whichever repository the shell is sitting in. Two modes over the GitHub API: `apply` creates-or-updates the settings, the Dependabot security features, and the rulesets idempotently, and `check` is the read-only inverse that exits non-zero on drift.
 
 ## Rulesets
 
@@ -15,13 +16,13 @@ Two workflow models share `main.json` but differ on `develop` (registry `workflo
 
 `main` (both models) requires merge-commit merges (no linear-history rule), signed commits, a passing `Check pull request workflow status job`, resolved review threads, and Copilot review, and blocks force-pushes and deletion - so a `develop -> main` promotion is always gated even when `develop` takes direct commits. Every ruleset intentionally leaves "Require branches to be up to date before merging" **off** - see [AGENTS.md "Branching Model"][agents-branching-model].
 
-**Configure by importing these JSON files, never by hand-building the rules** (hand reconstruction has gone wrong on past setups). The result must be **exactly two rulesets named `develop` and `main`** - the names are load-bearing (`AGENTS.md` and the workflows reference them); only the `develop` *content* varies by model. First remove all legacy classic branch-protection rules and any stray rulesets, then run `configure.sh` (which picks the `develop` payload from the repo's `workflowModel`), or `gh api -X POST repos/<owner>/<repo>/rulesets --input repo-config/<name>.json` per file (operational repos use `operational/develop.json` for `develop`). `gh ruleset` is read-only; creation goes through `gh api`. The required check binds by name and only turns green after the repo's PR workflow runs once. To edit a ruleset, GET it, change the field, and PUT the whole writable subset back (a partial PUT `422`s).
+**Configure by importing these JSON files, never by hand-building the rules** (hand reconstruction has gone wrong on past setups). The result must be **exactly two rulesets named `develop` and `main`**, since the names are load-bearing (`AGENTS.md` and the workflows reference them), and only the `develop` *content* varies by model. First remove all legacy classic branch-protection rules and any stray rulesets, then run the hub's apply script from a hub checkout naming this repository (it picks the `develop` payload from the repo's `workflowModel`), or `gh api -X POST repos/<owner>/<repo>/rulesets --input repo-config/<name>.json` per file (operational repos use `operational/develop.json` for `develop`). `gh ruleset` is read-only, so creation goes through `gh api`. The required check binds by name and only turns green after the repo's PR workflow runs once. To edit a ruleset, GET it, change the field, and PUT the whole writable subset back (a partial PUT `422`s).
 
 To change the canonical rulesets, edit the live rulesets (fleet-wide changes happen at the hub), then regenerate the committed files from the current repo:
 
 ```sh
 repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-# Paginate so a name match on a later page is never missed - the same trap configure.sh guards against.
+# Paginate so a name match on a later page is never missed - the same trap the hub's apply script guards against.
 # --paginate with --jq '.[]' emits one JSON object per ruleset across all pages; jq -s re-assembles them
 # into the single array the selections below expect.
 rulesets=$(gh api --paginate "repos/$repo/rulesets" --jq '.[]' | jq -s '.')
@@ -33,8 +34,11 @@ for name in develop main; do
   count=$(jq --arg n "$name" '[.[] | select(.name==$n)] | length' <<<"$rulesets")
   [ "$count" -eq 1 ] || { echo "expected exactly 1 ruleset named $name, found $count (drift)" >&2; exit 1; }
   id=$(jq --arg n "$name" '.[] | select(.name==$n) | .id' <<<"$rulesets")
+  # bypass_actors is deliberately not projected, matching what the payloads declare.
+  # Including it would write the live bypass list back into the committed file and reintroduce
+  # the very field these payloads stopped carrying, so a regeneration must not restore it.
   gh api "repos/$repo/rulesets/$id" \
-    --jq '{name, target, enforcement, bypass_actors, conditions, rules}' \
+    --jq '{name, target, enforcement, conditions, rules}' \
     | jq -S --indent 4 '.' > "$out"
 done
 ```
@@ -45,7 +49,7 @@ Publish credentials required per mechanism are enumerated in `spec/secrets.json`
 
 ## Repo Settings
 
-The fleet-standard general settings live in [`settings.json`][settings-json] and are applied idempotently by `configure.sh` alongside the rulesets (`gh api PATCH /repos/{owner}/{repo}`). The two settings that depend on per-repo state - `has_discussions` (visibility) and `default_branch` (main-must-exist) - are computed by the script, not stored in the file.
+The fleet-standard general settings live in [`settings.json`][settings-json] and are applied idempotently by the hub's apply script alongside the rulesets (`gh api PATCH /repos/{owner}/{repo}`). The two settings that depend on per-repo state, `has_discussions` (visibility) and `default_branch` (main-must-exist), are computed at apply time rather than stored in the file.
 
 - **Default branch `main`** (the script sets it only when a `main` branch exists, never pointing the default at a missing branch).
 - **Merge methods**: `Allow merge commits` and `Allow squash merging` on, **rebase off** - each branch ruleset then picks its method (merge on `main`, squash on `develop`).
