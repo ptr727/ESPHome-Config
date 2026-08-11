@@ -2,15 +2,15 @@
 
 Repository conventions for GitHub Copilot (and any other AI agent reading this file).
 
-The **canonical guide is [AGENTS.md](../AGENTS.md)** at the repo root - read it first, including the [PR Review Etiquette](../AGENTS.md#pr-review-etiquette) review-loop contract this file's runbook implements. This file is intentionally narrow: commit/PR-title conventions (summarized inline so VS Code's commit-message and PR-title generators have them) plus the GitHub Copilot Review Runbook.
+The **canonical guides are [AGENTS.md](../AGENTS.md) and [GOVERNANCE.md](../GOVERNANCE.md)** at the repo root, where `AGENTS.md` is the entry point read first and `GOVERNANCE.md` holds the rule text. Read them first, including the [PR Review Etiquette](../GOVERNANCE.md#pr-review-etiquette) review-loop contract this file's runbook implements. This file is intentionally narrow: commit/PR-title conventions (summarized inline so VS Code's commit-message and PR-title generators have them) plus the GitHub Copilot Review Runbook.
 
 For code-style rules, see [`CODESTYLE.md`](../CODESTYLE.md) at the repo root - one guide with a General section plus per-language sections (.NET, Python).
 
-Do not duplicate language-specific rules here. **Project-specific conventions and API/behavioral contracts also belong in [AGENTS.md](../AGENTS.md), not here** - this file is intentionally limited to the inline commit/PR-title summary and the GitHub Copilot Review Runbook. Non-Copilot agents (Claude Code, Codex, Cursor, ...) are not directed to this file and don't read it by default, so any rule a reviewer must honor has to live in `AGENTS.md` to be provider-independent.
+Do not duplicate language-specific rules here. **Project-specific conventions and behavioral contracts belong in the local doc that owns the subject, meaning [OPERATIONS.md](../OPERATIONS.md) for ESPHome operations and repository tooling, not here**. This file is intentionally limited to the inline commit/PR-title summary and the GitHub Copilot Review Runbook. Non-Copilot agents (Claude Code, Codex, Cursor, ...) are not directed to this file and don't read it by default, so any rule a reviewer must honor has to live in `AGENTS.md` to be provider-independent.
 
 ## Commit Messages and Pull Request Titles
 
-Summarized for VS Code's generators; the full rules, rationale, and examples are in [AGENTS.md "Pull Request Title and Commit Message Conventions"](../AGENTS.md#pull-request-title-and-commit-message-conventions).
+Summarized for VS Code's generators, with the full rules, rationale, and examples in [GOVERNANCE.md "Pull Request Title and Commit Message Conventions"](../GOVERNANCE.md#pull-request-title-and-commit-message-conventions).
 
 - Imperative subject, <= 72 characters, no trailing period; optional blank-line-separated body for the non-obvious *why*.
 - US English, title case with lowercase short bind words; no vague titles, no `Co-Authored-By:` unless asked, no release-bump magnitude (NBGV handles versioning). Dependabot's `Bump X from Y to Z` titles are fine.
@@ -18,7 +18,7 @@ Summarized for VS Code's generators; the full rules, rationale, and examples are
 
 ## Reviewing Carried Fleet Content
 
-Several of this repository's governance files are carried from a shared template and kept in sync across a fleet of sibling repositories - among them `AGENTS.md`, `CODESTYLE.md`, `WORKFLOW.md`, this file, and the `repo-config/` rulesets. Most of `AGENTS.md` is universal fleet law - every section that states a rule, as opposed to the two that describe this repository's own directory tree and devcontainer, is byte-locked and verified by an automated byte-for-byte match against the template canonical, not by line-by-line review.
+Several of this repository's governance files are carried from a shared template and kept in sync across a fleet of sibling repositories, among them `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md`, this file, and the `repo-config/` rulesets. Most of `GOVERNANCE.md` is universal fleet law, since every section that states a rule, as opposed to the two that describe this repository's own directory tree and devcontainer, is byte-locked and verified by an automated byte-for-byte match against the template canonical, not by line-by-line review.
 
 Two constraints follow when reviewing that content.
 
@@ -27,9 +27,9 @@ Two constraints follow when reviewing that content.
 
 ## GitHub Copilot Review Runbook
 
-> This runbook implements the [AGENTS.md "PR Review Etiquette"](../AGENTS.md#pr-review-etiquette) review-loop contract for GitHub Copilot. Without it in-repo, an agent has no pointer to the reliable Copilot mechanics and falls back to known-broken paths (the no-op `POST /requested_reviewers`, the wrong bot-login filter). In the API snippets below, fill the `ptr727` / `ESPHome-Config` / `<N>` placeholders.
+> This runbook implements the [GOVERNANCE.md "PR Review Etiquette"](../GOVERNANCE.md#pr-review-etiquette) review-loop contract for GitHub Copilot. Without it in-repo, an agent has no pointer to the reliable Copilot mechanics and falls back to known-broken paths (the no-op `POST /requested_reviewers`, the wrong bot-login filter). In the API snippets below, fill the `ptr727` / `ESPHome-Config` / `<N>` placeholders.
 
-Use this section for provider-specific mechanics. The expected review loop *contract* (request review on every push, verify head-SHA coverage, triage findings, reply + resolve, escalate when stuck) is defined in [AGENTS.md -> PR Review Etiquette](../AGENTS.md#pr-review-etiquette). This section only describes how to make GitHub Copilot reliably execute it.
+Use this section for provider-specific mechanics. The expected review loop *contract* (request review on every push, verify head-SHA coverage, triage findings, reply + resolve, escalate when stuck) is defined in [GOVERNANCE.md -> PR Review Etiquette](../GOVERNANCE.md#pr-review-etiquette). This section only describes how to make GitHub Copilot reliably execute it.
 
 ### Triggering and Polling
 
@@ -158,13 +158,13 @@ Issue-level Copilot comments (those in `issues/<N>/comments`) have no resolution
 Reply-body conventions:
 
 - Accepted bug/style fix: include fixing commit SHA and a one-line summary.
-- Declined style comment: cite the rule (AGENTS.md or the CODESTYLE.md language section) and the existing-tree precedent.
+- Declined style comment: cite the rule (GOVERNANCE.md or the CODESTYLE.md language section) and the existing-tree precedent.
 - Declined architecture proposal: one-sentence rationale.
 
 After the final push, sweep-resolve stale older threads for removed code paths.
 
 ## When in Doubt
 
-Read [AGENTS.md](../AGENTS.md) for this repo's conventions. For code-style rules, [`CODESTYLE.md`](../CODESTYLE.md) (its General section plus the relevant language section) is authoritative. Don't restate any of these files' rules in commit bodies or PR descriptions - keep those focused on the change itself.
+Read [AGENTS.md](../AGENTS.md) and [GOVERNANCE.md](../GOVERNANCE.md) for this repo's conventions. For code-style rules, [`CODESTYLE.md`](../CODESTYLE.md) (its General section plus the relevant language section) is authoritative. Don't restate any of these files' rules in commit bodies or PR descriptions, and keep those focused on the change itself.
 
-If you find a gap in the governance itself (this file or AGENTS.md is out of date, a rule is missing, something bit this repo and would bite the next), fix it in the governance docs as part of your change rather than only working around it locally.
+If you find a gap in the governance itself (this file, AGENTS.md, or GOVERNANCE.md is out of date, a rule is missing, something bit this repo and would bite the next), fix it in the governance docs as part of your change rather than only working around it locally.

@@ -66,14 +66,12 @@ My decoding adds the byte `[3]` = learned starts value, and I use ESPHome's Pyth
 
 I ran the whole reverse-engineering effort through [Claude Code][claude-product-claude-code-link] as the driver.
 I started with manual steps learned from my online reverse engineering research, then asking Claude to automate that step, then the next manual step, automate, refine, repeat.
-I asked Claude to create AGENTS.md instructions that describe the process allowing for future reuse, and refining the process documentation along the way based on actual work and gotchas.
+I asked Claude to write up the process so it could be reused, refining that documentation along the way based on the actual work and the gotchas it hit. The result is the playbook below.
 The final validation was to delete all artifacts I manually created, and have Claude drive the complete protocol reverse engineering effort via a single prompt.
 Claude ran every CLI and analysis step itself, `adb`, `pull-apk.sh`, `apktool`, `jadx`, grepping the decompiled source, decoding the byte layout, writing the monitor and the ESPHome component.
 
 The method, the division of labor, and the gotchas are captured so it is repeatable:
 
-- **[AGENTS.md][agents]** - session notes for the next agent:
-  - Project status, the validated protocol cheat-sheet, verified tool invocations, and the tool-sourcing policy.
 - **[BLE-RE-PLAYBOOK.md][ble-re-playbook]** - generalized, low-friction RE method:
   - Agent drives `adb`/`apktool`/`jadx`, the human only plugs in the phone and runs the monitor.
   - Reusable for the next BLE device.
@@ -186,7 +184,6 @@ See [LICENSE][license].
 
 <!-- Repo -->
 
-[agents]: ./AGENTS.md
 [ble-re-playbook]: ./BLE-RE-PLAYBOOK.md
 [easystart-header]: ./components/easystart/easystart.h
 [easystart-init]: ./components/easystart/__init__.py

@@ -2,7 +2,7 @@
 
 This is the single code-style guide for the fleet. The **General** section applies to every language. Each **language section** (.NET, Python) is self-contained: a repo follows only the section(s) for the languages it ships and ignores the rest. A repo keeps the whole file rather than trimming it - an unused-language section costs nothing, the same whole-file model as [`.editorconfig`][root], whose inert `[*.cs]` block a non-.NET repo keeps.
 
-Cross-cutting *process* rules (PR titles, branching, US English, markdown style, comments philosophy, workflow YAML, PR review etiquette) live in [AGENTS.md][agents] and are not repeated here.
+Cross-cutting *process* rules (PR titles, branching, US English, markdown style, comments philosophy, workflow YAML, PR review etiquette) live in [GOVERNANCE.md][governance] and are not repeated here.
 
 ## General
 
@@ -22,7 +22,7 @@ Each language defines a **clean-compile** verification - the combination of buil
 
 ### Analyzer Diagnostics and Suppressions
 
-- **A new port is not a license to silence diagnostics.** Brownfield / just-ported status never justifies relaxing analyzer or linter severities or muting newly surfaced warnings - fix them. (The only brownfield allowance is the one-time git-signing / line-ending migration described in [AGENTS.md][agents] and [README.md][readme], which has nothing to do with code analysis.)
+- **A new port is not a license to silence diagnostics.** Brownfield / just-ported status never justifies relaxing analyzer or linter severities or muting newly surfaced warnings, which are fixed rather than silenced. (The only brownfield allowance is the one-time git-signing / line-ending migration described in [GOVERNANCE.md][governance] and [README.md][readme], which has nothing to do with code analysis.)
 - **Suppress only genuine false-positives or deliberate, documented exceptions**, always at the **narrowest scope that fits**, in this order of preference:
   1. An **in-code annotation on the specific symbol**, with a justification - the language's attribute/comment form, never a blanket pragma spanning a region.
   2. The **owning project's local config** when the exception is project-wide for one project (e.g. a test project's own `.editorconfig` / `pyproject.toml`).
@@ -34,8 +34,8 @@ Each language defines a **clean-compile** verification - the combination of buil
 These apply repo-wide, in every directory:
 
 1. **Markdown linting**: All `.md` files must be lint-clean (error and warning free) via the VS Code `markdownlint` extension. [`.markdownlint-cli2.jsonc`][markdownlint-cli2] at the repo root is the single source of truth - the davidanson `markdownlint` extension and a command-line `markdownlint-cli2` run both read it, so the IDE and CLI stay in lock-step. Rules it deliberately disables (e.g. `MD013` line-length) are **intentional** - do not "fix" them. `MD033` inline HTML stays **enabled**: HTML comments are permitted (markdownlint does not flag them), HTML elements are flagged, and anything with a native markdown equivalent uses the markdown. Fix violations at the source rather than disabling rules.
-2. **Spelling**: All spelling must be clean via the CSpell VS Code integration; words must be correctly spelled in **US English** (the repo-wide convention - see [AGENTS.md][agents]). The shared `cspell.json` sets `"language": "en-US"` so British spellings are flagged - a bare `"en"` accepts both US and British and silently passes the wrong spelling. Project-specific terms go in the shared `cspell.json` `words` list - it is the single source of truth the extension, CLI, and CI all read. The `.code-workspace` must **not** carry its own `cspell.words`/`cSpell.words` block; when externalizing words into `cspell.json`, delete any word list left in the workspace (a leftover one duplicates the list and silently drifts).
-3. **Spelling CI scope**: The enforced CI spell-check gate covers **`**/README.md`, `DEVICES.md`, and `HISTORY.md`**. This widens the fleet default of a root `README.md` plus `HISTORY.md`, exercising the owner's option to widen: the templates, the easystart project, and its Python subtree each ship a README that a reader lands on directly, so all of them must be clean, and [`DEVICES.md`][devices] is the reader-facing device inventory split out of the root README (see [OPERATIONS.md][operations-documenting-a-device]), so it is gated exactly as it was there. It is deliberately **not** all `**/*.md`: repos carry many markdown files full of technical terms, and gating every one of them would mean endlessly padding `cspell.json` just to keep CI green. Broad, live spell-checking across any file (source, markdown, text) is the **cspell editor extension's** job, so typos still surface to whoever is editing. The CI workflow and the `Lint: Spelling` VS Code task carry the identical file list. The cspell one-liner in [AGENTS.md][agents] still shows the unwidened fleet default, because that section is byte-locked carried content this repo cannot edit - where the two disagree, the CI workflow is authoritative. `HISTORY.md` is named explicitly rather than matched by a glob, so a repo that ships no changelog drops it from both surfaces, since cspell errors on a listed file that does not exist. Markdown *linting* (item 1) stays repo-wide `**/*.md` - it does not choke on technical terms.
+2. **Spelling**: All spelling must be clean via the CSpell VS Code integration, and words must be correctly spelled in **US English**, the repo-wide convention (see [GOVERNANCE.md][governance]). The shared `cspell.json` sets `"language": "en-US"` so British spellings are flagged, where a bare `"en"` accepts both US and British and silently passes the wrong spelling. Project-specific terms go in the shared `cspell.json` `words` list, which is the single source of truth the extension, CLI, and CI all read. The `.code-workspace` must **not** carry its own `cspell.words`/`cSpell.words` block, and when externalizing words into `cspell.json`, delete any word list left in the workspace (a leftover one duplicates the list and silently drifts).
+3. **Spelling CI scope**: The enforced CI spell-check gate covers **`**/README.md`, `DEVICES.md`, and `HISTORY.md`**. This widens the fleet default of a root `README.md` plus `HISTORY.md`, exercising the owner's option to widen: the templates, the easystart project, and its Python subtree each ship a README that a reader lands on directly, so all of them must be clean, and [`DEVICES.md`][devices] is the reader-facing device inventory split out of the root README (see [OPERATIONS.md][operations-documenting-a-device]), so it is gated exactly as it was there. It is deliberately **not** all `**/*.md`: repos carry many markdown files full of technical terms, and gating every one of them would mean endlessly padding `cspell.json` just to keep CI green. Broad, live spell-checking across any file (source, markdown, text) is the **cspell editor extension's** job, so typos still surface to whoever is editing. The CI workflow and the `Lint: Spelling` VS Code task carry the identical file list. The cspell one-liner in [GOVERNANCE.md][governance] still shows the unwidened fleet default, because that section is byte-locked carried content this repo cannot edit, and where the two disagree the CI workflow is authoritative. `HISTORY.md` is named explicitly rather than matched by a glob, so a repo that ships no changelog drops it from both surfaces, since cspell errors on a listed file that does not exist. Markdown *linting* (item 1) stays repo-wide `**/*.md`, since it does not choke on technical terms.
 
 ## .NET
 
@@ -197,7 +197,7 @@ Note: Code snippets are illustrative examples only. Replace namespaces/types to 
    - YAML files: 2 spaces
    - JSON files: 4 spaces
 
-5. **Line endings**: not specified here - governed per repo by `.editorconfig` / `.gitattributes` per the [AGENTS.md][agents] "Line Endings" section.
+5. **Line endings**: not specified here, and governed per repo by `.editorconfig` / `.gitattributes` per the [GOVERNANCE.md][governance] "Line Endings" section.
 
 6. **`#region`**: Do not use regions. Prefer logical file/folder/namespace organization.
 7. **Member ordering (StyleCop SA1201)**: const -> static readonly -> static fields -> instance readonly fields -> instance fields -> constructors -> public (events -> properties -> indexers -> methods -> operators) -> non-public in same order -> nested types
@@ -504,19 +504,19 @@ Semantic and static analysis is deliberately out of scope. The downstream ESPHom
 
 ### Conventions
 
-- **Comments follow the repo-wide [comment rules][agents]** in `AGENTS.md`: structured rather than prose, one sentence per line, no file- or class-header summary blocks.
+- **Comments follow the repo-wide [comment rules][governance]** in `GOVERNANCE.md`: structured rather than prose, one sentence per line, no file- or class-header summary blocks.
 - **Keep header helpers safe to include more than once.** `templates/Utils.h` is textually included into generated lambdas, so it must not introduce a namespace-scope definition that is neither `inline` nor `constexpr` - that is an ODR violation waiting for a second include. Class-scope static member functions, `static constexpr` data members, and function-local `static` caches are fine and are the pattern already in use (`GetMultiButtonState` builds its table once into a function-local static). Prefer computing into a function-local static over a namespace-scope global.
 - **Match ESPHome's own naming** in an external component - `snake_case` members and methods, a trailing underscore on private members - so the component reads like the framework it plugs into.
 
 <!-- Repo -->
 
-[agents]: ./AGENTS.md
 [analyzer-diagnostics-and-suppressions]: #analyzer-diagnostics-and-suppressions
 [clang-format]: ./.clang-format
 [clean-compile-verification]: #clean-compile-verification
 [devices]: ./DEVICES.md
+[governance]: ./GOVERNANCE.md
 [history]: ./HISTORY.md
-[line-endings]: ./AGENTS.md#line-endings
+[line-endings]: ./GOVERNANCE.md#line-endings
 [markdown-and-spelling]: #markdown-and-spelling
 [markdownlint-cli2]: ./.markdownlint-cli2.jsonc
 [operations-documenting-a-device]: ./OPERATIONS.md#documenting-a-device
