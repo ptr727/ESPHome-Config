@@ -19,7 +19,7 @@ ESPHome configuration templates and projects.
 
 ### Release Notes <!-- omit from toc -->
 
-Version 2.0, with no published releases yet. See [HISTORY.md][history] for the complete release notes.
+Version 2.0. See [HISTORY.md][history] for the release notes.
 
 ## Table of Contents <!-- omit from toc -->
 
