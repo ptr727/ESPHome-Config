@@ -60,7 +60,7 @@ The fleet-standard general settings live in [`settings.json`][settings-json] and
 
 ## Brownfield Migration (Maintainer Only)
 
-`Require signed commits` rejects any pre-existing unsigned commit, so the first `develop -> main` release on a repo with unsigned history is blocked. Re-signing that history is a non-fast-forward that the `Block force pushes` rule rejects, **and the admin bypass does not cover `git push --force`**. Completing it requires temporarily disabling the ruleset and a maintainer force-push. This is a one-time, maintainer-performed migration that deliberately uses the force-push [GOVERNANCE.md "Git and Commit Rules"][governance-git-and-commit-rules] forbids agents from running. **An agent must never execute it, and surfaces it to the maintainer instead**. Greenfield repos where signing is live before the first commit never hit this.
+`Require signed commits` rejects any pre-existing unsigned commit, so the first `develop -> main` release on a repo with unsigned history is blocked. Re-signing that history is a non-fast-forward that the `Block force pushes` rule rejects, **and the admin bypass does not cover `git push --force`**. Completing it requires temporarily disabling the ruleset and a maintainer force-push. This is a one-time, maintainer-performed migration that deliberately uses the force-push [GOVERNANCE.md "Git and Commit Rules"][governance-git-and-commit-rules] forbids agents from running. **An agent must never execute it, and must surface it to the maintainer instead**. Greenfield repos where signing is live before the first commit never hit this.
 
 <!-- Repo -->
 
