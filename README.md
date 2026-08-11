@@ -2,7 +2,28 @@
 
 ESPHome configuration templates and projects.
 
-## About
+## Build and Distribution <!-- omit from toc -->
+
+- Source Code: [GitHub][github-link]
+- Versioned Releases: [GitHub Releases][releases-link]
+
+### Build Status <!-- omit from toc -->
+
+[![Build Status][build-status-shield]][actions-link]\
+[![Last Commit][last-commit-shield]][commits-link]
+
+### Releases <!-- omit from toc -->
+
+[![GitHub Release][github-release-shield]][releases-link]\
+[![GitHub Pre-Release][github-prerelease-shield]][releases-link]
+
+### Release Notes <!-- omit from toc -->
+
+Version 2.0. See [HISTORY.md][history] for the complete release notes and older versions.
+
+## Table of Contents <!-- omit from toc -->
+
+## Overview
 
 A collection of ESPHome hardware templates and projects I use in my home automation setup.
 
@@ -187,14 +208,56 @@ The templates above run on my own devices, whose per-device configs live in the 
 - Deploy `secrets.yaml`, use `secrets._yaml` as a template for required secrets.
 - In VSCode open remote SSH workspace on the docker host, and open the workspace from config directory.
 
-## Issues
+## Questions or Issues
 
 - For general ESPHome support visit the [ESPHome Discord `#general-support`][discord-dbwxp5r3-link].
+- Ask a question or start a conversation in [Discussions][discussions-link].
 - Only file an [issue][issues-link] if you believe there is a bug in a [template][templates] or one of my projects.
 
 ## Debugging
 
 Building, flashing, and debugging a device outside the live ESPHome instance is documented in [OPERATIONS.md][operations-debugging]: VSCode setup, the devcontainer, Windows, Windows WSL, and PlatformIO. The framework and platform version notes are in [the same file][operations-framework-and-platform-versions].
+
+## 3rd Party Tools
+
+The third-party tools, libraries, and actions this project depends on.
+
+- [actionlint][actionlint-link]: GitHub Actions workflow linter.
+- [Clang-Format][clang-format-link]: C and C++ code formatter.
+- [cspell][cspell-link]: Spell checker.
+- [editorconfig-checker][editorconfig-checker-link]: Line-ending and whitespace linter.
+- [ESPHome][esphome-link]: Firmware builder for ESP microcontrollers.
+- [GH Release][gh-release-link]: GitHub action that creates a release.
+- [GitHub Actions][github-actions-link]: CI and automation runner.
+- [GitHub Dependabot][github-dependabot-link]: Dependency update bot.
+- [Markdown All in One][markdown-all-in-one-link]: Markdown editing extension.
+- [markdownlint-cli2][markdownlint-cli2-link]: Markdown linter.
+- [Nerdbank.GitVersioning][nerdbank-gitversioning-link]: Version computation from git height.
+- [ruff][ruff-link]: Python linter and formatter.
+- [uv][uv-link]: Python package and project manager.
+
+## License
+
+Licensed under the MIT License. See [LICENSE][license] for details.
+
+[![License][license-shield]][license]
+
+<!-- Shields -->
+
+[build-status-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/test-pull-request.yml?branch=main&label=build
+[github-prerelease-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?include_prereleases&label=pre-release
+[github-release-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?label=release
+[last-commit-shield]: https://img.shields.io/github/last-commit/ptr727/ESPHome-Config?label=last%20commit
+[license-shield]: https://img.shields.io/github/license/ptr727/ESPHome-Config?label=license
+
+<!-- Distribution -->
+
+[actions-link]: https://github.com/ptr727/ESPHome-Config/actions
+[commits-link]: https://github.com/ptr727/ESPHome-Config/commits
+[discussions-link]: https://github.com/ptr727/ESPHome-Config/discussions
+[github-link]: https://github.com/ptr727/ESPHome-Config
+[issues-link]: https://github.com/ptr727/ESPHome-Config/issues
+[releases-link]: https://github.com/ptr727/ESPHome-Config/releases
 
 <!-- Repo -->
 
@@ -206,9 +269,9 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [common]: ./templates/common.yaml
 [debug]: ./templates/debug.yaml
 [devices]: ./DEVICES.md
+[easystart]: ./easystart/
 [easystart-readme]: ./easystart/README.md
 [easystart-template]: ./templates/easystart.yaml
-[easystart]: ./easystart/
 [efun-sh331]: ./templates/efun-sh331.yaml
 [esp32-s3-devkitc]: ./templates/esp32-s3-devkitc.yaml
 [esp32-s3-wroom-1-n16r8]: ./templates/esp32-s3-wroom-1-n16r8.yaml
@@ -216,9 +279,11 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [esp32-s3-wroom-2-n32r8v]: ./templates/esp32-s3-wroom-2-n32r8v.yaml
 [ethernet-sensor]: ./templates/ethernet-sensor.yaml
 [gls10-bluetooth-proxy]: ./templates/gls10-bluetooth-proxy.yaml
+[history]: ./HISTORY.md
 [hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
 [kincony-kc868-asr]: ./templates/kincony-kc868-asr.yaml
 [konnected-blaq]: ./templates/konnected-blaq.yaml
+[license]: ./LICENSE
 [logger]: ./templates/logger.yaml
 [max17048]: ./templates/max17048.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
@@ -227,8 +292,8 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [ota]: ./templates/ota.yaml
 [rgb-led-status]: ./templates/rgb-led-status.yaml
 [rocket-astra]: ./templates/rocket-astra.yaml
-[secrets-example]: ./secrets._yaml
 [secrets]: ./templates/secrets.yaml
+[secrets-example]: ./secrets._yaml
 [smarthome-ceilsense]: ./templates/smarthome-ceilsense.yaml
 [sonoff-s31]: ./templates/sonoff-s31.yaml
 [sonoff-th10]: ./templates/sonoff-th10.yaml
@@ -237,13 +302,14 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [test]: ./test/
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
-[waveshare-esp32-s3-eth-camera]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-esp32-s3-eth]: ./templates/waveshare-esp32-s3-eth.yaml
+[waveshare-esp32-s3-eth-camera]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [wemos-lolin32-lite]: ./templates/wemos-lolin32-lite.yaml
 [wifi]: ./templates/wifi.yaml
 
 <!-- External -->
 
+[actionlint-link]: https://github.com/rhysd/actionlint
 [adafruit-product-5323-link]: https://www.adafruit.com/product/5323
 [amazon-dp-b07r6ct3g7-link]: https://www.amazon.com/dp/B07R6CT3G7
 [amazon-sonoff-monitoring-certified-assistant-supporting-dp-link]: https://www.amazon.com/Sonoff-Monitoring-Certified-Assistant-Supporting/dp/B08GKGS197
@@ -255,13 +321,20 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [blog-tuya-to-esphome-link]: https://blog.insanegenius.com/2020/09/10/tuya-to-tasmota-to-esphome/
 [cartft-link]: https://www.cartft.com
 [ceilsense-en-link]: https://ceilsense.nl/en/
+[clang-format-link]: https://clang.llvm.org/docs/ClangFormat.html
+[cspell-link]: https://cspell.org
 [discord-dbwxp5r3-link]: https://discord.gg/dbwxp5R3
 [docker-hub-esphome-link]: https://hub.docker.com/r/esphome/esphome
+[editorconfig-checker-link]: https://github.com/editorconfig-checker/editorconfig-checker
 [efun-sh331w-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
 [esphome-components-ethernet-link]: https://esphome.io/components/ethernet/
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
+[esphome-link]: https://esphome.io
 [espressif-esp32-s3-devkitc-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
+[gh-release-link]: https://github.com/marketplace/actions/gh-release
+[github-actions-link]: https://github.com/actions
 [github-apolloautomation-plt-1-link]: https://github.com/ApolloAutomation/PLT-1/blob/main/Integrations/ESPHome/PLT-1B.yaml
+[github-dependabot-link]: https://github.com/dependabot
 [github-esphome-feature-requests-513-link]: https://github.com/esphome/feature-requests/issues/513
 [github-esphome-network-util-link]: https://github.com/esphome/esphome/blob/dev/esphome/components/network/util.h
 [github-konnected-io-konnected-esphome-link]: https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
@@ -270,14 +343,17 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [gl-inet-products-gl-s10-link]: https://www.gl-inet.com/products/gl-s10/
 [home-assistant-blog-2023-link]: https://www.home-assistant.io/blog/2023/11/06/removal-of-myq-integration/
 [improv-wifi-link]: https://www.improv-wifi.com/
-[issues-link]: https://github.com/ptr727/ESPHome-Config/issues
 [itead-product-sonoff-th-link]: https://itead.cc/product/sonoff-th/
 [kincony-esp32-sd-card-rtc-ds3231-link]: https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
 [konnected-products-smart-garage-door-opener-blaq-myq-alternative-link]: https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
+[markdown-all-in-one-link]: https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one
+[markdownlint-cli2-link]: https://github.com/DavidAnson/markdownlint-cli2
 [microair-link]: https://www.microair.net
+[nerdbank-gitversioning-link]: https://github.com/dotnet/Nerdbank.GitVersioning
 [platformio-esp32-s3-devkitc-link]: https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
 [rocketcontroller-docs-esphome-link]: https://www.rocketcontroller.com/docs/esphome
 [rocketcontroller-link]: https://www.rocketcontroller.com
+[ruff-link]: https://docs.astral.sh/ruff/
 [sensoper-link]: https://sensoper.com/
 [sensoper-shop-link]: https://sensoper.com/shop
 [sensoper-shop-sc-en-i6-ro4-link]: https://sensoper.com/shop/sc-en-i6-ro4/
@@ -287,6 +363,7 @@ Building, flashing, and debugging a device outside the live ESPHome instance is 
 [tasmota-sonoff-th-link]: https://tasmota.github.io/docs/devices/Sonoff-TH/
 [templates-sonoff-thr316-link]: https://templates.blakadder.com/sonoff_THR316.html
 [unexpectedmaker-pros3d-link]: https://esp32s3.com/pros3.html
+[uv-link]: https://docs.astral.sh/uv/
 [waveshare-esp32-s3-eth-link]: https://www.waveshare.com/esp32-s3-eth.htm
 [waveshare-esp32-s3-eth-wiki-link]: https://www.waveshare.com/wiki/ESP32-S3-ETH
 [web-web-20191002041532-link]: https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite
