@@ -64,6 +64,6 @@ The fleet-standard general settings live in [`settings.json`][settings-json] and
 
 <!-- Repo -->
 
-[agents-branching-model]: ../AGENTS.md#branching-model
-[agents-git-and-commit-rules]: ../AGENTS.md#git-and-commit-rules
+[agents-branching-model]: ../GOVERNANCE.md#branching-model
+[agents-git-and-commit-rules]: ../GOVERNANCE.md#git-and-commit-rules
 [settings-json]: ./settings.json
