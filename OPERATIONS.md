@@ -477,8 +477,8 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 
 Sharp edges in the tooling around this repository, each one learned by tripping over it.
 
-- **Never build a GitHub comment or reply body inside a double-quoted shell string.** Write it to a file and pass `--body-file`, or `-F body=@file` on a REST call. Backticks in a double-quoted string are command substitution, so a body that mentions a path in code formatting **executes that path**. This is not theoretical: a review reply containing `` `repo-config/configure.sh` `` ran the script, which writes by default, and the posted comment came out with its code spans replaced by command output. Escaping each backtick works and is one missed backslash from repeating the incident.
-- **[`repo-config/configure.sh`][configure-sh] writes unless told otherwise.** With no arguments it runs in `apply` mode and PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass `check` for the read-only validation, which is what you almost always want: `repo-config/configure.sh check`.
+- **Never build a GitHub comment or reply body inside a double-quoted shell string.** Write it to a file and pass `--body-file`, or `-F body=@file` on a REST call. Backticks in a double-quoted string are command substitution, so a body that mentions a path in code formatting **executes that path**. This is not theoretical: a review reply naming the ruleset apply script in code formatting **executed** it, back when this repository carried its own copy, and that script writes by default, so the posted comment came out with its code spans replaced by command output. Escaping each backtick works and is one missed backslash from repeating the incident. The hazard is the shell's, not that script's, so it survives the copy being retired.
+- **The ruleset apply script writes unless told otherwise, and it is hub-hosted rather than carried here.** Run it from a hub checkout and name this repository explicitly, since it otherwise targets whichever repository the shell is sitting in. Its default mode PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass its `check` mode for read-only validation, which is what you almost always want; the payloads it compares against are the committed [`repo-config/`][repo-config] files.
 - **Markdown links are reference-style everywhere except [`AGENTS.md`][agents] and `.github/copilot-instructions.md`**, which keep inline links because they are agent-instruction files. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
@@ -506,7 +506,6 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
-[configure-sh]: ./repo-config/configure.sh
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [easystart-protocol]: ./easystart/PROTOCOL.md
@@ -517,6 +516,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [norvi-template]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md
+[repo-config]: ./repo-config/
 [repository-tooling-hazards]: #repository-tooling-hazards
 [rgb-led-status-template]: ./templates/rgb-led-status.yaml
 [rgb-led-status]: #rgb-led-status
