@@ -373,7 +373,7 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`test/`](./test/) - one minimal example device config per published template. CI compiles these against the current ESPHome release, so a published template is known to build, and they double as usage samples.
 - [`easystart/`](./easystart/) - the Micro-Air EasyStart soft-starter project: the ESPHome external component, its protocol and reverse-engineering notes, and the standalone BLE monitor utility under `easystart/python`.
 - [`archive/`](./archive/) - retired device configs kept for reference, neither built nor validated.
-- [`repo-config/`](./repo-config/) - the branch ruleset payloads and the general-settings payload, kept out of `.github/` (which is Actions-owned). The script that applies them is hub-hosted rather than carried here.
+- [`repo-config/`](./repo-config/), the branch ruleset payloads and the general-settings payload, kept out of `.github/` (which is Actions-owned). The script that applies them is hub-hosted rather than carried here.
 - [`spec/`](./spec/) - the machine-readable secret-name ground truth this repo's audit checks against.
 - [`host-tools.json`](./host-tools.json) - what a development host needs beyond the fleet baseline, layered over it tighten-only. Empty here, because every tool this repo's procedures need is already declared at its own floor.
 - [`.devcontainer/`](./.devcontainer/) - the offline debugging container described above.
