@@ -72,16 +72,16 @@ Every rule below is a level-two section of [`GOVERNANCE.md`](./GOVERNANCE.md). R
 | Recording a durable lesson or updating governance | `Durable Knowledge and Self-Improvement` |
 | Any push, API mutation, comment, label, or merge, or which checkout the work happens in | `Repository Boundaries and Write Safety` |
 | Quoting data into a comment, commit, test, or doc | `Representative Data in Agent-Authored Text` |
-| Committing, signing, rebasing, force-pushing | `Git and Commit Rules` |
-| Branch choice, promotion, keeping branches in sync | `Branching Model` |
-| Releasing, version bumps, publishing | `Release Model` |
-| A live config repo rather than a code repo | `Operational Repositories` |
-| Onboarding a repo or running a conformance sweep | `Repository Onboarding and Conformance` (hub only, not carried) |
+| Committing, signing, rebasing, force-pushing | `Git and Commit Rules`, packaged as the `git-commit-conventions` Skill |
+| Branch choice, promotion, keeping branches in sync | `Branching Model`, packaged as the `operational-vs-release-workflow` Skill |
+| Releasing, version bumps, publishing | `Release Model`, packaged as the `operational-vs-release-workflow` Skill |
+| A live config repo rather than a code repo | `Operational Repositories`, packaged as the `operational-vs-release-workflow` Skill |
+| Onboarding a repo or running a conformance sweep | `Repository Onboarding and Conformance` (hub only, not carried). Standing up a new repo from a hub checkout is packaged as the `standup-a-repo` Skill, and resyncing one already stood up the same way is `resync-a-repo`, both hub-context only |
 | Running a fleet gate, the review digest, or the config script | `Hub-Hosted Tooling` |
-| Writing a commit message or pull request title | `Pull Request Title and Commit Message Conventions` |
-| Any prose, comment, doc, or line-ending change | `Documentation Style Conventions` |
+| Writing a commit message or pull request title | `Pull Request Title and Commit Message Conventions`, packaged as the `comment-and-doc-style` Skill |
+| Any prose, comment, doc, or line-ending change | `Documentation Style Conventions`, packaged as the `comment-and-doc-style` Skill |
 | Proving work actually happened | `Verification Discipline` |
-| Requesting, answering, or closing a review | `PR Review Etiquette` |
+| Requesting, answering, or closing a review | `PR Review Etiquette`, packaged as the `pr-review-conduct` Skill |
 | Reporting progress or asking the user something | `Communicating with the User` |
 | Editing a workflow YAML file | `Workflow YAML Conventions` |
 | Choosing an OS, runtime, or toolchain target | `Supported Development Platforms` |
@@ -89,3 +89,5 @@ Every rule below is a level-two section of [`GOVERNANCE.md`](./GOVERNANCE.md). R
 | Editor settings and tasks | `Editor and Tasks` |
 | The About panel, description, or repo toggles | `Repository Details` |
 | Where a file belongs in the tree | `Repository Layout` |
+
+Some of the rules above are also packaged as Claude Code / opencode / Codex Skills, hand-authored at `.agents/skills/` in the hub (not a repo-relative link here, since that path is hub-local and not carried into every fleet repo), so they surface automatically instead of needing to be re-read every session. `scripts/` is hub-hosted and reached rather than carried, per "Hub-Hosted Tooling", so run the installer from a hub checkout: `python3 scripts/skills_install.py` (or the `.sh`/`.ps1` wrapper) once per machine, from `github.com/ptr727/ProjectTemplate`, installs them for every repo touched from that machine. `python3 scripts/skills_install.py --report`, also from a hub checkout, says whether this machine is current. A rule that keeps needing to be restated is a sign the install is missing or stale, not that the rule does not exist. Keeping a repo's own carried `.github/copilot-instructions.md` in sync with the hub, without losing that repo's own "Disproved Claims" ledger entries in the process, is `copilot-instructions-keeper`, a skill about maintaining that file rather than a rule extracted from it, since the file itself is read directly by the Copilot bot and stays fully intact everywhere it is carried. Checking, from inside this repo's own session with no operator watching, whether this repo and this machine are actually current against the hub is `fleet-conformance-check`, new content rather than a rule extracted from a section, the counterpart to `resync-a-repo` that needs no standing hub checkout or named target beyond the repo the session is already in, even though its own check fetches a hub checkout to reach `scripts/skills_install.py`. Opening a pull request against a repository outside this fleet, one the maintainer does not control, follows a different workflow entirely, new content rather than a rule extracted from a section, packaged as `upstream-contribution-workflow` and independent of the target repo's own type or workflow model.
