@@ -8,12 +8,18 @@ name: Test pull request action
 # - develop takes direct signed commits, where push runs advisory CI.
 # - main is the promoted snapshot, where the develop -> main promotion PR runs the enforced gate.
 # - check-workflow-status is the ruleset-bound required check, rename it and the ruleset context together.
+# The pull_request branch set names both, since naming main alone matches nothing on a PR into develop.
+# That leaves the validation job unstarted and the aggregator unreported.
+# The PR then reads mergeable with an empty check list, the false clean WORKFLOW.md D1.2 forbids.
+# The duplicate run it costs, once on the PR and again on the push when the merge lands, is accepted.
+# The concurrency group keys on github.ref, and the two runs sit in different groups.
+# A pull_request run is refs/pull/<n>/merge where the push run is refs/heads/develop, so neither cancels the other.
 
 on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
   workflow_dispatch:
 
 concurrency:
