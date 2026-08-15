@@ -325,6 +325,11 @@ After the final push, sweep-resolve stale older threads for removed code paths.
 
 **The entries are this repository's own.** Each names a file and a revision, so a repository holding a copy of this file carries the shape and the rules above rather than these findings, deletes an entry whose subject it does not carry, and records what it has proved itself.
 
+- **`GOVENANCE.md` in the partial-coverage bullet of this file is a misspelling and should read `GOVERNANCE.md`.** Raised as an inline finding, reasoning from the correct spelling earlier in the same bullet and from the file that actually exists at the repository root.
+  - **Disproved by** - reading the sentence the token sits in. It is a quotation, not a reference: "one round here naming `GOVENANCE.md`, a path no diff carries" quotes a path a Copilot review round emitted, as the evidence that a partial round can name a file the diff does not contain. Correcting the spelling would delete the evidence and leave the sentence asserting that a round named a path that does exist, which is the opposite of what it records. The same quotation appears in three further hub files describing the same observed round, so it is a deliberate spelling carried consistently rather than one slip.
+  - **Proved against** - the `Counts unequal` bullet under "Reading a Coverage Line" in this file, carried from `ptr727/ProjectTemplate` `main` at `b09078e`, where the identical token also appears in `scripts/pr_review.py`, `scripts/README.md`, and `TODO.md`.
+  - **Delete when** - the quotation is reworded to mark itself as quoted reviewer output, or the bullet stops citing that round.
+
 ## When in Doubt
 
 Read [AGENTS.md](../AGENTS.md) to find the section that governs your change, and [GOVERNANCE.md](../GOVERNANCE.md) for the rule text itself. For code-style rules, [`CODESTYLE.md`](../CODESTYLE.md) (its General section plus the relevant language section) is authoritative. Don't restate any of these files' rules in commit bodies or PR descriptions, and keep those focused on the change itself.
