@@ -18,7 +18,7 @@ Summarized for VS Code's generators. The full rules, rationale, and examples are
 
 ## Reviewing Carried Fleet Content
 
-Several of this repository's governance files are carried from a shared template and kept in sync across a fleet of sibling repositories, among them `AGENTS.md`, `CODESTYLE.md`, `WORKFLOW.md`, this file, and the `repo-config/` rulesets. Most of `GOVERNANCE.md` is universal fleet law: every section that states a rule, as opposed to the two that describe this repository's own directory tree and devcontainer, is byte-locked and verified by an automated byte-for-byte match against the template canonical, not by line-by-line review. `AGENTS.md` is the thin router and carries three byte-locked sections of its own, with no repository-specific ones.
+Several of this repository's governance files are carried from a shared template and kept in sync across a fleet of sibling repositories, among them `AGENTS.md`, `CODESTYLE.md`, `WORKFLOW.md`, this file, and the `repo-config/` rulesets. Most of `GOVERNANCE.md` is universal fleet law: every section that states a rule, as opposed to the two that describe this repository's own directory tree and devcontainer, is byte-locked and verified by an automated byte-for-byte match against the template canonical, not by line-by-line review. `AGENTS.md` is the thin router and carries three byte-locked sections of its own, `Fleet Bootstrap`, `Context and Delegation Discipline`, and `Where the Rules Live`. Everything above the first of those headings is this repository's own prose, saying what this repository is and which local doc owns which subject, and it is editable like any other repository content.
 
 Three constraints follow when reviewing that content.
 
