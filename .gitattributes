@@ -5,8 +5,8 @@
 * -text
 
 # Exception: scripts must stay LF regardless of the `* -text` default, because a CRLF shebang breaks execution.
-# `.editorconfig` covers `*.sh`, but an extensionless executable matches no extension rule.
-# Pin those here, so git enforces LF on checkout and on `--renormalize`.
+# `.editorconfig` covers content checks, but it does not control Git checkout or renormalization.
+# Pin execution-sensitive paths here, so Git enforces LF on checkout and on `--renormalize`.
 *.sh text eol=lf
 
 # Vanilla `.py` follows the `[*]` default (LF, or CRLF from an operational repo's Windows-native override), since Python's universal newlines accept either.

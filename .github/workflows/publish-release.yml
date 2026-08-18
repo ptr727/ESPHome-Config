@@ -38,7 +38,7 @@ jobs:
     name: Validate sources job
     needs: [plan]
     if: ${{ needs.plan.outputs.publish == 'true' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@0b07a59d7c65d07d8df275a96deaf2e06cbefd51 # 2.0.352
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@537b1837fe90e2288f71034ef96cc4e949937712 # 2.0.376
     permissions:
       contents: read
 
