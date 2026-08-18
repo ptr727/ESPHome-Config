@@ -9,9 +9,10 @@ runs:
       uses: streetsidesoftware/cspell-action@e0668cf020899e887ee8ad4d173c31738a79eae8 # v9.0.1
       with:
         files: |
-          **/README.md
           DEVICES.md
-          HISTORY.md
+          easystart/README.md
+          easystart/python/README.md
+          repo-config/README.md
         incremental_files_only: false
 
     - name: Setup uv step
