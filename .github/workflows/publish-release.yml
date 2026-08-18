@@ -9,68 +9,56 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
+permissions: {}
+
 jobs:
 
-  # Publishes the dispatched branch, main as a release and develop as a prerelease.
-  # NBGV computes the tag from the ref, then the release is created from it.
-  # This is a source-only repo with no build targets.
-  publish:
-    name: Publish project release job
+  assert-dispatch-ref:
+    name: Assert dispatch ref job
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-
       - name: Assert dispatch ref step
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           if [ "${{ github.ref_name }}" != "main" ] && [ "${{ github.ref_name }}" != "develop" ]; then
             echo "::error::Dispatch publish-release from main (release) or develop (prerelease); got ${{ github.ref_name }}."
             exit 1
           fi
 
-      - name: Setup .NET SDK step
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: 10.x
+  plan:
+    name: Plan release job
+    needs: [assert-dispatch-ref]
+    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@5d0fa7f26833f9c932fdc2b191922044efad191e # 2.0.357
+    with:
+      event_name: ${{ github.event_name }}
+      actor: ${{ github.actor }}
+      ref_name: ${{ github.ref_name }}
 
-      # Full history so NBGV can compute the git height for the branch.
-      - name: Checkout code step
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
+  validate:
+    name: Validate sources job
+    needs: [plan]
+    if: ${{ needs.plan.outputs.publish == 'true' }}
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@0b07a59d7c65d07d8df275a96deaf2e06cbefd51 # 2.0.352
+    permissions:
+      contents: read
 
-      # NBGV versions the dispatched ref: main is the public-release ref (clean X.Y.Z), develop a prerelease.
-      - name: Compute version step
-        id: nbgv
-        uses: dotnet/nbgv@master
-
-      # Skip create on an existing tag (no-op republish). A re-dispatch refreshes it.
-      - name: Check for existing release step
-        id: release-exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.nbgv.outputs.SemVer2 }}
-        run: |
-          set -euo pipefail
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      # target_commitish pins the tag to the exact built commit, not the default branch.
-      # The release is that tag plus GitHub's auto source archive, README, and LICENSE, with no build assets.
-      - name: Create GitHub release step
-        if: ${{ steps.release-exists.outputs.exists == 'false' || github.event_name == 'workflow_dispatch' }}
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          generate_release_notes: true
-          tag_name: ${{ steps.nbgv.outputs.SemVer2 }}
-          target_commitish: ${{ steps.nbgv.outputs.GitCommitId }}
-          prerelease: ${{ github.ref_name != 'main' }}
-          files: |
-            LICENSE
-            README.md
+  publish:
+    name: Publish project release job
+    needs: [plan, validate]
+    if: ${{ needs.plan.outputs.publish == 'true' }}
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@5d0fa7f26833f9c932fdc2b191922044efad191e # 2.0.357
+    permissions:
+      contents: write
+      actions: write
+    with:
+      ref: ${{ github.sha }}
+      branch: ${{ github.ref_name }}
+      smoke: false
+      github: true
+      nuget: false
+      dockerhub: false
+      enable_docker: false
+      enable_nuget: false
+      enable_pypi: false
+      enable_executable: false
+      expect_release_assets: false
