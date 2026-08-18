@@ -46,7 +46,7 @@ jobs:
     name: Publish project release job
     needs: [plan, validate]
     if: ${{ needs.plan.outputs.publish == 'true' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@5d0fa7f26833f9c932fdc2b191922044efad191e # 2.0.357
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@537b1837fe90e2288f71034ef96cc4e949937712 # 2.0.376
     permissions:
       contents: write
       actions: write
@@ -60,5 +60,5 @@ jobs:
       enable_docker: false
       enable_nuget: false
       enable_pypi: false
-      enable_executable: false
+      enable_dotnet_publish: false
       expect_release_assets: false
