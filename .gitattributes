@@ -3,3 +3,23 @@
 # git add --renormalize .
 # git ls-files --eol
 * -text
+
+# Exception: scripts must stay LF regardless of the `* -text` default, because a CRLF shebang breaks execution.
+# `.editorconfig` covers content checks, but it does not control Git checkout or renormalization.
+# Pin execution-sensitive paths here, so Git enforces LF on checkout and on `--renormalize`.
+*.sh text eol=lf
+
+# Vanilla `.py` follows the `[*]` default (LF, or CRLF from an operational repo's Windows-native override), since Python's universal newlines accept either.
+# Pin LF only for a `.py` executed directly via its shebang, by path, so it still runs on a Windows-native operational repo.
+# Do not re-add a blanket `*.py text eol=lf`.
+easystart/python/easystart_monitor.py text eol=lf
+
+# The uv tool regenerates uv.lock with LF on every platform, so pin it here.
+# That makes git enforce LF on checkout and renormalize, so a CRLF-default operational repo does not fight the tool on every `uv lock` or `uv sync`.
+# A repo with no lockfile is unaffected, so this pin is forward-declared.
+uv.lock text eol=lf
+
+# Dockerfiles must be LF, because a CRLF breaks RUN heredocs and line continuations.
+# A repo with no Dockerfile is unaffected, so these pins are forward-declared.
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
