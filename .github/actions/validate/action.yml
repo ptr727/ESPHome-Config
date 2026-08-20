@@ -1,0 +1,40 @@
+name: Validate ESPHome sources action
+description: Run repository-specific spelling, Python, and C++ checks.
+
+runs:
+  using: composite
+  steps:
+
+    - name: Spell check repository docs step
+      uses: streetsidesoftware/cspell-action@e0668cf020899e887ee8ad4d173c31738a79eae8 # v9.0.1
+      with:
+        files: |
+          DEVICES.md
+          easystart/README.md
+          easystart/python/README.md
+          repo-config/README.md
+        incremental_files_only: false
+
+    - name: Setup uv step
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+    - name: Lint Python step
+      shell: bash
+      working-directory: easystart/python
+      run: |
+        set -Eeuo pipefail
+        uvx ruff@0.15.22 check .
+        uvx ruff@0.15.22 format --check .
+
+    - name: Lint C++ step
+      shell: bash
+      run: |
+        set -Eeuo pipefail
+        mapfile -t files < <(git ls-files '*.h' '*.hpp' '*.c' '*.cc' '*.cpp' '*.ino')
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "::error::no C/C++ sources found, the discovery pattern stopped matching"
+          exit 1
+        fi
+        printf 'checking %s\n' "${files[@]}"
+        docker run --rm -v "$PWD":/src --workdir /src xianpengshen/clang-tools:19 \
+          clang-format --dry-run --Werror "${files[@]}"

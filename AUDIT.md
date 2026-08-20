@@ -12,7 +12,7 @@ This is an operational (live-config) repo: `main` and `develop` rulesets, genera
 
 Diff the live repository settings against [`repo-config/settings.json`][repo-config-settings]. The two state-dependent settings are not in the file: `has_discussions` follows visibility (public on / private off) and `default_branch` is `main`.
 
-```sh
+```bash
 repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 live=$(gh api "repos/$repo" --jq '{has_wiki,has_projects,allow_merge_commit,allow_squash_merge,allow_rebase_merge,allow_auto_merge,allow_update_branch,delete_branch_on_merge}')
 diff <(jq -S . repo-config/settings.json) <(jq -S . <<<"$live") \
@@ -23,7 +23,7 @@ diff <(jq -S . repo-config/settings.json) <(jq -S . <<<"$live") \
 
 Diff each live ruleset against the committed expected payload with a normalized comparison (sort the order-insensitive `rules[]` on each rule's whole content before diffing, so a reordered but equivalent ruleset does not read as drift). The compared subset is `name`, `target`, `enforcement`, `conditions` and `rules`, and `bypass_actors` sits deliberately outside it, which is the same subset and the same sort key the fleet-wide audit uses. Who may bypass a ruleset is a per-repository human decision taken in the UI, no payload declares one, and the fleet's ruleset tooling treats it that way in both modes, writing the live list back unchanged when it applies a payload and reporting it without asserting when it checks one. Comparing it here would contradict that and report a ruleset finding against this repository for having any bypass actor at all, which is the field's normal state rather than a deviation. This operational carry keeps its `develop` payload at [`repo-config/operational/develop.json`][repo-config-develop].
 
-```sh
+```bash
 repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 # bypass_actors stays outside the projection, since no payload declares one and jq cannot sort the null that leaves.
 # Rules sort on each rule's whole content, matching the key the fleet-wide audit sorts by.
@@ -55,7 +55,7 @@ The result must be exactly two rulesets named `develop` and `main` - a missing r
 
 Confirm each name [`spec/secrets.json`][secrets] requires exists in the stores its mechanism claims - the name lists derive from the spec itself, so this check and the spec cannot drift apart - and no forbidden name is present in any store (names only; values are not readable).
 
-```sh
+```bash
 repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 # Name lists derive from spec/secrets.json (baseline plus any mechanisms, per store claim; forbidden names
 # checked in every store), so this check and the spec cannot drift apart. --paginate so names beyond the

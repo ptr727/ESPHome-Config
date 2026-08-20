@@ -85,8 +85,8 @@ The remaining ESP32 devices are clear: the [garage presence sensor][garage-prese
 [templates]: ./templates/
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
 [upstairs-hallway-plant-sensor]: ./upstairs-hallway-plant-sensor.yaml
-[waveshare-esp32-s3-eth-camera]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-esp32-s3-eth]: ./templates/waveshare-esp32-s3-eth.yaml
+[waveshare-esp32-s3-eth-camera]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 
 <!-- External -->
 

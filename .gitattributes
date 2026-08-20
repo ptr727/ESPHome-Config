@@ -1,5 +1,7 @@
-# Leave line endings alone; .editorconfig + CI (editorconfig-checker) enforce LF.
-# git config --global core.autocrlf false
-# git add --renormalize .
-# git ls-files --eol
-* -text
+# Normalize every detected text file to LF in the index and on checkout.
+# `text=auto` leaves binary files byte-preserved.
+* text=auto eol=lf
+
+# Windows command scripts require CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
