@@ -96,12 +96,10 @@ Pick by where each artifact *goes*, not by language:
   bounded by a declared count, and one side is recorded as owning the prune: the deploy where its
   credential can observe the destination, the host where that credential is deliberately
   write-only.
-- **Source-only / no build** (validate + tag + release): this seam does not apply. A source-only
-  repo carries **no** `build-release-task.yml` (its `appliesTo` excludes it), so there are no leaf
-  tasks and no `get-version`/`github-release` jobs to curate. Its whole release is
-  the standalone `publish-release.yml` on `workflow_dispatch`: a `validate` job (the repo's
-  reusable validation task) gates a publish job that **inlines** NBGV for the tag and
-  `action-gh-release` for the release (tag, auto source archive, README, LICENSE).
+- **Source-only / no build** (validate + tag + release): the repo has no leaf build tasks.
+  Its dispatch-only `publish-release.yml` calls the hub-hosted `build-release-task.yml` after the repo's reusable validation task succeeds.
+  The caller sets `github: true`, every `enable_*` input to false, and `expect_release_assets: false`.
+  The reusable task runs NBGV and creates the release with the tag, automatic source archive, README, and LICENSE.
 
 `get-version-task.yml` installs the .NET SDK only because NBGV needs the runtime to compute the
 version/tag, which is heavyweight but expected even for a non-.NET repo, and acceptable as-is.

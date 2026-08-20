@@ -13,21 +13,16 @@ summary, preserve the existing ending and verify with a byte scan, covers that c
   declared, the redundant per-type LF rules are intentionally omitted, since the default already
   gives shell scripts, Dockerfiles, workflow YAML, `uv.lock`, and every shebang-executed `.py`
   the ending they need without a path-specific pin.
-- **`.gitattributes` mirrors the execution-sensitive classes**: `* -text` (git stores the exact
-  bytes committed and does not normalize) plus explicit `text eol=lf` pins for `*.sh`, Dockerfiles,
-  `uv.lock`, and the shebang-executed `.py` by-path list. Those pins are now redundant with the
-  `[*]` LF default above, since every path they name already gets LF from it, and they stay
-  regardless, as git-level enforcement independent of the editor (a re-normalization tool or a
-  CRLF-configured git client that does not consult `.editorconfig`). Do not add a new
-  `.gitattributes` pin for a path that only needs the default, `.editorconfig`'s `[*]` already
-  covers it. Add one only for a genuinely execution-sensitive path where losing LF breaks
-  execution, matching the existing classes.
+- **`.gitattributes` mirrors the repository-wide defaults**: `* text=auto eol=lf` normalizes every
+  detected text file to LF while leaving binary files byte-preserved. `*.bat` and `*.cmd` override
+  that default to CRLF. Do not add per-language or per-file LF pins where the global LF default
+  already applies. The CRLF-native exception for POSIX-executed paths is defined below.
 - **Both files are required together.** `.editorconfig` governs the editor, `.gitattributes`
   governs git (checkout, commit, `--renormalize`). A repo missing either file, or whose
   `.editorconfig` sets no global `end_of_line` default (for example declares it only under
   `[*.md]`), accumulates files mixed between LF and CRLF, the exact failure these two files
-  prevent together. Carry both files whole (an inert `[*.cs]` block costs nothing in a non-.NET
-  repo), including the `*.sh text eol=lf` pin and any extensionless-script path pins.
+  prevent together. Carry both files whole. An inert `[*.cs]` block costs nothing in a non-.NET
+  repo.
 
 ## Choosing an ending for a new file type
 
@@ -45,14 +40,12 @@ A config repo (registry `workflowModel: operational`) is a view into an applicat
 configuration directory, often the exact tree mounted into that app's container, so its files use
 the ending the app itself reads and writes, and forcing the fleet LF default would fight an app
 that needs CRLF. Set the `[*] end_of_line` default to the app's native ending and record it in the
-registry `lineEndings` field (`lf` or `crlf`): the field is still required for every operational
-repo regardless of value, since a config repo's ending is a load-bearing decision tied to its
-consuming app rather than something to leave implicit, exactly the reasoning this fleet-wide
-default flip demonstrates. Most operational repos need no override today: a Linux-native app whose
-config lives in a Linux container (ESPHome, Home Assistant, a devcontainer-only or HACS config)
-already matches the new `lf` fleet default. CRLF is still declared for a genuinely Windows-native
-editor, for example Vantage InFusion config edited by Design Center on Windows. `release` repos
-keep the `[*] end_of_line = lf` fleet default above. Do not re-normalize an operational repo to
+registry `lineEndings` field (`lf` or `crlf`): the field is required for every operational repo
+because a config repo's ending is a load-bearing decision tied to its consuming app. A
+Linux-native app or container config uses the `lf` fleet default. A Windows-native app that uses
+CRLF requires `[*] end_of_line = crlf` and
+`* text=auto eol=crlf`. `release` repos keep the LF fleet defaults above. Do not re-normalize an
+operational repo to
 the fleet default, that is exactly the over-normalization these per-repo endings exist to
 prevent, whichever direction the fleet default currently points.
 
@@ -63,27 +56,15 @@ subtree), the clean answer is a repo per consumer, each single-platform with its
 CRLF repo, not as a subtree inside a Linux `lf` config repo. Fallback only if a subtree genuinely
 cannot be split out: keep the global default at the primary consumer and pin the odd subtree with
 an `.editorconfig` path override (for example `[<subtree>/**] end_of_line = crlf`) matching its
-consumer. The global `* -text` in `.gitattributes` already preserves those bytes, no extra git pin
-is needed.
+consumer. Pair the same path override in `.gitattributes`, since both layers must resolve the
+path to the same ending.
 
 ## Scripts and extensionless executables
 
-Must be LF. A CRLF shebang (`#!/usr/bin/env bash\r`) breaks execution, and the `[*]` LF default
-already covers an extensionless executable (s6 service scripts `run`/`up`/`finish`, husky or git
-hook scripts like `.husky/pre-commit`) without needing a path-specific `.editorconfig` override,
-since EditorConfig's `[*]` matches any filename including one with no extension. The remaining
-risk is `.gitattributes`, whose `* -text` enforces nothing on its own, so a broad normalization
-pass or a CRLF-configured git client can still flip such a file on checkout regardless of what
-the editor writes. Pin it there: any repo whose tooling ships extensionless scripts adds the
-matching path pin (`Docker/s6-overlay/** text eol=lf` for s6 init, `.husky/pre-commit text
-eol=lf` for husky hooks), so git holds them at LF on checkout and `--renormalize` independent of
-the editor default. This pin is mandatory for any repo that overrides s6 init, uses husky or git
-hooks, or otherwise ships executable scripts. The same explicit-pin rule extends to tool-owned
-file formats the base config does not key on: pin them to whatever ending the tool reads and
-writes, for example KiCad project, footprint, and 3D files (`*.kicad_mod`, `*.kicad_sym`,
-`*.step`), which KiCad writes LF (already the fleet default, so these need no override either
-today, but stay pinned since a tool-owned ending is a fact about the tool, not a coincidence with
-whatever the fleet default currently is).
+Must be LF. A CRLF shebang (`#!/usr/bin/env bash\r`) breaks execution. The paired global LF
+defaults cover extensionless executables, shell scripts, and directly executed Python without
+path-specific pins. A CRLF-native operational repo adds narrow matching LF overrides in both
+files only for scripts it executes on POSIX.
 
 For a type that genuinely needs an ending the `[*]` default no longer supplies (a Windows-native
 tool-owned format outside `.bat`/`.cmd`, or a byte-preserve data directory whose exact bytes the
