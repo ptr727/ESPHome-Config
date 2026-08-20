@@ -58,8 +58,8 @@ repo's copy is wrong in both directions:
 4. If in doubt whether an entry is still valid for the current tree, treat it per the guard skill
    below rather than guessing.
 
-This is the same failure class [`carried-instruction-file-guard`](../carried-instruction-file-guard/SKILL.md)
-exists to stop for `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, and `WORKFLOW.md`: a
+The `carried-instruction-file-guard` skill stops this same failure class for `AGENTS.md`,
+`GOVERNANCE.md`, `CODESTYLE.md`, and `WORKFLOW.md`: a
 routine-sounding overwrite silently deleting content that is not a stale copy of the hub. Run
 that skill's distinctive-phrase probe against this file too before any full-file replace. It is
 not in that skill's own file list because its failure mode, ledger entries rather than fleet

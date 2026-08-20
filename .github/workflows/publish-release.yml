@@ -45,7 +45,7 @@ jobs:
   publish:
     name: Publish project release job
     needs: [plan, validate]
-    if: ${{ needs.plan.outputs.publish == 'true' }}
+    if: ${{ needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' }}
     uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@537b1837fe90e2288f71034ef96cc4e949937712 # 2.0.376
     permissions:
       contents: write

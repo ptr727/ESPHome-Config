@@ -5,8 +5,10 @@ description: >-
   including a continuation of a prior session's task, creates its own git worktree on its own
   feature branch before its first file edit, based on the branch work starts on (develop on both
   fleet workflow models unless the task is explicitly about main-only content, never whichever
-  branch a tool defaulted to), with a standalone-clone fallback when an executor cannot write
-  both the standard worktree and its Git metadata. Also wraps the mechanics:
+  branch a tool defaulted to), preferring a registered worktree in the fleet layout and using a
+  standalone-clone fallback only when the executor cannot write to either the standard worktree
+  location or its Git metadata, and no available approval route grants access. Also wraps the
+  mechanics:
   creating a worktree with git worktree add, the fleet layout convention, listing what is in
   flight, preparing Husky.Net or Python pre-commit hooks in the new tree, and removing a
   worktree and its branch after merge. Use this whenever about to create or edit files in a
@@ -99,20 +101,34 @@ git -C ~/repos/<Repo> fetch origin develop
 git -C ~/repos/<Repo> worktree add ~/repos/worktrees/<Repo>-<task-slug> -b <task-branch> origin/develop
 ```
 
-Before choosing that path, inspect the executor's active write boundaries. A linked worktree
+The registered worktree above is the normal path. It keeps the task visible in `git worktree
+list`, the fleet worktree directory, and IDE worktree discovery. It also leaves the task in a
+durable location the maintainer can inspect after the agent session ends.
+
+Before running that command, inspect the executor's active write boundaries. A linked worktree
 requires write access to both of these locations:
 
 - the intended `~/repos/worktrees/<Repo>-<task-slug>` worktree directory
 - the base clone's `.git/worktrees/` administrative directory, which holds the index and locks
 
-A writable worktree directory does not make the administrative directory writable.
+A writable worktree directory does not make the administrative directory writable. When the
+executor has an approval mechanism, request scoped approval for the standard `git worktree add`
+command. A declared sandbox boundary is the reason to request that approval, not by itself the
+reason to skip the registered worktree.
 
-Use the standard layout when both locations are writable. When either location is outside the
-write boundary, create a standalone clone under a writable temporary root. Name it
-`<temporary-root>/<Repo>-<task-slug>`, fetch immediately, and create the task branch from
-`origin/develop`. A standalone clone keeps its worktree and Git administrative directory under
-the same writable root. It therefore supports edits, explicit-path staging, commits, and branch
-updates without sharing the base clone's index.
+Use the standard layout when both locations are writable or the executor approves the scoped
+write. When approval is unavailable or denied, create a standalone clone under a writable
+temporary root. Name it `<temporary-root>/<Repo>-<task-slug>`, fetch immediately, and create the
+task branch from `origin/develop`. A standalone clone keeps its worktree and Git administrative
+directory under the same writable root. It therefore supports edits, explicit-path staging,
+commits, and branch updates without sharing the base clone's index.
+
+A temporary standalone clone is a degraded handoff, not an equivalent location. The base clone
+does not register it, `git worktree list` does not show it, and an IDE opened on the base clone
+does not discover its changes. The maintainer must navigate to it manually, and the operating
+system may reap it as temporary data. State the absolute path as soon as the fallback is chosen
+and again in the handoff. Do not present work there as ordinarily reviewable from the primary
+workspace.
 
 ```sh
 TASK_ORIGIN="$(git -C <base-clone> remote get-url origin)"
@@ -123,8 +139,8 @@ git -C <temporary-root>/<Repo>-<task-slug> switch -c <task-branch> origin/develo
 
 Do not use a linked worktree under the temporary root when the base clone's Git metadata is
 read-only. If an existing linked worktree must be kept, index operations require the executor's
-scoped approval for that administrative path. Prefer the standalone clone so ordinary Git work
-does not require repeated approval.
+scoped approval for that administrative path. Use the standalone clone only after the standard
+registered path and its approval route are unavailable.
 
 A continuation attaches the task's existing branch rather than forking a fresh one:
 
