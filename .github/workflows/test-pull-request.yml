@@ -8,84 +8,33 @@ name: Test pull request action
 # - develop takes direct signed commits, where push runs advisory CI.
 # - main is the promoted snapshot, where the develop -> main promotion PR runs the enforced gate.
 # - check-workflow-status is the ruleset-bound required check, rename it and the ruleset context together.
+# The pull_request branch set names both, since naming main alone matches nothing on a PR into develop.
+# That leaves the validation job unstarted and the aggregator unreported.
+# The PR then reads mergeable with an empty check list, the false clean WORKFLOW.md D1.2 forbids.
+# The duplicate run it costs, once on the PR and again on the push when the merge lands, is accepted.
+# The concurrency group keys on github.ref, and the two runs sit in different groups.
+# A pull_request run is refs/pull/<n>/merge where the push run is refs/heads/develop, so neither cancels the other.
 
 on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
 
-  # Source lint with the same configs the editor extensions and CLI use, for linter parity.
-  # Markdown, spelling, and workflow YAML run as pinned action wrappers.
-  # editorconfig-checker's action is install-only, so it runs via Docker.
-  lint:
-    name: Lint sources job
-    runs-on: ubuntu-latest
+  validate:
+    name: Validate sources job
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@537b1837fe90e2288f71034ef96cc4e949937712 # 2.0.376
     permissions:
       contents: read
-
-    steps:
-
-      - name: Checkout code step
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Lint Markdown step
-        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
-        with:
-          globs: '**/*.md'
-
-      - name: Spell check step
-        uses: streetsidesoftware/cspell-action@e0668cf020899e887ee8ad4d173c31738a79eae8 # v9.0.1
-        with:
-          files: |
-            **/README.md
-            DEVICES.md
-            HISTORY.md
-          incremental_files_only: false
-
-      - name: Lint workflows step
-        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
-
-      - name: Check EditorConfig step
-        run: docker run --rm -v "$PWD":/check --workdir /check mstruebing/editorconfig-checker:latest
-
-      - name: Setup uv step
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-
-      # Lint the standalone Python utility, the easystart BLE monitor, with ruff.
-      # The version is pinned so an upstream ruff release cannot fail an unrelated change.
-      # The fleet default is unpinned latest, so this is a recorded divergence, see CODESTYLE.md.
-      # Keep the pin identical to the Ruff tasks in .vscode/tasks.json.
-      # pyright stays editor-only via Pylance.
-      - name: Lint Python step
-        working-directory: easystart/python
-        run: |
-          set -euo pipefail
-          uvx ruff@0.15.22 check .
-          uvx ruff@0.15.22 format --check .
-
-      # Style-only check of the committed C++, the easystart component and the template lambda helpers.
-      # The shared .clang-format also drives the editor and the Lint: C++ task, so all three agree.
-      # Semantic analysis stays with the ESPHome compile, which has the compile context clang-tidy would need.
-      # Discovers the tracked sources so a new file is never silently skipped.
-      - name: Lint C++ step
-        run: |
-          set -Eeuo pipefail
-          mapfile -t files < <(git ls-files '*.h' '*.hpp' '*.c' '*.cc' '*.cpp' '*.ino')
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "::error::no C/C++ sources found, the discovery pattern stopped matching"
-            exit 1
-          fi
-          printf 'checking %s\n' "${files[@]}"
-          docker run --rm -v "$PWD":/src --workdir /src xianpengshen/clang-tools:19 \
-            clang-format --dry-run --Werror "${files[@]}"
 
   # Change gate for the compile tests, plus the template matrix definition.
   # An esp-idf build costs minutes, so gate on what each test covers.
@@ -115,7 +64,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           AFTER: ${{ github.sha }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           run_all() {
             echo "compile-test=true" >> "$GITHUB_OUTPUT"
             echo "template-test=true" >> "$GITHUB_OUTPUT"
@@ -151,7 +100,7 @@ jobs:
         env:
           UTILITY: api basic common debug ethernet-sensor logger max17048 ota rgb-led-status secrets temperature time wifi
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           missing=()
           for path in templates/*.yaml; do
             name="$(basename "$path" .yaml)"
@@ -186,13 +135,13 @@ jobs:
       # The encryption key is generated here, so no usable key is committed.
       - name: Create dummy secrets step
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           cp secrets._yaml secrets.yaml
           sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" secrets.yaml
 
       - name: Compile easystart test config step
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           cache="$(mktemp -d)"
           chmod -R 0777 "$cache" .
           docker run --rm --user 1000:1000 \
@@ -200,7 +149,7 @@ jobs:
             --volume "$cache":/cache \
             ptr727/esphome-nonroot:latest \
             bash -c '
-              set -euo pipefail
+              set -Eeuo pipefail
               /entrypoint/cache.sh
               esphome config /config/easystart/test/compile-test.yaml > /dev/null
               esphome compile /config/easystart/test/compile-test.yaml
@@ -234,13 +183,13 @@ jobs:
       # The encryption key is generated here, so no usable key is committed.
       - name: Create dummy secrets step
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           cp secrets._yaml secrets.yaml
           sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" secrets.yaml
 
       - name: Compile template test config step
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           cache="$(mktemp -d)"
           chmod -R 0777 "$cache" .
           docker run --rm --user 1000:1000 \
@@ -248,7 +197,7 @@ jobs:
             --volume "$cache":/cache \
             ptr727/esphome-nonroot:latest \
             bash -c '
-              set -euo pipefail
+              set -Eeuo pipefail
               /entrypoint/cache.sh
               esphome config /config/test/${{ matrix.config }}.yaml > /dev/null
               esphome compile /config/test/${{ matrix.config }}.yaml
@@ -260,14 +209,14 @@ jobs:
   check-workflow-status:
     name: Check pull request workflow status job
     runs-on: ubuntu-latest
-    needs: [ lint, changes, compile-test, template-compile-test ]
+    needs: [ validate, changes, compile-test, template-compile-test ]
     if: always()
     steps:
       - name: Check workflow results step
         run: |
-          set -euo pipefail
-          if [[ "${{ needs.lint.result }}" != "success" ]]; then
-            echo "Job 'lint' did not succeed (${{ needs.lint.result }}); refusing to pass."
+          set -Eeuo pipefail
+          if [[ "${{ needs.validate.result }}" != "success" ]]; then
+            echo "Job 'validate' did not succeed (${{ needs.validate.result }}); refusing to pass."
             exit 1
           fi
           if [[ "${{ needs.changes.result }}" != "success" ]]; then
