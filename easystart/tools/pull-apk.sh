@@ -11,7 +11,7 @@
 # Requires: adb on PATH (winget Google.PlatformTools), phone plugged in with USB debugging
 # authorized. Works in Git Bash (Windows) and macOS/Linux bash (3.2-safe: no mapfile).
 
-set -euo pipefail
+set -Eeuo pipefail
 
 QUERY="${1:?usage: pull-apk.sh <package-or-keyword> [output-dir]}"
 OUTDIR="${2:-.}"
