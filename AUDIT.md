@@ -1,12 +1,11 @@
 # AUDIT.md
 
 How this repository audits itself against its committed baseline and reports drift. This is the
-repo-scoped adaptation of the fleet-wide AUDIT.md kept at the fleet hub (carried per the hub's
-repo-config downstream carry, described in [`docs/repo-config.md`][hub-repo-config-link]), and the
-hub's fleet-wide audit remains authoritative. The ground truth is the hub's own committed
-`repo-config/` payloads and `spec/secrets.json` (this repo carries no local copy of either, per
-the hub carry), and the prose authorities are [`AGENTS.md`][agents], [`GOVERNANCE.md`][governance],
-[`CODESTYLE.md`][codestyle], and [`WORKFLOW.md`][workflow].
+repo-scoped adaptation of the fleet-wide AUDIT.md kept at the fleet hub, and the hub's fleet-wide
+audit remains authoritative. The ground truth is the hub's own committed `repo-config/` payloads
+and `spec/secrets.json` (this repo carries no local copy of either), and the prose authorities are
+[`AGENTS.md`][agents], [`GOVERNANCE.md`][governance], [`CODESTYLE.md`][codestyle], and
+[`WORKFLOW.md`][workflow].
 
 The audit is read-only: it diffs live state against the committed baseline and reports findings,
 and it never applies changes. The verdict vocabulary is [`WORKFLOW.md`][workflow]'s: **operational
@@ -41,9 +40,8 @@ This repo carries no local `spec/secrets.json` either, for the same reason: the 
 forbidden name lists resolve centrally from the registry entry (`publish[]` and `types[]`) rather
 than from anything repo-specific, so a per-repo copy could only restate the hub's own computation
 or drift from it. This repo declares `requiredSecrets: []` and `publish: [{ "target":
-"github-release", "mechanism": "none" }]` in [`registry/repos.json`][hub-registry-link], which
-resolves to no required secret beyond the fleet baseline. Confirm it from a hub checkout at
-`main`:
+"github-release", "mechanism": "none" }]` in the hub's registry, which resolves to no required
+secret beyond the fleet baseline. Confirm it from a hub checkout at `main`:
 
 ```sh
 python3 spec/audit.py ESPHome-Config
@@ -56,7 +54,7 @@ equivalent outcome in a non-standard form is a **drift finding**. N/A items are 
 counted as failures. Surface findings as repository issues, and fixes land as direct signed
 commits to `develop` per [GOVERNANCE.md "Branching Model"][governance-branching-model]. To
 re-apply the whole baseline, run the hub-hosted `configure.sh apply` from a hub checkout, naming
-this repository and its model (see [`docs/repo-config.md`][hub-repo-config-link]).
+this repository and its model.
 
 <!-- Repo -->
 
@@ -65,8 +63,3 @@ this repository and its model (see [`docs/repo-config.md`][hub-repo-config-link]
 [governance]: ./GOVERNANCE.md
 [governance-branching-model]: ./GOVERNANCE.md#branching-model
 [workflow]: ./WORKFLOW.md
-
-<!-- External -->
-
-[hub-registry-link]: https://github.com/ptr727/ProjectTemplate/blob/main/registry/repos.json
-[hub-repo-config-link]: https://github.com/ptr727/ProjectTemplate/blob/main/docs/repo-config.md
