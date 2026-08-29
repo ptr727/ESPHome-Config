@@ -55,6 +55,26 @@ Use each tool's official casing in task labels, docs, and prose: `.NET` (not `.N
   for what a machine reads: a tool or package name (`markdownlint`), a settings key, a heading
   anchor, a file extension.
 
+## Docker lint authorization
+
+A restricted executor treats Docker socket access, image fetching, and repository exposure as
+separate permissions. Repository exposure needs explicit maintainer approval even when the mount
+is read-only. Use the hub's `scripts/docker_lint.py` wrapper for the standard lint shape. It
+discovers targets, pulls images in a separate phase, resolves each digest, and announces the
+boundary before repository mounts begin. Each Docker command has a timeout and visible result.
+Lint containers disable networking and mount the checkout read-only. Persist approval only when
+the executor constrains that whole shape. Never allow an unconstrained `docker run` prefix.
+PSScriptAnalyzer downloads its pinned module in a separate container that has network access and
+no repository mount. `GOVERNANCE.md` "Running the Linters Locally (Known-Working Invocations)"
+owns the exact invocation and full authorization model.
+
+Agent-specific authorization stays in provider-labeled bullets so one agent's configuration does
+not read as a shared requirement:
+
+- **Codex:** rules cannot safely cover changing worktree paths and digests. Smart Approvals can
+  prompt per task. No-prompt operation is supported only inside an external sandbox because it
+  removes command-wide protection.
+
 ## Markdown formatting
 
 - **Reference-style links everywhere**, except the four files read one section at a time rather
@@ -194,7 +214,7 @@ file type, operational-repo overrides, extensionless-script pins, and auditing, 
 ## Carried files reference no coordination machinery
 
 `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`,
-the `repo-config/` and `spec/` files, and the carried `AUDIT.md` never reference the template repo
+the `spec/` files and the carried `AUDIT.md` never reference the template repo
 (in prose or a link), and never name a sibling fleet repo as an illustrative example. State the
 behavior a carried rule needs, not the coordination flow that produced it, the maintainer supplies
 the destination out of band. A contextually relevant link to a related project (the image this
@@ -204,8 +224,8 @@ hub-hosted tool the reader runs, are in `references/carried-doc-references.md`.
 
 ## PR titles and commit messages
 
-- **Format**: an imperative subject, 72 characters or fewer, no trailing period ("Add 24-hour
-  PM2.5 average sensor", not "Added X" or "Adds X"). An optional body, blank-line separated,
+- **Format**: an imperative subject, 72 characters or fewer, no trailing period ("Add 24-Hour
+  PM2.5 Average Sensor", not "Added X" or "Adds X"). An optional body, blank-line separated,
   explains *why* the change is being made when that is non-obvious, the diff already shows *what*.
 - **Rules**: no vague titles (`update stuff`, `wip`). Dependabot's default `Bump X from Y to Z`
   titles are fine as-is. No `Co-Authored-By:` lines unless the developer explicitly asks. No
@@ -217,11 +237,11 @@ hub-hosted tool the reader runs, are in `references/carried-doc-references.md`.
   *EPA-Corrected*, *24-Hour*).
 
 ```text
-Add structured logging extensions to library
-Pin softprops/action-gh-release to commit SHA
-Drop net8.0 multi-targeting from console project
+Add Structured Logging Extensions to Library
+Pin softprops/action-gh-release to Commit SHA
+Drop net8.0 Multi-Targeting from Console Project
 Bump xunit.v3 from 3.2.2 to 3.3.0
-Clarify devcontainer setup steps in README
+Clarify devcontainer Setup Steps in README
 ```
 
 ## Quantitative claims

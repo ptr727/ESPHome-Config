@@ -41,11 +41,20 @@ visible comments, routinely still carries a finding nobody has answered. Treatin
 2. A review is confirmed on the **current head SHA**, matched by commit SHA rather than assumed
    from a green merge-state. A push makes checks go green *before* the re-review lands, and the
    matched review is **read**, not just counted. A review can carry the head SHA and still decline
-   the PR outright, or say it read only part of the changed files.
+   the PR outright, or say it read only part of the changed files. `pr_review.py`'s
+   `review_on_head` names Copilot's own coverage specifically, the currently required reviewer,
+   not "no review of any kind covers this head": a trialed advisory reviewer (CodeRabbit,
+   Qodo) carrying the exact head under `other_reviewed`, with an empty review body and no new
+   threads, is its own ordinary "reviewed, nothing to flag" shape, not a missing review (#1066).
 3. **Every** finding on that head SHA is closed: threads resolved, issue-level comments (which
    have no resolve action) triaged and replied to, **and** the low-confidence findings collapsed
    in the review body investigated and answered. Those appear in no thread, so polling threads
-   alone reports a clean pass while they stand.
+   alone reports a clean pass while they stand. The same holds for CodeRabbit's own
+   "outside diff range" comments (`cr_outside_diff` in `pr_review.py`'s digest) and for Qodo's
+   comment-only findings (`qodo_open`): neither opens a `reviewThreads` entry either, so
+   give each one the same triage the low-confidence findings above already get (#1058). Qodo's own
+   `Resolved`/`Dismissed` self-tracked badge is a fast pre-triage signal, not a substitute for
+   reading the finding, spot-verify against `gh pr diff` rather than trusting it outright.
 4. Nothing in the review was a shape the tooling could not read (an unrecognized heading, a moved
    section, an unfamiliar coverage wording). An unrecognized shape blocks the gate on its own.
    File an issue naming it and quoting the body, rather than guessing what the new wording
@@ -57,12 +66,19 @@ full stop, whatever the merge-state field says.
 
 ## Expected review loop
 
+Open every fleet-owned pull request ready for review. Draft state delays the loop and causes
+reviewers to skip, so it has no place in the internal feature-to-develop or develop-to-main
+workflow. The separately documented `upstream-contribution-workflow` may use a draft while a
+third-party contribution is still being prepared for upstream review.
+
 Opening a pull request starts this loop by default. Creating the PR is not a terminal handoff.
-Only an explicit maintainer instruction may stop, defer, or alter the loop. A draft state, silence,
-or a request that says only "open a PR" is not such an instruction.
+Only an explicit maintainer instruction may stop, defer, or alter the loop. Silence or a request
+that says only "open a PR" is not such an instruction.
 
 Run every `scripts/pr_review.py` command below from a hub checkout. The script is hosted there and
 is never carried into a downstream repository.
+
+Run `local-strict-review` against the branch's current diff before step 1's push, and again before any fix push under outcome 1 below.
 
 1. Push changes to the PR branch and open the pull request when it does not exist.
 2. Run `scripts/pr_review.py status` once in the foreground and read its output.
@@ -78,14 +94,19 @@ is never carried into a downstream repository.
 7. Reply to each thread and resolve what was addressed.
 8. Re-run the loop after every fix push until the checks are green and no finding remains open.
 
+The review effort setting is user-controlled. The workflow never selects or changes it. `status` reports `Lite`, `Balanced`, or `Max` when the completed review exposes that metadata, and distinguishes an inherited `Default (<level>)` from an explicit choice. Missing effort metadata reports `unknown` and does not change coverage or completion. A pending effort-labeled request can complete without a `copilot_work_started` timeline event, so absence of that event never proves the request is abandoned. The bounded timeout reports `PENDING` when no review or terminal answer arrives. After a timeout with `requested=yes`, rerun `wait` for another bounded interval by default because the request may still be active. If the maintainer directs a retry, remove Copilot in the pull request UI, add it again, and rerun `wait`. This recovery replaces only the review request and never changes the effort setting.
+
 Drive to green, a review confirmed on the latest head SHA and every actionable finding closed,
 then apply the Merge Gate above. **Never exit the loop early.** A round count is not a stopping
 condition, and neither is patience running out. Reporting only that the PR was opened is an early
 exit unless the maintainer explicitly instructed the agent not to monitor or drive its review.
 
+After an authorized merge, run the `repo-worktree` post-merge cleanup procedure unless the user explicitly asks to retain the checkout or branch. The pull request loop is incomplete while its finished worktree or local task branch remains. It is also incomplete until the base clone returns to fetched and fast-forwarded `develop`.
+
 ## Every finding ends in one of five outcomes
 
-1. **Real, so fix it.** Reply with the fixing commit SHA. For a finding on platform-specific code
+1. **Real, so fix it.** Run `local-strict-review` against the branch's current diff before pushing
+   the fix, then reply with the fixing commit SHA. For a finding on platform-specific code
    (PowerShell, a macOS- or WSL-only path), "fixed" means executed on that platform, per
    `agent-conduct` "Before Claiming Done": a fix reasoned out by analogy to a tested equivalent
    elsewhere is not yet fixed, and the reply says so rather than claiming the SHA closes it.

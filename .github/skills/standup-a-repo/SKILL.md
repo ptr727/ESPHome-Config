@@ -51,10 +51,13 @@ maintainer can supply what section 0A lists.
    section 2, then write or repair its `registry/repos.json` entry and confirm it with
    `spec/validate.py`.
 
-4. **The instruction set, before authoring anything.** STANDUP.md section 1A: carry `AGENTS.md`,
-   `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md` and `AUDIT.md`, adapted rather than cloned for
-   the ones that describe a repo, plus `.markdownlint-cli2.jsonc` and `cspell.json`. Read
-   `CODESTYLE.md` and the `GOVERNANCE.md` documentation-style rules before writing any repo
+4. **The instruction set, before authoring anything.** STANDUP.md section 1A: carry `CLAUDE.md`,
+   `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md` and `AUDIT.md`, adapted rather
+   than cloned for the ones that describe a repo, plus `.markdownlint-cli2.jsonc` and
+   `cspell.json`. `CLAUDE.md` is the fixed, verbatim `@AGENTS.md`-import file that gets
+   `AGENTS.md` into a Claude Code session's context at all, a separate baseline entry from
+   `AGENTS.md` itself, so carrying one without the other still leaves that provider unconfigured.
+   Read `CODESTYLE.md` and the `GOVERNANCE.md` documentation-style rules before writing any repo
    content of your own, the same window-closes shape as signing in step 1.
 
 5. **Capture the source, if one exists.** STANDUP.md section 1B, only when the repo's content
@@ -74,9 +77,12 @@ maintainer can supply what section 0A lists.
    inventing a shape.
 
 8. **Settings, rulesets, and secrets.** STANDUP.md section 4: confirm the remote and the GitHub
-   repository agree before running anything else here, then apply with
-   `repo-config/configure.sh apply owner/repo release|operational` and check with the same
-   command's `check` subcommand, never from a hand-built or carried copy.
+   repository agree before running anything else here, then run
+   `repo-config/configure.sh check owner/repo release` (substitute `operational` for an
+   operational repo) from the hub at `main`. A non-zero exit there means drift was found, not a
+   command failure. Review what it reports. Then run the same command's `apply` subcommand, which
+   idempotently reconciles the repo to the full committed configuration regardless of what `check`
+   reported, never from a hand-built or carried copy.
 
 9. **Verify with the audit.** STANDUP.md section 5: run `AUDIT.md` end to end. The repo is stood
    up only when it passes for its type, or its residual deltas are tracked in

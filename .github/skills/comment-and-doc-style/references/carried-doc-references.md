@@ -7,7 +7,7 @@ doc.
 ## Which files this governs
 
 `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`,
-the `repo-config/` and `spec/` files, and the carried `AUDIT.md`, the files the fleet carries
+the `spec/` files and the carried `AUDIT.md`, the files the fleet carries
 verbatim or at `intent` fidelity from the hub into every repo. This rule governs carried template
 content only. A repo's own `README.md` and topical docs are its own content, never carried
 verbatim, and this rule does not reach them.

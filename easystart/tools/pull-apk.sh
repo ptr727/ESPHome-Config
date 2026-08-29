@@ -20,14 +20,17 @@ OUTDIR="${2:-.}"
 clean() { tr -d '\r' | sed 's/^package://'; }
 
 [ "$(adb get-state 2>/dev/null || true)" = "device" ] || {
-  echo "no authorized adb device - plug in the phone, enable USB debugging, and approve the" \
-       "on-screen prompt (run 'adb devices' to check)." >&2
-  exit 1
+    echo "no authorized adb device - plug in the phone, enable USB debugging, and approve the" \
+        "on-screen prompt (run 'adb devices' to check)." >&2
+    exit 1
 }
 
 # Resolve the package name (exact, or first substring match).
 matches=$(adb shell pm list packages | clean | grep -iF -- "$QUERY" || true)
-[ -n "$matches" ] || { echo "no installed package matching '$QUERY'" >&2; exit 1; }
+[ -n "$matches" ] || {
+    echo "no installed package matching '$QUERY'" >&2
+    exit 1
+}
 count=$(printf '%s\n' "$matches" | grep -c .)
 PKG=$(printf '%s\n' "$matches" | head -1)
 [ "$count" -eq 1 ] || echo "note: $count packages match '$QUERY'; using '$PKG'" >&2
@@ -44,21 +47,24 @@ echo "version: $VNAME (code $VCODE)"
 # APK path(s) - more than one means a split APK.
 PATHS=()
 while IFS= read -r line; do
-  [ -n "$line" ] && PATHS+=("$line")
+    [ -n "$line" ] && PATHS+=("$line")
 done < <(adb shell pm path "$PKG" | clean)
-[ "${#PATHS[@]}" -gt 0 ] || { echo "no APK paths returned for $PKG" >&2; exit 1; }
+[ "${#PATHS[@]}" -gt 0 ] || {
+    echo "no APK paths returned for $PKG" >&2
+    exit 1
+}
 
 mkdir -p "$OUTDIR"
 BASE="${PKG}-${VNAME}-${VCODE}"
 
 if [ "${#PATHS[@]}" -eq 1 ]; then
-  DEST="$OUTDIR/${BASE}.apk"
-  adb pull "${PATHS[0]}" "$DEST" >/dev/null
-  echo "pulled: $DEST"
+    DEST="$OUTDIR/${BASE}.apk"
+    adb pull "${PATHS[0]}" "$DEST" >/dev/null
+    echo "pulled: $DEST"
 else
-  DEST="$OUTDIR/${BASE}"
-  mkdir -p "$DEST"
-  for p in "${PATHS[@]}"; do adb pull "$p" "$DEST/" >/dev/null; done
-  echo "pulled ${#PATHS[@]} split APKs to: $DEST/"
-  echo "(merge with apkeditor/apktool if a single APK is needed)"
+    DEST="$OUTDIR/${BASE}"
+    mkdir -p "$DEST"
+    for p in "${PATHS[@]}"; do adb pull "$p" "$DEST/" >/dev/null; done
+    echo "pulled ${#PATHS[@]} split APKs to: $DEST/"
+    echo "(merge with apkeditor/apktool if a single APK is needed)"
 fi

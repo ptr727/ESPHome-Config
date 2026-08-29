@@ -11,7 +11,7 @@ An operational discovery is written down as part of the change that surfaced it,
 - **A mechanism that stopped working, and whatever replaced it**, goes in the section that owns the subject. Record the replacement and the reason the old route failed, so the next agent does not retry it.
 - **A procedure carried out for the first time** gets a section describing how, not that it happened. Write the recipe someone would follow, and name the command or the file rather than narrating the session.
 - **A fact established by running something** is recorded with what proved it, since a claim nobody can re-derive gets doubted and re-tested. Prefer the observed output over an assertion.
-- **A defect in the carried fleet content** (`AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`, `repo-config/`, `spec/`, and `AUDIT.md`) is reported upstream rather than patched here, because a local edit registers as drift and fails the audit. Filing that report is a **cross-repository write and needs the maintainer's explicit permission for that specific repository in the current session**, per [Repository Boundaries and Write Safety][governance-write-safety]. Ask, do not assume.
+- **A defect in the carried fleet content** (`AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, `WORKFLOW.md`, `.github/copilot-instructions.md`, and `AUDIT.md`, plus the hub-hosted `repo-config/` and `spec/secrets.json` this repository reaches rather than carries) is reported upstream rather than patched here, because a local edit registers as drift and fails the audit. Filing that report is a **cross-repository write and needs the maintainer's explicit permission for that specific repository in the current session**, per [Repository Boundaries and Write Safety][governance-write-safety]. Ask, do not assume.
 - **Nothing here is a changelog.** State the current mechanism in the present tense, per the documentation rules in `GOVERNANCE.md`. The before-and-after belongs in the commit message.
 - **`git blame` does not establish who wrote a line.** Agent commits carry the maintainer's `noreply` identity by policy, so blame attributes agent-authored prose to the maintainer just as it does their own. The `AGENTS.md` carve-out for Unicode the developer deliberately typed cannot be claimed from blame output, and a review flagging non-ASCII is answered by removing it rather than by defending it with an authorship claim the repository cannot support.
 
@@ -478,18 +478,24 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 Sharp edges in the tooling around this repository, each one learned by tripping over it.
 
 - **Never build a GitHub comment or reply body inside a double-quoted shell string.** Write it to a file and pass `--body-file`, or `-F body=@file` on a REST call. Backticks in a double-quoted string are command substitution, so a body that mentions a path in code formatting **executes that path**. This is not theoretical: a review reply naming the ruleset apply script in code formatting **executed** it, back when this repository carried its own copy, and that script writes by default, so the posted comment came out with its code spans replaced by command output. Escaping each backtick works and is one missed backslash from repeating the incident. The hazard is the shell's, not that script's, so it survives the copy being retired.
-- **The ruleset apply script writes unless told otherwise, and it is hub-hosted rather than carried here.** Run it from a hub checkout and name this repository explicitly, since it otherwise targets whichever repository the shell is sitting in. Its default mode PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass its `check` mode for read-only validation, which is what you almost always want. The payloads it compares against are the committed [`repo-config/`][repo-config] files.
+- **The ruleset apply script writes unless told otherwise, and it is hub-hosted rather than carried here.** Run it from a hub checkout and name this repository explicitly, since it otherwise targets whichever repository the shell is sitting in. Its default mode PATCHes repository settings, toggles Dependabot features, and PUTs both branch rulesets. Pass its `check` mode for read-only validation, which is what you almost always want. The payloads it compares against are the hub's own committed `repo-config/` files. This repository carries no local copy, per [AUDIT.md "General Settings and Rulesets"][audit-general-settings-and-rulesets].
 - **This file uses reference-style links, and it is the one file in this repository that should not.** The fleet rule allows four agent-instruction files to keep inline links, [`AGENTS.md`][agents], [`GOVERNANCE.md`][governance], this one, and `.github/copilot-instructions.md`, on the grounds that they are read one section at a time so a definition at the foot of the file is never reached. The other three take that allowance and this one does not, which is a divergence to close deliberately rather than incidentally. Every other Markdown file in the repository is reference-style by the rule rather than by exception. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
-- **Never mount the live checkout into a third-party lint container.** `secrets.yaml` holds the live secrets and is git-ignored. [`secrets._yaml`][secrets-example] is the tracked placeholder. Build a temporary snapshot from tracked and intended untracked files, then mount that snapshot read-only. The Git exclusion rules keep `secrets.yaml` out without maintaining a second exclusion list.
+- **Never mount the live checkout into a third-party lint container.** `secrets.yaml` holds the live secrets and is git-ignored. [`secrets._yaml`][secrets-example] is the tracked placeholder. Build a temporary snapshot from tracked and intended untracked files, mount that snapshot read-only, and remove it when done. The Git exclusion rules keep `secrets.yaml` out without maintaining a second exclusion list.
 
   ```shell
+  set -Eeuo pipefail
+  repo_root="$(git rev-parse --show-toplevel)"
   lint_root="$(mktemp -d /tmp/esphome-lint.XXXXXX)"
-  git ls-files --cached --others --exclude-standard -z | tar --null -T - -cf - | tar -xf - -C "$lint_root"
-  chmod -R a+rX "$lint_root"
-  docker run --rm -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
+  trap 'rm -rf "$lint_root"' EXIT
+  git -C "$repo_root" ls-files --cached --others --exclude-standard -z | tar -C "$repo_root" --null -T - -cf - | tar -xf - -C "$lint_root"
+  docker run --rm --network=none --user "$(id -u):$(id -g)" -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
   ```
+
+  `--user "$(id -u):$(id -g)"` runs the container as the invoking host user rather than the image's own default, so it reads `$lint_root` through the same owner permission bits `mktemp -d`'s default `0700` already grants, with no `chmod` opening it to any other local account. This assumes a standard rootful Docker daemon, where the container's user namespace is the host's own. Under **rootless** Docker the daemon runs in its own user namespace, so the host UID passed to `--user` maps to an unrelated subordinate UID inside the container rather than to the owner of the bind mount, and the snapshot becomes unreadable instead. On a rootless daemon, `chmod -R o+rX "$lint_root"` after the tar step is the fallback, accepting the wider local-account readability for the run's duration. The trap removes the snapshot on exit either way.
+
+  **This includes the hub's `scripts/docker_lint.py` wrapper, and it cannot currently take this snapshot as its `--root`.** Its own target discovery runs `git -C "$root" ls-files`, and the snapshot above deliberately holds only the `git ls-files` output, not `.git` itself, so `--root "$lint_root"` fails with "not a git repository" before any linter runs. Passing the live checkout instead would defeat the whole point of the snapshot. Until the wrapper accepts a plain snapshot or file manifest (tracked upstream as [ptr727/ProjectTemplate#1090][hub-issue-1090]), lint this repository with the direct `docker run` invocations above rather than `docker_lint.py`.
 
 - **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
 - **A compile job that fails in about 18 seconds is a registry timeout, not a template defect.** The compile jobs pull the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image, and a slow Docker Hub kills the job with `registry-1.docker.io ... context deadline exceeded` before any ESPHome work starts. A real esp-idf compile runs for minutes, so the duration tells the two apart at a glance. Re-run the job rather than reading the template for a fault that is not there.
@@ -508,6 +514,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [agents]: ./AGENTS.md
 [api-connection-cap]: #logs-and-the-api-connection-cap
 [apollo-template]: ./templates/apollo-plt-1b.yaml
+[audit-general-settings-and-rulesets]: ./AUDIT.md#general-settings-and-rulesets
 [ble-issue]: ./easystart/ESPHOME-BLE-ISSUE.md
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
@@ -525,7 +532,6 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [norvi-template]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md
-[repo-config]: ./repo-config/
 [repository-tooling-hazards]: #repository-tooling-hazards
 [rgb-led-status]: #rgb-led-status
 [rgb-led-status-template]: ./templates/rgb-led-status.yaml
@@ -555,6 +561,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
 [flo-r1der-link]: https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
+[hub-issue-1090]: https://github.com/ptr727/ProjectTemplate/issues/1090
 [option-zero-link]: https://github.com/Option-Zero/esphome-components
 [packages-link]: https://esphome.io/components/packages
 [substitutions-link]: https://esphome.io/components/substitutions

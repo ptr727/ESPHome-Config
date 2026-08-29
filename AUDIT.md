@@ -1,88 +1,68 @@
 # AUDIT.md
 
-How this repository audits itself against its committed baseline and reports drift. This is the repo-scoped adaptation of the fleet-wide AUDIT.md kept at the fleet hub (carried per the [repo-config downstream carry][repo-config-readme]), and the hub's fleet-wide audit remains authoritative. The ground truth here is the committed [`repo-config/`][repo-config] payloads and [`spec/secrets.json`][secrets], and the prose authorities are [`GOVERNANCE.md`][governance], [`CODESTYLE.md`][codestyle], and [`WORKFLOW.md`][workflow].
+How this repository audits itself against its committed baseline and reports drift. This is the
+repo-scoped adaptation of the fleet-wide AUDIT.md kept at the fleet hub, and the hub's fleet-wide
+audit remains authoritative. The ground truth is the hub's own committed `repo-config/` payloads
+and `spec/secrets.json` (this repo carries no local copy of either), and the prose authorities are
+[`AGENTS.md`][agents], [`GOVERNANCE.md`][governance], [`CODESTYLE.md`][codestyle], and
+[`WORKFLOW.md`][workflow].
 
-The audit is read-only: it diffs live state against the committed baseline and reports findings; it never applies changes. The verdict vocabulary is [`WORKFLOW.md`][workflow]'s: **operational / not operational**, **N/A**, **defect**, and the applicable/absent rule.
+The audit is read-only: it diffs live state against the committed baseline and reports findings,
+and it never applies changes. The verdict vocabulary is [`WORKFLOW.md`][workflow]'s: **operational
+/ not operational**, **N/A**, **defect**, and the applicable/absent rule.
 
 ## Scope
 
-This is an operational (live-config) repo: `main` and `develop` rulesets, general repository settings, and secret names. Code-project dimensions (analyzers, publish mechanisms, coverage) are N/A, so see [GOVERNANCE.md "Branching Model"][governance-branching-model] for the model this baseline encodes.
+This is an operational (live-config) repo: `main` and `develop` rulesets, general repository
+settings, and secret names. Code-project dimensions (analyzers, publish mechanisms, coverage) are
+N/A, see [GOVERNANCE.md "Branching Model"][governance-branching-model] for the model this baseline
+encodes.
 
-## General Settings
+## General Settings and Rulesets
 
-Diff the live repository settings against [`repo-config/settings.json`][repo-config-settings]. The two state-dependent settings are not in the file: `has_discussions` follows visibility (public on / private off) and `default_branch` is `main`.
+This repo carries no local `repo-config/` directory: the hub hosts the settings and ruleset
+payloads it is checked against, so both are validated from a hub checkout rather than diffed
+locally. Run, from a checkout of `ptr727/ProjectTemplate` at `main`:
 
-```bash
-repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-live=$(gh api "repos/$repo" --jq '{has_wiki,has_projects,allow_merge_commit,allow_squash_merge,allow_rebase_merge,allow_auto_merge,allow_update_branch,delete_branch_on_merge}')
-diff <(jq -S . repo-config/settings.json) <(jq -S . <<<"$live") \
-  && echo "settings: in sync" || echo "settings: DRIFT"
+```sh
+repo-config/configure.sh check ptr727/ESPHome-Config operational
 ```
 
-## Rulesets
-
-Diff each live ruleset against the committed expected payload with a normalized comparison (sort the order-insensitive `rules[]` on each rule's whole content before diffing, so a reordered but equivalent ruleset does not read as drift). The compared subset is `name`, `target`, `enforcement`, `conditions` and `rules`, and `bypass_actors` sits deliberately outside it, which is the same subset and the same sort key the fleet-wide audit uses. Who may bypass a ruleset is a per-repository human decision taken in the UI, no payload declares one, and the fleet's ruleset tooling treats it that way in both modes, writing the live list back unchanged when it applies a payload and reporting it without asserting when it checks one. Comparing it here would contradict that and report a ruleset finding against this repository for having any bypass actor at all, which is the field's normal state rather than a deviation. This operational carry keeps its `develop` payload at [`repo-config/operational/develop.json`][repo-config-develop].
-
-```bash
-repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-# bypass_actors stays outside the projection, since no payload declares one and jq cannot sort the null that leaves.
-# Rules sort on each rule's whole content, matching the key the fleet-wide audit sorts by.
-# Sorting on .type alone leaves two rules of one type in input order, so a reordered pair would read as drift.
-# canon sorts keys at every depth before serializing, because the committed payload is written key-sorted and the API returns its own order, so a bare tojson gives the same rule two different sort keys.
-# It recurses rather than calling walk/1, which the declared jq floor does make available, because the recursion costs nothing and compiles below the floor as well.
-# A host on jq 1.5 would not degrade on walk, it would fail to compile the filter and report drift on every ruleset it never compared, which is what the fleet's ruleset tooling defines its own recursion to avoid.
-canon='def canon: . as $in | if type == "object" then reduce (keys_unsorted|sort)[] as $k ({}; . + { ($k): ($in[$k]|canon) }) elif type == "array" then map(canon) else . end;'
-norm="$canon"'{name,target,enforcement,conditions,rules} | .rules|=sort_by(canon|tojson)'
-# Paginate so later-page rulesets count: --paginate with --jq '.[]' emits one JSON object per ruleset
-# across all pages; jq -s re-assembles them into the single array the selections below expect.
-rulesets=$(gh api --paginate "repos/$repo/rulesets" --jq '.[]' | jq -s '.')
-for b in develop main; do
-  file="repo-config/$b.json"
-  [ "$b" = "develop" ] && file="repo-config/operational/develop.json"
-  # Exactly one ruleset per name: zero or duplicates is itself a finding - report it, never diff a guess.
-  count=$(jq --arg n "$b" '[.[] | select(.name==$n)] | length' <<<"$rulesets")
-  [ "$count" -eq 1 ] || { echo "$b: expected exactly 1 ruleset, found $count (defect/drift)"; continue; }
-  id=$(jq --arg n "$b" '.[] | select(.name==$n) | .id' <<<"$rulesets")
-  diff <(jq -S "$norm" "$file") \
-       <(gh api "repos/$repo/rulesets/$id" --jq '{name,target,enforcement,conditions,rules}' | jq -S "$norm") \
-    && echo "$b: in sync" || echo "$b: DRIFT"
-done
-```
-
-The result must be exactly two rulesets named `develop` and `main` - a missing ruleset or a divergent payload is a **defect**; a duplicate or stray ruleset is a **drift finding**.
+This asserts the live repository settings against the hub's `settings.json`, and each of the
+`main` and `develop` rulesets against the hub's `main.json` and `operational/develop.json`,
+exiting non-zero on drift. A missing ruleset or a divergent payload is a **defect**. The result
+must also be exactly two rulesets named `develop` and `main`, but `configure.sh check` only warns
+on a duplicate expected name and does not enumerate a stray one, so a duplicate or stray ruleset
+is confirmed instead by running `python3 spec/audit.py ESPHome-Config` from the same hub checkout, which
+does report both as a **drift finding**.
 
 ## Secrets
 
-Confirm each name [`spec/secrets.json`][secrets] requires exists in the stores its mechanism claims - the name lists derive from the spec itself, so this check and the spec cannot drift apart - and no forbidden name is present in any store (names only; values are not readable).
+This repo carries no local `spec/secrets.json` either, for the same reason: the required and
+forbidden name lists resolve centrally from the registry entry (`publish[]`, `types[]`, and its
+own `requiredSecrets[]`) rather than from anything repo-specific, so a per-repo copy could only
+restate the hub's own computation or drift from it. This repo declares `requiredSecrets: []` and
+`publish: [{ "target": "github-release", "mechanism": "none" }]` in the hub's registry, which
+resolves to no required secret beyond the fleet baseline. Confirm it from a hub checkout at
+`main`:
 
-```bash
-repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-# Name lists derive from spec/secrets.json (baseline plus any mechanisms, per store claim; forbidden names
-# checked in every store), so this check and the spec cannot drift apart. --paginate so names beyond the
-# first page still count.
-for store in actions dependabot; do
-  names=$(gh api --paginate "repos/$repo/$store/secrets" --jq '.secrets[].name')
-  for s in $(jq -r --arg store "$store" '[.baseline, ((.mechanisms // {}) | .[])] | map(select(.stores | index($store)) | .requires[]) | .[]' spec/secrets.json); do
-    grep -qx "$s" <<<"$names" && echo "$store/$s: present" || echo "$store/$s: MISSING (defect)"
-  done
-  for s in $(jq -r '[.baseline, ((.mechanisms // {}) | .[])] | map(.forbids[]) | .[]' spec/secrets.json); do
-    grep -qx "$s" <<<"$names" && echo "$store/$s: forbidden name present (defect)" || true
-  done
-done
+```sh
+python3 spec/audit.py ESPHome-Config
 ```
 
 ## Verdict and Follow-Up
 
-A missing required item or a divergent payload is a **defect** (not operational), and an equivalent outcome in a non-standard form is a **drift finding**. N/A items are excluded, never counted as failures. Surface findings as repository issues. Fixes land as direct signed commits to `develop` per [GOVERNANCE.md "Branching Model"][governance-branching-model]. To re-apply the whole baseline, run the hub's apply script from a hub checkout naming this repository, which is where that script lives rather than here (see [repo-config/README.md][repo-config-readme]).
+A missing required item or a divergent payload is a **defect** (not operational), and an
+equivalent outcome in a non-standard form is a **drift finding**. N/A items are excluded, never
+counted as failures. Surface findings as repository issues, and fixes land as direct signed
+commits to `develop` per [GOVERNANCE.md "Branching Model"][governance-branching-model]. To
+re-apply the whole baseline, run the hub-hosted `configure.sh apply` from a hub checkout, naming
+this repository and its model.
 
 <!-- Repo -->
 
+[agents]: ./AGENTS.md
 [codestyle]: ./CODESTYLE.md
 [governance]: ./GOVERNANCE.md
 [governance-branching-model]: ./GOVERNANCE.md#branching-model
-[repo-config]: ./repo-config/
-[repo-config-develop]: ./repo-config/operational/develop.json
-[repo-config-readme]: ./repo-config/README.md
-[repo-config-settings]: ./repo-config/settings.json
-[secrets]: ./spec/secrets.json
 [workflow]: ./WORKFLOW.md
