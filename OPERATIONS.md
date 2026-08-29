@@ -482,16 +482,23 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 - **This file uses reference-style links, and it is the one file in this repository that should not.** The fleet rule allows four agent-instruction files to keep inline links, [`AGENTS.md`][agents], [`GOVERNANCE.md`][governance], this one, and `.github/copilot-instructions.md`, on the grounds that they are read one section at a time so a definition at the foot of the file is never reached. The other three take that allowance and this one does not, which is a divergence to close deliberately rather than incidentally. Every other Markdown file in the repository is reference-style by the rule rather than by exception. Definitions live at the bottom of the file, grouped under `<!-- Repo -->` and `<!-- External -->` and alphabetized within each group. A reference name encodes what it points at, so `analog-max17048-link`, never `analog-en-products-link` after a URL path segment. Removing a link also removes its definition, since an orphan fails the lint.
 - **Inline HTML is limited to `<details>` and `<summary>`.** Those two are allowed because a collapsible has no markdown equivalent. Every other element still fails `MD033`, and that includes a `<code>` nested inside a `<summary>` - use a markdown code span there instead.
 - **The spell-check gate covers `**/README.md` plus [`DEVICES.md`][devices] and `HISTORY.md`**, wider than the fleet default, so a nested README fails CI like any other. The CI workflow and the `Lint: Spelling` task carry the identical list.
-- **Never mount the live checkout into a third-party lint container.** `secrets.yaml` holds the live secrets and is git-ignored. [`secrets._yaml`][secrets-example] is the tracked placeholder. Build a temporary snapshot from tracked and intended untracked files, then mount that snapshot read-only. The Git exclusion rules keep `secrets.yaml` out without maintaining a second exclusion list. **This includes the hub's `scripts/docker_lint.py` wrapper**: its `--root` argument becomes a plain read-only bind mount with no exclusion of its own (read-only stops the container writing back, not reading `secrets.yaml`), so pass the snapshot's path as `--root` here, never `"$PWD"` on the live checkout.
+- **Never mount the live checkout into a third-party lint container.** `secrets.yaml` holds the live secrets and is git-ignored. [`secrets._yaml`][secrets-example] is the tracked placeholder. Build a temporary snapshot from tracked and intended untracked files, mount that snapshot read-only, and remove it when done. The Git exclusion rules keep `secrets.yaml` out without maintaining a second exclusion list.
 
   ```shell
+  repo_root="$(git rev-parse --show-toplevel)"
   lint_root="$(mktemp -d /tmp/esphome-lint.XXXXXX)"
-  git ls-files --cached --others --exclude-standard -z | tar --null -T - -cf - | tar -xf - -C "$lint_root"
-  chmod -R a+rX "$lint_root"
-  docker run --rm -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
-  # Or, for the hub's docker_lint.py wrapper:
-  python3 /path/to/ProjectTemplate/scripts/docker_lint.py --root "$lint_root"
+  trap 'rm -rf "$lint_root"' EXIT
+  git -C "$repo_root" ls-files --cached --others --exclude-standard -z | tar -C "$repo_root" --null -T - -cf - | tar -xf - -C "$lint_root"
+  chmod -R o+rX "$lint_root"
+  docker run --rm --network=none -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
   ```
+
+  `chmod -R o+rX` stays: `mktemp -d`'s default `0700` blocks a lint container running as a
+  non-matching, non-root UID (the common case for these images) from reading the mount at all,
+  and the trap now removes the snapshot regardless, so the readable window is only the lint run
+  itself on a single-tenant CI runner or dev host.
+
+  **This includes the hub's `scripts/docker_lint.py` wrapper, and it cannot currently take this snapshot as its `--root`.** Its own target discovery runs `git -C "$root" ls-files`, and the snapshot above deliberately holds only the `git ls-files` output, not `.git` itself, so `--root "$lint_root"` fails with "not a git repository" before any linter runs. Passing the live checkout instead would defeat the whole point of the snapshot. Until the wrapper accepts a plain snapshot or file manifest (tracked upstream as [ptr727/ProjectTemplate#1090][hub-issue-1090]), lint this repository with the direct `docker run` invocations above rather than `docker_lint.py`.
 
 - **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
 - **A compile job that fails in about 18 seconds is a registry timeout, not a template defect.** The compile jobs pull the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image, and a slow Docker Hub kills the job with `registry-1.docker.io ... context deadline exceeded` before any ESPHome work starts. A real esp-idf compile runs for minutes, so the duration tells the two apart at a glance. Re-run the job rather than reading the template for a fault that is not there.
@@ -557,6 +564,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
 [flo-r1der-link]: https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
 [framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
+[hub-issue-1090]: https://github.com/ptr727/ProjectTemplate/issues/1090
 [option-zero-link]: https://github.com/Option-Zero/esphome-components
 [packages-link]: https://esphome.io/components/packages
 [substitutions-link]: https://esphome.io/components/substitutions
