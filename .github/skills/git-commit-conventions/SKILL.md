@@ -164,6 +164,4 @@ any rewrite. See `references/history-rewrite.md` for the full two-gate rule.
 
 ## Never run destructive git commands without being asked
 
-`git reset --hard`, `git checkout .`, `git restore .`, `git clean -f`, and anything else that
-discards uncommitted work runs only on explicit developer instruction, never as a convenience step
-inside a larger task.
+`git reset --hard`, `git checkout .`, `git restore .`, `git clean -f`, and other commands that discard work require explicit developer instruction. Never use them as a convenience inside a larger task. One narrow cleanup exception applies to `git branch -D <exact-task-branch>` after a squash merge. It requires live proof that the pull request for that exact branch merged and a clean worktree at the verified head SHA, per `repo-worktree`. The exception never applies to `develop`, an unmerged branch, an unresolved pull request, or a branch with uncommitted work.

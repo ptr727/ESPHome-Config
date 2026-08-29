@@ -19,9 +19,12 @@ Read `GOVERNANCE.md` "Verification Discipline" before reporting success on anyth
 - **Run the repo's whole lint gate before every push**, not the parts that look relevant, because the tool most likely to catch a change is often the one it seems least about.
 - **A launched process is not a result.** Report the output the wait produced, and where it produced none, that absence is the report. Never name an external cause the record does not carry.
 - **A local clone is not the branch it names.** Fetch immediately before reading, or read the live ref, and name the ref and commit in any finding a local read produced.
+- **A checkout this session did not create is not ground truth.** One found already sitting on disk may belong to another concurrent session, sit on a stale fetch or an unexpected branch, or hold unreviewed uncommitted edits. Clone fresh or read the live API instead of trusting `git status`/`git remote -v` run against a pre-existing checkout.
 - **A "does not exist" claim names the branch it was checked against.** A worktree's default branch is not necessarily the one the content lives on: in-flight content on a `release`-model repo lands on `develop` before `main`, per `GOVERNANCE.md` "Branching Model," so check that branch before reporting anything absent repo-wide.
+- **A `raw.githubusercontent.com` 404 does not distinguish a private repository from a missing file.** Where visibility is not confirmed public, read content via `gh api "repos/<owner>/<repo>/contents/<path>?ref=<ref>"`, capturing the result before decoding it (`content=$(gh api ... --jq '.content') && printf '%s' "$content" | base64 -d`) rather than piping straight into `base64 -d`, whose own exit status is all a direct pipe reports, letting a failed fetch decode as an empty success. Never `2>&1` either form, which corrupts the decode with the error text instead of the payload. Verify the ref resolves before reading either failure as proof the content itself does not exist.
 - **A test asserts the mechanism it names, and a gate has to be watched failing.** A case that passes for an incidental reason is worse than no case, because it is later cited as evidence.
 - **Platform-specific code is verified only on the platform it runs on.** Reasoning about PowerShell, macOS, or WSL-specific behavior from a different host is not verification, however closely it matches an already-tested equivalent elsewhere. State an untested structural match as exactly that, never in the words used for a tested fact, and when no agent in the loop has access to the target platform, say so and defer or ship it labeled unverified.
+- **PR-bound work runs `local-strict-review` before the claim.** Claiming a unit of work done, verified, green, or fixed for work that will become, or already is, a pull request means running `local-strict-review` against the branch's diff first, before a PR-hosted reviewer finds the same gap.
 
 Claims about a pull request being reviewed, clean, or mergeable are owned by the `pr-review-conduct` skill, and claims that a commit landed by `git-commit-conventions`.
 
@@ -35,7 +38,7 @@ Claims about a pull request being reviewed, clean, or mergeable are owned by the
 ## When a Failure Surfaces a Lesson
 
 - **Durable knowledge lands in the committed docs, not in agent memory**, as part of the change that surfaced it, per `GOVERNANCE.md` "Durable Knowledge and Self-Improvement". Memory does not survive a new session or machine, so it holds only environment nuance and in-flight state.
-- **Where the governing doc is carried from the hub, propose the fix upstream** rather than only patching it locally, since a local fix leaves every sibling repo with the same trap.
+- **Where the governing doc is carried from the hub, file the finding against `ptr727/ProjectTemplate`** rather than only patching it locally. A local fix leaves every sibling repo with the same trap. Search open and closed issues first, then update the matching issue or file a new one.
 - **A review flags an instance, so fix the class**: sweep for the siblings before replying, because reviewers sample rather than enumerate.
 - **A rule that keeps needing restating** is usually a stale or missing skills install, so run `python3 scripts/skills_install.py --report` from a hub checkout (the `fleet-conformance-check` skill) before concluding the rule does not exist.
 

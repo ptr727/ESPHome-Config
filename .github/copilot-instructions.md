@@ -48,6 +48,8 @@ diff coverage. A refusal, partial or absent coverage statement, unrecognized out
 unresolved thread, or body-only finding blocks the review loop. Re-run the loop after every fix
 push. Never infer review completion from `mergeStateStatus: CLEAN`.
 
+Review effort is user-controlled. The automation observes `Lite`, `Balanced`, or `Max`, including an inherited `Default (<level>)`, and never selects or changes the setting. Effort does not determine coverage or completion. A request can complete without a `copilot_work_started` event, so absence of that event is not a stalled-review verdict. When `wait` returns `PENDING` with `requested=yes`, report the state and rerun `wait` for another bounded interval by default. Do not clear the request automatically because it may be active. If the maintainer directs a retry, remove Copilot in the pull request UI, add it again, and rerun `wait`. This recovery replaces only the review request and never changes the effort setting.
+
 ### Disproved Claims
 
 **A disproof is proof about this repository, and the thread it was written in is not where the next round looks.** [GOVERNANCE.md "PR Review Etiquette"](../GOVERNANCE.md#pr-review-etiquette), which routes to the `pr-review-conduct` Skill, closes a false finding by disproving it in the thread, addressed to the reviewer so it does not raise the same thing again, and while the pull request is open that is the right place for it. Afterwards it is the wrong one. The pull request merges, the next round begins with no memory of the last, and the second occurrence reaches a maintainer with no way to tell it from a first. Each entry below is a claim that was tested against this repository and found false, kept so the proof is read rather than built twice.

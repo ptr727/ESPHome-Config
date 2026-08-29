@@ -23,13 +23,13 @@ description: >-
 intact in every repo that carries it. This skill maintains that carried copy, it does not replace
 the bootstrap.
 
-`spec/files.json` declares it `intent` fidelity, `whole: true`, covering three named sections
+`spec/files.json` declares it `intent` fidelity, `whole: true`, covering four named sections
 (`Commit Messages and Pull Request Titles`, `Reviewing Carried Fleet Content`, `GitHub Copilot
-Review Runbook`), with `<owner>`, `<repo>`, and `<N>` placeholders filled per repo. **The fleet
-audit checks an `intent` file for file presence and each named section's heading, never for
-content drift inside a section.** A section that is present but has fallen out of date against
-the hub, the exact gap this skill exists to catch, produces no finding anywhere in the mechanical
-audit. Noticing that has to happen in a live session like this one.
+Review Runbook`, `When in Doubt`), with `<owner>`, `<repo>`, and `<N>` placeholders filled per
+repo. **The fleet audit checks an `intent` file for file presence and each named section's
+heading, never for content drift inside a section.** A section that is present but has fallen out
+of date against the hub, the exact gap this skill exists to catch, produces no finding anywhere in
+the mechanical audit. Noticing that has to happen in a live session like this one.
 
 ## The one thing this file has that others don't: repo-local ledger entries
 
@@ -51,7 +51,7 @@ repo's copy is wrong in both directions:
 
 1. Read the current "Disproved Claims" section in that repo's copy, if it has one, and preserve
    every entry that names a file or behavior that repo actually carries.
-2. Update everything else, the runbook mechanics, the three named sections, the rule text, to
+2. Update everything else, the runbook mechanics, the four named sections, the rule text, to
    match the hub canonical.
 3. Never carry the hub's own repo-specific "Disproved Claims" entries downstream. They name
    `ProjectTemplate`'s own files and revisions, not the target repo's.

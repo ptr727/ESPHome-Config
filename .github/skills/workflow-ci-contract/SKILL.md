@@ -21,7 +21,7 @@ description: >-
 ## Style Rules That Break in One-Line Diffs
 
 - **Pin every action to a commit SHA** with a trailing `# vX.Y.Z` comment, first-party included. The one documented no-pin exception is `dotnet/nbgv@master`. Invent no others.
-- **Names carry meaning**: `-task.yml` files and "task" names are reusable (`on: workflow_call`), entry points end in what they do and their names end in "action", every job `name:` ends in "job" and every step in "step". A ruleset-bound required check's job `name:` and the ruleset `context:` are one string renamed together, in the live ruleset and `repo-config/{develop,main}.json` in lockstep, or required-check enforcement silently breaks.
+- **Names carry meaning**: `-task.yml` files and "task" names are reusable (`on: workflow_call`), entry points end in what they do and their names end in "action", every job `name:` ends in "job" and every step in "step". A ruleset-bound required check's job `name:` and the ruleset `context:` are one string renamed together, in the live ruleset and the hub's `repo-config/` payloads in lockstep, or required-check enforcement silently breaks.
 - **Concurrency**: top-level workflows use `group: '${{ github.workflow }}-${{ github.ref }}'` with `cancel-in-progress: true`. The publisher is the documented exception: a global ref-independent group with `cancel-in-progress: false`, so publishes serialize and never cancel mid-push.
 - **Shells**: every multi-line bash `run:` starts `set -Eeuo pipefail`. Multi-line `if:` uses `>-`, never `|`.
 - **Boolean inputs** are declared in both trigger blocks and compared against both forms, `${{ inputs.foo == true || inputs.foo == 'true' }}`, since `workflow_dispatch` delivers strings.

@@ -42,29 +42,26 @@ stale clone answers confidently instead of failing, and verify the host with
 RESYNC.md section 2, against the target's `main` branch, never `develop`. A finding is a snapshot,
 so quote the run stamp in anything derived from it and re-run before acting on a finding read
 earlier in the session.
+File any hub defect this work exposes against `ptr727/ProjectTemplate`.
+Examples include bugs, conflicting sources, unclear or incomplete instructions, missing capabilities, and Copilot findings about any of them.
+Search open and closed issues first, then update the matching issue or file a new one.
+Preserve the evidence RESYNC.md section 2 requires, and do not leave the finding only in chat, a review thread, the downstream repo, or agent memory.
 
 ## Apply, in this order
 
-1. **The instruction set first.** `AGENTS.md` and `GOVERNANCE.md` verbatim sections, then
-   `CODESTYLE.md` and `WORKFLOW.md`, including the `AGENTS.md` skill-dependency pointer paragraph
-   (naming `scripts/skills_install.py` and where the fleet's Skills live) as one more verbatim
-   unit carried in this same step, not a separate pass. **Before any verbatim re-vendor in this
-   step, run the `carried-instruction-file-guard` skill's distinctive-phrase probe against the
-   target file, every time, without exception.** This is not advisory language to weigh against
-   how routine the diff looks, a diff that looks routine is exactly the shape the
-   AGENTS.md-overwrite incident took. Do not proceed to the re-vendor until the probe has run and
-   any local addition it finds has a destination, per that skill's own procedure.
+1. **The instruction set first.** `CLAUDE.md`, then `AGENTS.md` and `GOVERNANCE.md` verbatim sections, then `CODESTYLE.md` and `WORKFLOW.md`, including the `AGENTS.md` skill-dependency pointer paragraph (naming `scripts/skills_install.py` and where the fleet's Skills live) as one more verbatim unit carried in this same step, not a separate pass. `CLAUDE.md` is the single `@AGENTS.md`-import file that gets `AGENTS.md` into a Claude Code session's context at all, a separate baseline entry from `AGENTS.md` itself, so carrying one without the other still leaves that provider unconfigured. **Before touching `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, or `WORKFLOW.md` in this step, run the `carried-instruction-file-guard` skill's distinctive-phrase probe against the target file, every time, without exception, regardless of whether the update is a verbatim re-vendor or an intent-fidelity edit.** This is not advisory language to weigh against how routine the diff looks, a diff that looks routine is exactly the shape the AGENTS.md-overwrite incident took. Do not proceed to the re-vendor until the probe has run and any local addition it finds has a destination, per that skill's own procedure. `CLAUDE.md` is outside that guard's scope: it carries no mixed or repo-specific content by design, so its re-vendor is an ordinary verbatim-fidelity copy, no probe needed.
 2. **Deletions second, before any re-vendor.** Only a `retire` disposition in
    `spec/divergences.json` authorizes removing a file, and the removal is swept tree-wide, per
    RESYNC.md section 4, before the deletion counts as done.
-3. **Verbatim re-vendors** for everything the probe in step 1 cleared. A finding classified
-   modified rather than stale gets its diff read before being overwritten, since it may be an
-   improvement the hub should adopt instead of a mistake to erase.
+3. **Verbatim re-vendors** for `CLAUDE.md` and everything else the probe in step 1 cleared. A
+   finding classified modified rather than stale gets its diff read before being overwritten,
+   since it may be an improvement the hub should adopt instead of a mistake to erase.
 4. **Interface workflows.** Honor the named contract, required jobs, the ruleset-bound check name,
    the artifact-name handoff, rather than copying bytes.
 5. **Settings, rulesets, and secrets.** Run
-   `repo-config/configure.sh check <owner>/<repo> release|operational` against the repo by name,
-   then `apply` for what it reports, never from a carried copy.
+   `repo-config/configure.sh check "<owner>/<repo>" release` (substitute `operational` for an
+   operational repo) from the hub at `main`, then `apply` for what it reports, never from a
+   carried copy. Run `spec/audit.py [RepoName]` from the same checkout for secrets.
 6. **Intent files last, and by hand,** since nothing mechanical judges these.
 
 Reconcile the registry entry (`status`, `types`, `releaseTrigger`, `workflowModel`,
@@ -77,4 +74,5 @@ One focused pull request per drift class, branched from the target's `develop`, 
 push to a protected branch and never a hand edit outside a pull request. Close the review loop,
 per the `pr-review-conduct` skill, before asking the maintainer for merge permission. The
 maintainer merges, the agent drives to green and stops. Re-run the audit after the merge and
-commit the report, done means measured, not applied.
+commit the report once authorized, per `git-commit-conventions`, done means measured, not
+applied.

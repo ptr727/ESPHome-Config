@@ -49,8 +49,9 @@ All builds must complete without warnings, enforced three ways:
   surfaced as a warning fails the build and must be fixed or deliberately suppressed at the
   narrowest scope that fits (see Analyzer suppressions below), never left to accumulate.
 - **CI lint backstop.** CI runs the clean-compile checks on every PR as the authoritative gate.
-  Git hooks are optional, and a repo may wire a local runner (Husky.Net, with `dotnet husky run`
-  as a style step) for pre-commit enforcement, but CI is the gate that matters.
+  A working local hook is strongly suggested, not optional: wire Husky.Net from the canonical
+  `catalog/snippets/husky/` config. See GOVERNANCE.md "Running the Linters Locally" for what the
+  hook must cover and what its absence means.
 
 **A new port is not a license to silence diagnostics.** Brownfield or just-ported status never
 justifies relaxing analyzer severities or muting newly surfaced warnings. Fix them. (The only
@@ -94,8 +95,8 @@ updates, dependency upgrades, benchmarks) on top:
   `dotnet format style --verify-no-changes --severity=info --verbosity=detailed`.
 - **`dotnet-outdated-tool`** checks for dependency updates, and Nerdbank.GitVersioning owns
   version management.
-- CI is the authoritative lint backstop. Local pre-commit hooks are optional, wire Husky.Net (or
-  another runner) if you want local enforcement.
+- CI is the authoritative lint backstop. A local pre-commit hook is strongly suggested: wire
+  Husky.Net from `catalog/snippets/husky/` for local enforcement, including the shared doc gates.
 - **Required VS Code extensions**: CSharpier, markdownlint, CSpell. Use the workspace settings
   without overrides.
 

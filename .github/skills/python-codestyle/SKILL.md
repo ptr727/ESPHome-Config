@@ -48,7 +48,7 @@ declaration, versioning, VS Code config), see `references/profiles.md`.
 | [ruff][ruff-link] | lint + format + import sort | `pyproject.toml` `[tool.ruff]` |
 | [pyright][pyright-link] | type checker (the default, a strict baseline) | `pyproject.toml` `[tool.pyright]` |
 | [mypy][mypy-link] | additional/alternate type checker (optional, the CI checker in a mypy-in-CI repo, required for Home Assistant) | `pyproject.toml` `[tool.mypy]` (or per home-assistant/core) |
-| [pytest][docs-link] | test runner | `pyproject.toml` `[tool.pytest.ini_options]` |
+| [pytest][docs-link] | test runner (build profile only, lint-only uses `unittest`) | `pyproject.toml` `[tool.pytest.ini_options]` |
 
 **Type checking targets strongly typed, deterministic code.** pyright in strict mode is the
 default baseline on first-party code (a repo may instead run mypy in CI and keep pyright
@@ -72,7 +72,9 @@ inherently consistent.
 
 ## Local development loop
 
-From inside the Python project directory:
+From inside a **build**-profile Python project directory. A **lint-only** Scripts profile has no
+`uv.lock` to sync and no pytest to run, substitute `uvx` per tool and `unittest` per the Two
+Profiles section above:
 
 ```sh
 uv sync                          # creates .venv, installs deps + dev group
@@ -85,13 +87,18 @@ uv run pytest                    # run tests
 uv build                         # produce wheel + sdist in ./dist (published packages only)
 ```
 
-The Python clean-compile is `uv run ruff format` + `uv run ruff check` + the repo's type checker:
-`uv run pyright`, or `uv run mypy src` where mypy is the CI checker, or both where the repo runs
-both (see Type checking above). Run it, plus `uv run pytest`, before committing. These are
-documented commands, and an optional VS Code tasks mirror (all `type: process`, no `&&` shell
-chaining, so it runs the same on any task shell) is in the hub `vscode-tasks-python.json` snippet.
-CI runs the same clean-compile commands as the authoritative backstop. Git hooks are opt-in, so
-wire `pre-commit` for `ruff` and the type checker yourself if you want local enforcement.
+The **build**-profile Python clean-compile is `uv run ruff format` + `uv run ruff check` + the
+repo's type checker: `uv run pyright`, or `uv run mypy src` where mypy is the CI checker, or both
+where the repo runs both (see Type checking above). Run it, plus `uv run pytest`, before
+committing. A **lint-only** profile's clean-compile substitutes its `uvx` and `unittest`
+equivalents, per Two Profiles above, and has no such command to run before committing beyond
+those. These are documented commands, and an optional VS Code tasks mirror (all `type: process`,
+no `&&` shell chaining, so it runs the same on any task shell) is in the hub
+`vscode-tasks-python.json` snippet. CI runs the same clean-compile commands as the authoritative
+backstop. A working local hook is strongly suggested, not opt-in: wire the Python `pre-commit`
+framework from the canonical `catalog/snippets/pre-commit/.pre-commit-config.yaml`. See
+GOVERNANCE.md "Running the Linters Locally" for what the hook must cover and what its absence
+means.
 
 A restricted executor gives each task a cache directory under a writable temporary root. Point
 `UV_CACHE_DIR`, `RUFF_CACHE_DIR`, `MYPY_CACHE_DIR`, and `COVERAGE_FILE` into that directory before
@@ -140,9 +147,12 @@ For comments, docstrings, full type-hint rules, naming, imports, and all pattern
 
 ## Tests
 
-`uv run pytest`. One test file per module (`test_<module>.py`), fixtures over setup/teardown,
-fakes over mocks. Test the docstring's contract, not implementation details. See
-`references/testing.md` for the full conventions.
+`uv run pytest` for a build profile, `unittest` for a lint-only Scripts profile (see Two Profiles
+above). One test file per module (`test_<module>.py`). A build profile prefers fixtures over
+`unittest`'s `setUp`/`tearDown` lifecycle hooks. A lint-only profile uses those hooks directly,
+since `unittest` has no fixture-injection mechanism of its own. Fakes over mocks either way. Test
+the docstring's contract, not implementation details. See `references/testing.md` for the full
+build-profile conventions, and `references/profiles.md` for the lint-only `unittest` conventions.
 
 ## Versioning
 
@@ -157,10 +167,11 @@ Before pushing or opening a PR:
 - VS Code's Problems pane should be quiet for the files you touched. The relevant linters are ruff
   (via the `charliermarsh.ruff` extension) and pyright (via the `ms-python.python` extension's
   bundled Pylance).
-- The CI gate is `uv run ruff check`, `uv run ruff format --check`, the repo's type checker
-  (`uv run pyright` or `uv run mypy src`), and `uv run pytest`, the same commands as the local
-  loop above, run from the Python project directory (invoked as separate steps, not `&&`-chained,
-  so the runner shell is irrelevant).
+- The **build**-profile CI gate is `uv run ruff check`, `uv run ruff format --check`, the repo's
+  type checker (`uv run pyright` or `uv run mypy src`), and `uv run pytest`, the same commands as
+  the local loop above, run from the Python project directory (invoked as separate steps, not
+  `&&`-chained, so the runner shell is irrelevant). A **lint-only** profile's CI gate is its `uvx`
+  equivalents plus its `unittest` suite, per `references/profiles.md`.
 - Markdown in this directory follows CODESTYLE.md's repo-wide Markdown and Spelling rules,
   packaged as the `comment-and-doc-style` Skill.
 
