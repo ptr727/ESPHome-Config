@@ -493,10 +493,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
   docker run --rm --network=none --user "$(id -u):$(id -g)" -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
   ```
 
-  `--user "$(id -u):$(id -g)"` runs the container as the invoking host user rather than the
-  image's own default, so it reads `$lint_root` through the same owner permission bits `mktemp
-  -d`'s default `0700` already grants, with no `chmod` opening it to any other local account. The
-  trap removes the snapshot on exit either way.
+  `--user "$(id -u):$(id -g)"` runs the container as the invoking host user rather than the image's own default, so it reads `$lint_root` through the same owner permission bits `mktemp -d`'s default `0700` already grants, with no `chmod` opening it to any other local account. This assumes a standard rootful Docker daemon, where the container's user namespace is the host's own. Under **rootless** Docker the daemon runs in its own user namespace, so the host UID passed to `--user` maps to an unrelated subordinate UID inside the container rather than to the owner of the bind mount, and the snapshot becomes unreadable instead. On a rootless daemon, `chmod -R o+rX "$lint_root"` after the tar step is the fallback, accepting the wider local-account readability for the run's duration. The trap removes the snapshot on exit either way.
 
   **This includes the hub's `scripts/docker_lint.py` wrapper, and it cannot currently take this snapshot as its `--root`.** Its own target discovery runs `git -C "$root" ls-files`, and the snapshot above deliberately holds only the `git ls-files` output, not `.git` itself, so `--root "$lint_root"` fails with "not a git repository" before any linter runs. Passing the live checkout instead would defeat the whole point of the snapshot. Until the wrapper accepts a plain snapshot or file manifest (tracked upstream as [ptr727/ProjectTemplate#1090][hub-issue-1090]), lint this repository with the direct `docker run` invocations above rather than `docker_lint.py`.
 
