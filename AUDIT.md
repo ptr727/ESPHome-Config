@@ -30,9 +30,11 @@ repo-config/configure.sh check ptr727/ESPHome-Config operational
 
 This asserts the live repository settings against the hub's `settings.json`, and each of the
 `main` and `develop` rulesets against the hub's `main.json` and `operational/develop.json`,
-exiting non-zero on drift. The result must be exactly two rulesets named `develop` and `main`
-(a missing ruleset or a divergent payload is a **defect**, and a duplicate or stray ruleset is a
-**drift finding**).
+exiting non-zero on drift. A missing ruleset or a divergent payload is a **defect**. The result
+must also be exactly two rulesets named `develop` and `main`, but `configure.sh check` only warns
+on a duplicate expected name and does not enumerate a stray one, so a duplicate or stray ruleset
+is confirmed instead by running `spec/audit.py ESPHome-Config` from the same hub checkout, which
+does report both as a **drift finding**.
 
 ## Secrets
 
