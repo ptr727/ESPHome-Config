@@ -39,11 +39,12 @@ does report both as a **drift finding**.
 ## Secrets
 
 This repo carries no local `spec/secrets.json` either, for the same reason: the required and
-forbidden name lists resolve centrally from the registry entry (`publish[]` and `types[]`) rather
-than from anything repo-specific, so a per-repo copy could only restate the hub's own computation
-or drift from it. This repo declares `requiredSecrets: []` and `publish: [{ "target":
-"github-release", "mechanism": "none" }]` in the hub's registry, which resolves to no required
-secret beyond the fleet baseline. Confirm it from a hub checkout at `main`:
+forbidden name lists resolve centrally from the registry entry (`publish[]`, `types[]`, and its
+own `requiredSecrets[]`) rather than from anything repo-specific, so a per-repo copy could only
+restate the hub's own computation or drift from it. This repo declares `requiredSecrets: []` and
+`publish: [{ "target": "github-release", "mechanism": "none" }]` in the hub's registry, which
+resolves to no required secret beyond the fleet baseline. Confirm it from a hub checkout at
+`main`:
 
 ```sh
 python3 spec/audit.py ESPHome-Config
