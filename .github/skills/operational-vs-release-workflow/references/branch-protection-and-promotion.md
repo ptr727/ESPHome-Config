@@ -8,28 +8,24 @@ covers that case).
 
 ## Configuring branch protection: don't hand-build the rules
 
-Reconstructing rulesets by hand is error-prone and has gone wrong on past ports. First delete
-**all** legacy classic branch-protection rules and any stray rulesets (rulesets are the *only*
-mechanism used), then create **exactly two rulesets named `develop` and `main`** by importing the
-committed `repo-config/*.json` ruleset payloads via `gh api -X POST "repos/<owner>/<repo>/rulesets"`
-(`gh ruleset` is read-only). The names are load-bearing, other governance content and the
-workflows reference them. Operational repos import `repo-config/operational/develop.json` as their
-`develop` ruleset (the `main` ruleset is shared), and the hub's `repo-config/configure.sh`, run
-from a hub checkout against the repository named on its command line, selects the right `develop`
-payload from the registry `workflowModel` automatically. **Brownfield repos** (pre-existing
-history) need an extra step: `Require signed commits` rejects legacy unsigned commits and the
-admin bypass does not cover `git push --force`, so re-signing requires temporarily disabling the
-ruleset. See `repo-config/README.md` "Rulesets" for the configured state.
+Delete **all** classic branch-protection rules and stray rulesets because rulesets are the only
+protection mechanism. From a hub checkout at `main`, create **exactly two rulesets named `develop`
+and `main`** from the hub's `repo-config/*.json` payloads. Run
+`repo-config/configure.sh apply <owner>/<repo> release|operational` from that checkout. The names
+are load-bearing because governance content and workflows reference them. The registry
+`workflowModel` selects the `develop` payload for a registered repository. Pass the model
+explicitly for a repository outside the registry. See the hub's `repo-config/README.md`
+"Rulesets" for the configured state.
 
 ## Executing a `develop -> main` promotion safely
 
 Two traps, both learned the hard way:
 
 - **Never delete `develop`.** A promotion PR's head *is* `develop`, so `gh pr merge --delete-branch`
-  (and a repo's "Automatically delete head branches" toggle, kept off in `repo-config/settings.json`
-  for exactly this reason) deletes `develop` itself. Merge a promotion with a plain
-  `gh pr merge --merge`, no `--delete-branch`. If `develop` is ever lost this way, restore it to
-  the merged PR's head SHA, which is still reachable as the merge commit's second parent:
+  (and a repo's "Automatically delete head branches" toggle, kept off in the hub's
+  `repo-config/settings.json` for exactly this reason) deletes `develop` itself. Merge a promotion
+  with a plain `gh pr merge --merge`, no `--delete-branch`. If `develop` is ever lost this way,
+  restore it to the merged PR's head SHA, which is still reachable as the merge commit's second parent:
   `gh api -X POST "repos/<owner>/<repo>/git/refs" -f ref=refs/heads/develop -f sha="$(gh pr view <n> --json headRefOid --jq .headRefOid)"`.
 - **Spurious EOL-only conflicts resolve by taking `develop`.** When `develop`'s `.editorconfig`
   line-ending default has changed (for example the fleet-wide CRLF-to-LF flip) while `main` hasn't
@@ -39,7 +35,7 @@ Two traps, both learned the hard way:
   `git checkout -b promote/develop-to-main origin/main && git merge origin/develop`, take
   `develop`'s side for the EOL-conflicted files (`git checkout --theirs <file>`) **after
   confirming each is content-identical modulo EOL, or that `develop` is a strict superset**
-  (`diff <(git show :2:f | tr -d '\r') <(git show :3:f | tr -d '\r')`), then open that branch into
+  (`diff <(git show ":2:<file>" | tr -d '\r') <(git show ":3:<file>" | tr -d '\r')`), then open that branch into
   `main`. Verify no genuine `main`-only content is dropped (build/test where the repo supports it).
 
 ## Why both rulesets omit "Require branches to be up to date before merging"
@@ -110,5 +106,5 @@ supplies its own input-deterministic generator and wires the codegen reference w
 
 `actions/create-github-app-token` deprecated the numeric `app-id` input in v3.0.0. Use
 `client-id: ${{ secrets.CODEGEN_APP_CLIENT_ID }}`. When adding new App-token call sites, use the
-same form, and do not reintroduce `app-id` / `CODEGEN_APP_ID`. See `repo-config/README.md`
-"Secrets" for which secrets each mechanism needs.
+same form, and do not reintroduce `app-id` / `CODEGEN_APP_ID`. See the hub's
+`repo-config/README.md` "Secrets" for which secrets each mechanism needs.

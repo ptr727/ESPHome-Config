@@ -15,3 +15,7 @@
      <InternalsVisibleTo Include="YourTestProject" />
    </ItemGroup>
    ```
+
+5. **Nullable and XML documentation**: `<Nullable>enable</Nullable>`,
+   `<GenerateDocumentationFile>true</GenerateDocumentationFile>` (see `references/conventions.md`
+   for the XML documentation format every public surface needs).

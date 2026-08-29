@@ -58,6 +58,7 @@ rather than guessing from the repo's contents.
   promotion PR's head *is* `develop`, so `--delete-branch` deletes it. An EOL-only conflict on a
   workflow YAML file resolves on a throwaway branch off `main`, not on `develop`. Full recovery and
   conflict-resolution commands: `references/branch-protection-and-promotion.md`.
+- **A merge or release ends with worktree cleanup and the base clone on current `develop`.** Run the `repo-worktree` post-merge procedure after a feature squash merge. Run it again after a promotion or release completes, unless the user explicitly asks to retain a checkout or branch. Remove finished task, conflict-resolution, installer, and release helpers. Never delete `develop`, and never leave the base clone on `main` merely because `main` was promoted or released.
 - **Issue-closing keywords (`Closes #N`, `Fixes #N`) go in the `develop -> main` promotion PR, not
   the feature -> `develop` PR.** GitHub auto-closes an issue only when the closing keyword merges
   into the **default branch** (`main`), so a feature -> `develop` PR merge never fires it.
