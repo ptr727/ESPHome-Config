@@ -39,7 +39,11 @@ fleet's internal model so the two are never conflated.
    carries only the intended, minimal commit history, one commit (or a small, deliberate set) that
    states what the change is, not how it was arrived at.
 4. **Open the PR against the upstream repo from that second, clean branch.** This is the only
-   branch upstream ever sees.
+   branch upstream ever sees. An upstream draft may be opened only after that clean presentation
+   branch exists and is published. When more preparation is needed, continue on the dirty branch,
+   re-squash it into the clean branch, and update the same draft by the step 5 procedure. Never
+   iterate directly on the published presentation branch. Mark the draft ready when preparation
+   finishes. Open it ready immediately when no preparation remains.
 5. **If upstream reviewers ask for changes, apply them to the dirty branch first**, iterate there
    the same way as step 2, then re-squash the updated dirty branch into the clean branch that
    actually reaches upstream. Updating the same upstream PR rather than opening a new one each

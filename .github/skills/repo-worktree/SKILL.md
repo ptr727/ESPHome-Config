@@ -161,11 +161,19 @@ A machine not yet migrated to this layout still isolates exactly the same way, s
 is the isolation rather than the path: create the worktree beside whatever layout the machine
 has, and note that the base clone may live elsewhere than `~/repos/<Repo>`.
 
-Claude Code's own `EnterWorktree` tool acts only on an explicit instruction from the user or the
-project instructions, which is why the carried rules state this mandate in so many words. Given
-a `name`, it creates the worktree under `.claude/worktrees/` inside the repo and bases it on the
-GitHub default branch, which is the wrong path and the wrong base here. Create the worktree with
-`git worktree add` as above, then attach with `EnterWorktree` `path:`, not `name:`.
+## Agent-Specific Worktree Tools
+
+Provider-specific mechanics stay separate from the general creation procedure above:
+
+- **Claude Code:** its `EnterWorktree` tool acts only on an explicit instruction from the user or
+  project instructions. Given a `name`, it creates the worktree under `.claude/worktrees/` and
+  bases it on the GitHub default branch. Both differ from the fleet path and base. Create the
+  worktree with `git worktree add`, then attach with `EnterWorktree` `path:`, not `name:`.
+- **Codex:** no provider-specific creation override applies. Use the general `git worktree add`
+  procedure above. Its host-specific writable-root setting lives in `docs/host-setup.md` "Agent
+  Worktree Access".
+- **opencode:** no provider-specific creation override applies. Use the general
+  `git worktree add` procedure above.
 
 ## Preparing Git Hooks
 
@@ -177,9 +185,9 @@ in the new tree.
 - **Husky.Net:** When `.husky/pre-commit` sources `.husky/_/husky.sh` and the local .NET tool
   manifest declares Husky.Net, run `dotnet tool restore`, then `dotnet husky install` from the
   worktree root.
-- **Python pre-commit:** When `.pre-commit-config.yaml` exists, install the repository's declared
-  Python environment, then run `pre-commit install` through that environment. A uv project runs
-  `uv sync --frozen`, then `uv run pre-commit install`.
+- **Python pre-commit:** When `.pre-commit-config.yaml` exists, run `uv tool install pre-commit`
+  once per host if not already installed, then `pre-commit install` from the worktree root.
+  `pre-commit` is never a project dependency, so this is the same regardless of profile.
 - **Repository override:** Follow a repository's explicit hook-setup instructions when they
   differ from these standard cases. Do not infer a replacement command from the language alone.
 
@@ -191,11 +199,12 @@ fails, report that boundary and fix the setup. Never bypass the hook to make the
 - `git worktree list`, run in any checkout of a repo, names that repo's base clone and every
   worktree with its branch. On the convention layout, one `ls ~/repos/worktrees/` reads what is
   in flight across the whole fleet.
-- After the task's pull request merges, remove the worktree and its branch from the base clone:
-  `git worktree remove ~/repos/worktrees/<Repo>-<task-slug>`, then `git branch -d <task-branch>`.
-- After the task's pull request merges, remove a temporary standalone clone at its exact
-  `<temporary-root>/<Repo>-<task-slug>` path. The remote branch follows the repository's normal
-  pull request cleanup policy.
+- **Cleanup after merge is the default terminal step.** Run it after a squash merge into `develop`. Run it again after a merge-commit promotion into `main`, unless the user explicitly says to retain a checkout or branch. A merge or release handoff is incomplete while finished task, conflict-resolution, installer, or release worktrees remain registered.
+- **Verify before removing.** Read the pull request's merged state and head SHA from live GitHub state. Confirm the worktree is clean and resolves to that head. A dirty worktree stops cleanup because force-removing it would discard work. A detached helper worktree needs no pull request, but its commit must be contained in the branch whose completed operation created it.
+- **Remove the exact finished worktree, then its local task branch.** Use `git worktree remove <exact-path>`. Try `git branch -d <exact-branch>` after a merge commit. A squash merge does not make the feature tip an ancestor of `develop`, so `-d` cannot recognize it as merged. After the live merged-PR and clean-worktree checks prove that exact branch finished, use `git branch -D <exact-branch>` under the narrow post-squash exception in `git-commit-conventions`. Never apply that exception to an unverified branch or to `develop`.
+- **Remove temporary standalone clones and detached helper worktrees too.** Remove the exact `<temporary-root>/<Repo>-<task-slug>` path after confirming it is clean. The remote feature branch follows the repository's normal pull request cleanup policy. Never delete `develop` after a promotion because it is the permanent integration branch.
+- **Return the base clone to current `develop`.** Fetch and prune `origin`, confirm the base clone is clean, switch it to `develop` when needed, and fast-forward it with `git merge --ff-only origin/develop`. A completed promotion or release does not leave the base clone on `main`. Stop and report a dirty base clone or a non-fast-forward instead of switching or reconciling it.
+- **Prove the cleanup.** Finish with `git status --short --branch` in the base clone and `git worktree list`. The expected result is a clean base clone at `origin/develop` and no worktree belonging only to the completed task.
 - A worktree that refuses removal is dirty, and force is not the fix: look at what is
   uncommitted in it first, since discarding uncommitted work runs only on explicit instruction,
   per the `git-commit-conventions` skill.

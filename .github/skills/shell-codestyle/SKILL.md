@@ -3,8 +3,9 @@ name: shell-codestyle
 description: >-
   Governs Bash/shell script style for ptr727/ProjectTemplate fleet repos: when a bootstrap or
   host-tool script may be shell instead of Python, the mandatory set -Eeuo pipefail header, the
-  pipefail-versus-early-reader pitfall, self-locating scripts, shellcheck cleanliness, and the
-  why-not-what comment rule. Use this whenever writing, reviewing, or editing a .sh file, whenever
+  pipefail-versus-early-reader pitfall, self-locating scripts, the shellcheck-plus-shfmt
+  clean-compile, and the why-not-what comment rule. Use this whenever writing, reviewing, or
+  editing a shell script (a `.sh` file, or an extensionless bash/sh shebang script), whenever
   deciding whether a new script should be Bash or Python, or whenever a pipeline built from
   `curl`/`grep`/`jq`-style commands looks like it silently swallowed a failure. Triggers even when
   the task looks like a one-line tweak to an existing script, because a missing `-e`/`pipefail`,
@@ -31,6 +32,12 @@ depend on one. Everything else is Python, with a test under the scripts tree's `
 
 ## Rules
 
+- **`shellcheck` is the linter and `shfmt` the formatter.** The clean-compile is `shellcheck`
+  clean at default severity plus `shfmt -d`, both reporting nothing before a commit. CI enforces
+  both, per `GOVERNANCE.md` "Running the Linters Locally", and `scripts/docker_lint.py` runs the
+  same pair headless. Neither is scoped to the `*.sh` glob alone: a tracked, extension-less
+  script whose shebang names bash or sh (the shape a script meant to run as a bare command takes)
+  joins the target list too.
 - **`set -Eeuo pipefail`, before the first command the script runs.** A header comment sits above
   it, as `repo-config/configure.sh` and the `host-setup/` scripts do, since what matters is that
   nothing executes unguarded rather than which line number it lands on. Without `-e` a failed

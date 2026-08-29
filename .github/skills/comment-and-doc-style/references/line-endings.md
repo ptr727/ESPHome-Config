@@ -71,9 +71,10 @@ tool-owned format outside `.bat`/`.cmd`, or a byte-preserve data directory whose
 consumer may depend on), still pair a `.gitattributes` pin with a matching `.editorconfig`
 override, since the git pin alone is not enough there, `.gitattributes` governs git while the
 editor follows `.editorconfig`. For a byte-preserve directory, disable all editor normalization,
-not just EOL: `[<dir>/*]` with `charset = unset`, `end_of_line = unset`, `insert_final_newline =
+not just EOL: `[<dir>/**]` with `charset = unset`, `end_of_line = unset`, `insert_final_newline =
 false`, `trim_trailing_whitespace = false` (`unset` is EditorConfig's spec-defined special value
-that removes an inherited property).
+that removes an inherited property, and `**` is needed rather than `*` so a nested file under the
+directory is covered too, since `*` excludes `/` and only matches one path component).
 
 ## Editing discipline
 
