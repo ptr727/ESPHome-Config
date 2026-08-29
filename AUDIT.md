@@ -33,7 +33,7 @@ This asserts the live repository settings against the hub's `settings.json`, and
 exiting non-zero on drift. A missing ruleset or a divergent payload is a **defect**. The result
 must also be exactly two rulesets named `develop` and `main`, but `configure.sh check` only warns
 on a duplicate expected name and does not enumerate a stray one, so a duplicate or stray ruleset
-is confirmed instead by running `spec/audit.py ESPHome-Config` from the same hub checkout, which
+is confirmed instead by running `python3 spec/audit.py ESPHome-Config` from the same hub checkout, which
 does report both as a **drift finding**.
 
 ## Secrets
