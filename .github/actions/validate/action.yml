@@ -12,7 +12,6 @@ runs:
           DEVICES.md
           easystart/README.md
           easystart/python/README.md
-          repo-config/README.md
         incremental_files_only: false
 
     - name: Setup uv step
