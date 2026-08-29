@@ -485,18 +485,18 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 - **Never mount the live checkout into a third-party lint container.** `secrets.yaml` holds the live secrets and is git-ignored. [`secrets._yaml`][secrets-example] is the tracked placeholder. Build a temporary snapshot from tracked and intended untracked files, mount that snapshot read-only, and remove it when done. The Git exclusion rules keep `secrets.yaml` out without maintaining a second exclusion list.
 
   ```shell
+  set -Eeuo pipefail
   repo_root="$(git rev-parse --show-toplevel)"
   lint_root="$(mktemp -d /tmp/esphome-lint.XXXXXX)"
   trap 'rm -rf "$lint_root"' EXIT
   git -C "$repo_root" ls-files --cached --others --exclude-standard -z | tar -C "$repo_root" --null -T - -cf - | tar -xf - -C "$lint_root"
-  chmod -R o+rX "$lint_root"
-  docker run --rm --network=none -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
+  docker run --rm --network=none --user "$(id -u):$(id -g)" -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
   ```
 
-  `chmod -R o+rX` stays: `mktemp -d`'s default `0700` blocks a lint container running as a
-  non-matching, non-root UID (the common case for these images) from reading the mount at all,
-  and the trap now removes the snapshot regardless, so the readable window is only the lint run
-  itself on a single-tenant CI runner or dev host.
+  `--user "$(id -u):$(id -g)"` runs the container as the invoking host user rather than the
+  image's own default, so it reads `$lint_root` through the same owner permission bits `mktemp
+  -d`'s default `0700` already grants, with no `chmod` opening it to any other local account. The
+  trap removes the snapshot on exit either way.
 
   **This includes the hub's `scripts/docker_lint.py` wrapper, and it cannot currently take this snapshot as its `--root`.** Its own target discovery runs `git -C "$root" ls-files`, and the snapshot above deliberately holds only the `git ls-files` output, not `.git` itself, so `--root "$lint_root"` fails with "not a git repository" before any linter runs. Passing the live checkout instead would defeat the whole point of the snapshot. Until the wrapper accepts a plain snapshot or file manifest (tracked upstream as [ptr727/ProjectTemplate#1090][hub-issue-1090]), lint this repository with the direct `docker run` invocations above rather than `docker_lint.py`.
 
