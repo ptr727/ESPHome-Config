@@ -44,6 +44,7 @@ packages:
   api: !include api.yaml
   basic: !include basic.yaml
   debug: !include debug.yaml
+  minversion: !include min-version.yaml
   ota: !include ota.yaml
   time: !include time.yaml
   wifi: !include wifi.yaml

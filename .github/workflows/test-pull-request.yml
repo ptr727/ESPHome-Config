@@ -98,7 +98,7 @@ jobs:
       - name: List template test configs step
         id: configs
         env:
-          UTILITY: api basic common debug ethernet-sensor logger max17048 ota rgb-led-status secrets temperature time wifi
+          UTILITY: api basic common debug ethernet-sensor logger max17048 min-version ota rgb-led-status secrets temperature time wifi
         run: |
           set -Eeuo pipefail
           missing=()

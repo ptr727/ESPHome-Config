@@ -37,6 +37,7 @@ esphome:
 # https://esphome.io/components/packages
 packages:
   apollo: github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main
+  minversion: !include min-version.yaml
   time: !include time.yaml
 
 # Strip stock-firmware provisioning + the HA-side update entity.
