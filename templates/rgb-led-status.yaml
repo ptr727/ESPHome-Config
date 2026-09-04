@@ -92,7 +92,7 @@ light:
     id: system_status_led
     name: "Status LED"
     pin: ${rgb_led_pin}
-    rgb_order: GRB
+    channel_colors: GRB
     num_leds: 1
     chipset: WS2812
     disabled_by_default: true
