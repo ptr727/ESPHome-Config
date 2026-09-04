@@ -123,7 +123,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - [`debug.yaml`][debug] - debug component and debug text sensors.
 - [`temperature.yaml`][temperature] - on-chip internal temperature sensor.
 - [`ethernet-sensor.yaml`][ethernet-sensor] - Ethernet IP / MAC info text sensors.
-- [`min-version.yaml`][min-version] - the ESPHome `min_version` floor, the single place that version is set.
+- [`min-version.yaml`][min-version] sets the ESPHome `min_version` floor, the single place that version is written.
 - [`secrets.yaml`][secrets] - re-exports the root `secrets.yaml` so templates can resolve secrets.
 
 ### Board and Component Helpers

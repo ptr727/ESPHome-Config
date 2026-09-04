@@ -1,6 +1,6 @@
 # External usage:
 # packages:
-#   minversion: github://ptr727/ESPHome-Config/templates/min-version.yaml@main
+#   `minversion: github://ptr727/ESPHome-Config/templates/min-version.yaml@main`
 
 # The last ESPHome release the templates in this repository were compiled and tested against.
 # - This is the only place the version is written, so bump it here when CI moves to a newer release.
