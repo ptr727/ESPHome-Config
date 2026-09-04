@@ -38,6 +38,7 @@ packages:
   gdov2q: github://konnected-io/konnected-esphome/garage-door-GDOv2-Q.yaml
   api: !include api.yaml
   logger: !include logger.yaml
+  minversion: !include min-version.yaml
   ota: !include ota.yaml
   time: !include time.yaml
 

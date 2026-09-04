@@ -1,0 +1,11 @@
+# External usage:
+# packages:
+#   minversion: github://ptr727/ESPHome-Config/templates/min-version.yaml@main
+
+# The last ESPHome release the templates in this repository were compiled and tested against.
+# - This is the only place the version is written, so bump it here when CI moves to a newer release.
+# - Every board template reaches it, directly or through common.yaml, so a new one adds the include.
+# - A build then stops on an old release rather than failing later on a component that release lacks.
+# https://esphome.io/components/esphome#esphome-min_version
+esphome:
+  min_version: 2026.8.2

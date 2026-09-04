@@ -4,16 +4,3 @@ substitutions:
 
 packages:
   thinknode: !include templates/elecrow-thinknode-m7.yaml
-
-# https://esphome.io/components/external_components
-# The template needs the CH390 ethernet type, which ESPHome does not ship yet.
-# Tracked upstream as esphome/esphome#18226, and the block goes away once that merges and releases.
-# A local path resolves against this config's own directory.
-# Local, not `source: github://pr#18226`: that fetches the PR's ethernet component, which is based on dev
-# and imports get_network_priority from the core network component, absent in the installed release.
-# external_components shadows ethernet only, so the dev component meets a release core and the import fails.
-external_components:
-  - source:
-      type: local
-      path: ch390/components
-    components: [ethernet]

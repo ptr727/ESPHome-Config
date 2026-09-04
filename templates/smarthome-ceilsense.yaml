@@ -53,6 +53,7 @@ packages:
   base:   github://smarthomeshop/ceilsense/ceilsense-v1/base.yaml@main
   ld2412: github://smarthomeshop/ceilsense/ceilsense-v1/packages/ld2412.yaml@main
   scd4x:  github://smarthomeshop/ceilsense/ceilsense-v1/packages/scd4x.yaml@main
+  minversion: !include min-version.yaml
   time: !include time.yaml
 
 # Whole-key removals from base.yaml, dropping the web UI and the firmware-update entity.

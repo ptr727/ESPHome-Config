@@ -153,6 +153,14 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 ## Template Notes
 
+### Minimum ESPHome Version
+
+[`templates/min-version.yaml`][min-version-template] carries the only `esphome:` `min_version` in the tree, set to the last release the templates were compiled and tested against. Bump that one file when they are re-tested on a newer release, and every template that reaches it follows.
+
+- **Every board template reaches it**, through [`common.yaml`][common-template] or through its own `packages:` entry, so a board template that cannot use `common.yaml` adds `minversion: !include min-version.yaml` itself. One that omits it validates and compiles exactly the same and nothing in CI notices, so check the include when adding a board template.
+- **Everything else inherits it.** An overlay, a parameterized package such as [`easystart.yaml`][easystart-template], and every utility include are only ever composed onto a board template, so none of them carries a copy of its own.
+- **A duplicate include is harmless.** Packages merge and every path resolves to the same scalar, so a board template composed alongside `common.yaml` needs no deduplication.
+
 ### Apollo PLT-1B
 
 [`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/data/appdata/esphome/cache/data/packages/8bc80dd7/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
@@ -529,6 +537,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [governance]: ./GOVERNANCE.md
 [governance-write-safety]: ./GOVERNANCE.md#repository-boundaries-and-write-safety
 [max17048-template]: ./templates/max17048.yaml
+[min-version-template]: ./templates/min-version.yaml
 [norvi-template]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md

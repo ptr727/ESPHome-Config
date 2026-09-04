@@ -33,7 +33,7 @@ A [collection][templates] of utility and device-specific configuration templates
 
 Note that for devices with native ESPHome factory firmware, I opt to strip out the generic project and [Improv][improv-wifi-link] configuration in favor of a custom configuration specific to my environment. This also cuts down on resource utilization by removing unused features.
 
-Every device template has an example configuration in [test][test] that CI compiles against the current ESPHome release, so a published template is known to build. The examples also serve as minimal usage samples, composing the template with a local `!include`.
+Every device template has an example configuration in [test][test] that CI compiles against the current ESPHome release, so a published template is known to build. That release is also written into [`min-version.yaml`][min-version], which every device template reaches, so composing a template on an older ESPHome stops at validation rather than at a missing component. The examples also serve as minimal usage samples, composing the template with a local `!include`.
 
 Every template also opens with an `External usage:` comment block showing how to compose it from outside this repository as a remote `github://` package, along with whatever that particular template needs from the including config. Relative includes resolve inside the fetched package, and `!secret` falls back to a `secrets.yaml` beside the including config, so an adopter supplies their own secrets under the names in [`secrets._yaml`][secrets-example].
 
@@ -123,6 +123,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - [`debug.yaml`][debug] - debug component and debug text sensors.
 - [`temperature.yaml`][temperature] - on-chip internal temperature sensor.
 - [`ethernet-sensor.yaml`][ethernet-sensor] - Ethernet IP / MAC info text sensors.
+- [`min-version.yaml`][min-version] - the ESPHome `min_version` floor, the single place that version is set.
 - [`secrets.yaml`][secrets] - re-exports the root `secrets.yaml` so templates can resolve secrets.
 
 ### Board and Component Helpers
@@ -286,6 +287,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [license]: ./LICENSE
 [logger]: ./templates/logger.yaml
 [max17048]: ./templates/max17048.yaml
+[min-version]: ./templates/min-version.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
 [operations-debugging]: ./OPERATIONS.md#debugging
 [operations-framework-and-platform-versions]: ./OPERATIONS.md#framework-and-platform-versions
