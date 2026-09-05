@@ -7,13 +7,6 @@
 # device_name
 # device_friendly_name
 
-# Required external components:
-# ethernet, from the patched copy in ch390/components, which adds the CH390 type ESPHome lacks.
-# - The including config declares it, because a local path resolves against that config's own directory.
-# - Upstream as esphome/esphome#18226, and the block goes away once that merges and ships in a release.
-# - Not `source: github://pr#18226`: that component is based on dev and imports get_network_priority from the
-#   core network component, which the installed release lacks, and external_components shadows ethernet only.
-
 # Elecrow ThinkNode M7
 # ESP32-S3 QFN56 rev v0.2, 8MB Quad Flash, 8MB Octal PSRAM, 40MHz crystal
 
@@ -84,6 +77,7 @@ packages:
   debug: !include debug.yaml
   ethernetsensor: !include ethernet-sensor.yaml
   logger: !include logger.yaml
+  minversion: !include min-version.yaml
   ota: !include ota.yaml
   temperature: !include temperature.yaml
   time: !include time.yaml

@@ -1,15 +1,13 @@
+# Secrets
 /secrets.yaml
 
-# Python tooling caches from the local BLE monitor utility.
+# Python
 __pycache__/
 *.pyc
 .ruff_cache/
+.mypy_cache/
 
-# Serial and API log captures kept for debugging, they hold device MACs and are large.
+# ESPHome
 logs/
-
-# ESPHome build artifacts, from compiling the test configs locally.
-# ESPHome also auto-writes a boilerplate .gitignore into any config directory it compiles.
 .esphome/
-easystart/test/.gitignore
-test/.gitignore
+.device-builder*

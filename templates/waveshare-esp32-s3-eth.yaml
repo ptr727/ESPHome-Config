@@ -96,6 +96,7 @@ packages:
   debug: !include debug.yaml
   ethernetsensor: !include ethernet-sensor.yaml
   logger: !include logger.yaml
+  minversion: !include min-version.yaml
   ota: !include ota.yaml
   rgbledstatus: !include rgb-led-status.yaml
   temperature: !include temperature.yaml
