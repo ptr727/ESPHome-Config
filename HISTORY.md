@@ -10,7 +10,7 @@ ESPHome configuration templates and projects.
   - Added ESPHome `min_version` to templates (required to use `CH390` and `channel_colors`).
 - Version 2.0:
   - Refactored the layout to be fleet conformant.
-  - Added Elecrow Thinknode M7 support.
+  - Added Elecrow ThinkNode M7 support.
   - Added CH390 ethernet controller support (ESPHome [PR][esphome-pr-18226-link] submitted).
   - Added Micro-Air EasyStart support.
   - Added Apollo's PLT-1B support.

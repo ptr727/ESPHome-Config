@@ -7,7 +7,7 @@ ESPHome configuration templates and projects.
 - **Source Code**: [GitHub][github-link] for source, issues, and CI/CD pipelines.
 - **Versioned Releases**: [GitHub Releases][releases-link] for version-tagged source archives.
 
-### Build Status <!-- omit from toc -->
+### Publish Status <!-- omit from toc -->
 
 [![Publish Status][publish-status-shield]][actions-link]\
 [![Last Commit][last-commit-shield]][commits-link]
