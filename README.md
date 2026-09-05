@@ -219,7 +219,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Includes the on-chip temperature sensor and a plain status LED, since the board's LED is not individually addressable.
 - Flash over USB through the onboard CH343 USB-UART bridge, no external adapter needed.
 - The board's Semtech LR1110 LoRa radio is deliberately not configured: ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
-- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout, established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
+- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout. Both were established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
 - The user button is an ADC ladder with no documented threshold, exposed as a raw voltage sensor.
 
 ## Devices
