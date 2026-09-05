@@ -42,6 +42,7 @@ This is a public repository whose primary audience is people reusing the templat
 - **[`DEVICES.md`][devices] documents the deployed fleet**: one section per device or device family, naming the template it composes and carrying the siting, status, and maintenance state of the physical unit. A reader who is not the maintainer has no use for it.
 - **The test is whether a stranger reusing the template needs it.** Knowledge that generalizes to any instance of the hardware belongs in `README.md`. Anything true only of this installation - where a unit is mounted, what signal it sees there, why one is powered off, which ones await a reflash - belongs in `DEVICES.md`. A device-specific fact does not migrate to `README.md` by being interesting.
 - **Agent-facing depth stays here** in [Template Notes][template-notes]. `README.md` and `DEVICES.md` are both written for humans, so a mechanism an agent needs in order to change a config safely is documented in this file and linked from there rather than expanded inline.
+- **A root config named `<name>-test.yaml` is bench hardware, not the deployed fleet.** `.gitignore` excludes `*-test.yaml` at the repository root, so it needs no commit history and never appears in `DEVICES.md`. This is distinct from [`test/`][test], which holds the tracked, CI-compiled example device per template.
 
 ## Container and CLI
 

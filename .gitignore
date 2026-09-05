@@ -12,5 +12,6 @@ logs/
 .esphome/
 .device-builder*
 
-# Bench hardware, not part of the deployed fleet.
-/thinknode-m7.yaml
+# Bench and test devices, not part of the deployed fleet.
+# A root config named *-test.yaml needs no commit history, see OPERATIONS.md "Documenting a Device".
+/*-test.yaml
