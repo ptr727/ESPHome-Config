@@ -11,3 +11,6 @@ __pycache__/
 logs/
 .esphome/
 .device-builder*
+
+# Bench hardware, not part of the deployed fleet.
+/thinknode-m7.yaml
