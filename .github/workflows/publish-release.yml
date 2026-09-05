@@ -55,7 +55,6 @@ jobs:
       branch: ${{ github.ref_name }}
       smoke: false
       github: true
-      nuget: false
       dockerhub: false
       enable_docker: false
       enable_nuget: false
