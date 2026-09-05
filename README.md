@@ -4,12 +4,12 @@ ESPHome configuration templates and projects.
 
 ## Build and Distribution <!-- omit from toc -->
 
-- Source Code: [GitHub][github-link]
-- Versioned Releases: [GitHub Releases][releases-link]
+- **Source Code**: [GitHub][github-link] for source, issues, and CI/CD pipelines.
+- **Versioned Releases**: [GitHub Releases][releases-link] for version-tagged source archives.
 
 ### Build Status <!-- omit from toc -->
 
-[![Build Status][build-status-shield]][actions-link]\
+[![Publish Status][publish-status-shield]][actions-link]\
 [![Last Commit][last-commit-shield]][commits-link]
 
 ### Releases <!-- omit from toc -->
@@ -19,9 +19,28 @@ ESPHome configuration templates and projects.
 
 ### Release Notes <!-- omit from toc -->
 
-Version 2.0. See [HISTORY.md][history] for the release notes.
+**Version 2.1**:
+
+- Updated to use ESPHome's [CH390 ethernet controller][esphome-blog-ch390-link] after my [PR][esphome-pr-18226-link] landed.
+- Updated deprecated `rgb_order` to `channel_colors`.
+- Added ESPHome `min_version` to templates (required to use `CH390` and `channel_colors`).
+
+See [HISTORY.md][history] for the release notes.
 
 ## Table of Contents <!-- omit from toc -->
+
+- [ESPHome-Config](#esphome-config)
+  - [Overview](#overview)
+  - [Templates](#templates)
+    - [Device Templates](#device-templates)
+    - [Utility Templates](#utility-templates)
+    - [Board and Component Helpers](#board-and-component-helpers)
+  - [Devices](#devices)
+  - [Usage](#usage)
+  - [Questions or Issues](#questions-or-issues)
+  - [Debugging](#debugging)
+  - [3rd Party Tools](#3rd-party-tools)
+  - [License](#license)
 
 ## Overview
 
@@ -193,6 +212,16 @@ Shared building-block includes, composed via `packages:` by the device templates
     - `camera_resolution`: `SVGA` (800x600) by default. The OV2640 tops out at `UXGA` (1600x1200), and the larger sizes in the ESPHome list are OV5640 sizes.
 - The TF card slot is documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
 
+#### Elecrow ThinkNode M7 Board
+
+- [Template][elecrow-thinknode-m7] for the [Elecrow ThinkNode M7][elecrow-thinknode-m7-link] board, an ESP32-S3 with 8MB Quad Flash and 8MB Octal PSRAM.
+- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support.
+- Includes the on-chip temperature sensor and a plain status LED, since the board's LED is not individually addressable.
+- Flash over USB through the onboard CH343 USB-UART bridge, no external adapter needed.
+- The board's Semtech LR1110 LoRa radio is deliberately not configured: ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
+- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout, established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
+- The user button is an ADC ladder with no documented threshold, exposed as a raw voltage sensor.
+
 ## Devices
 
 The templates above run on my own devices, whose per-device configs live in the repository root. They are documented in [DEVICES.md][devices].
@@ -245,7 +274,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 
 <!-- Shields -->
 
-[build-status-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/test-pull-request.yml?branch=main&label=build
+[publish-status-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/publish-release.yml?branch=main&label=publish
 [github-prerelease-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?include_prereleases&label=pre-release
 [github-release-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?label=release
 [last-commit-shield]: https://img.shields.io/github/last-commit/ptr727/ESPHome-Config?label=last%20commit
@@ -274,6 +303,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [easystart-readme]: ./easystart/README.md
 [easystart-template]: ./templates/easystart.yaml
 [efun-sh331]: ./templates/efun-sh331.yaml
+[elecrow-thinknode-m7]: ./templates/elecrow-thinknode-m7.yaml
 [esp32-s3-devkitc]: ./templates/esp32-s3-devkitc.yaml
 [esp32-s3-wroom-1-n16r8]: ./templates/esp32-s3-wroom-1-n16r8.yaml
 [esp32-s3-wroom-2-n16r8v]: ./templates/esp32-s3-wroom-2-n16r8v.yaml
@@ -329,9 +359,13 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [docker-hub-esphome-link]: https://hub.docker.com/r/esphome/esphome
 [editorconfig-checker-link]: https://github.com/editorconfig-checker/editorconfig-checker
 [efun-sh331w-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
+[elecrow-thinknode-m7-link]: https://www.elecrow.com/thinknode-m7-wireless-communication-gateway-for-lorawan-powered-by-esp32-s3-and-lr1110.html
+[elecrow-thinknode-m7-wiki-link]: https://www.elecrow.com/wiki/ThinkNode_M7_LoRaWAN_Wireless_Communication_Gateway_Support_PoE_Power.html
+[esphome-blog-ch390-link]: https://esphome.io/blog/2026/08/19/esphome-2026-8/#new-hardware-support
 [esphome-components-ethernet-link]: https://esphome.io/components/ethernet/
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
 [esphome-link]: https://esphome.io
+[esphome-pr-18226-link]: https://github.com/esphome/esphome/pull/18226
 [espressif-esp32-s3-devkitc-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 [gh-release-link]: https://github.com/marketplace/actions/gh-release
 [github-actions-link]: https://github.com/actions
