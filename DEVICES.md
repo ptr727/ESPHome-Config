@@ -6,7 +6,7 @@ Each per-device config lives in the repository root, one per physical device. Ea
 
 ## Plant Sensors
 
-- [`music-room-plant-sensor.yaml`][music-room-plant-sensor], [`patio-plant-sensor.yaml`][patio-plant-sensor], [`stairs-plant-sensor.yaml`][stairs-plant-sensor], and [`upstairs-hallway-plant-sensor.yaml`][upstairs-hallway-plant-sensor] use the [Apollo PLT-1B template][apollo-plt-1b].
+- [`living-room-plant-sensor.yaml`][living-room-plant-sensor], [`music-room-plant-sensor.yaml`][music-room-plant-sensor], [`patio-plant-sensor.yaml`][patio-plant-sensor], [`stairs-plant-sensor.yaml`][stairs-plant-sensor], and [`upstairs-hallway-plant-sensor.yaml`][upstairs-hallway-plant-sensor] use the [Apollo PLT-1B template][apollo-plt-1b].
 
 ## Garage Presence and Air Sensor
 
@@ -71,6 +71,7 @@ The remaining ESP32 devices are clear: the [garage presence sensor][garage-prese
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
 [konnected-blaq]: ./templates/konnected-blaq.yaml
+[living-room-plant-sensor]: ./living-room-plant-sensor.yaml
 [music-room-plant-sensor]: ./music-room-plant-sensor.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml

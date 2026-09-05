@@ -1,6 +1,0 @@
-substitutions:
-  device_name: thinknode-m7
-  device_friendly_name: "ThinkNode M7"
-
-packages:
-  thinknode: !include templates/elecrow-thinknode-m7.yaml
