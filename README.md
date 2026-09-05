@@ -128,6 +128,16 @@ Every template also opens with an `External usage:` comment block showing how to
 - Used by [`hvac-compressor-sensor.yaml`][hvac-compressor-sensor], which sits outside next to the HVAC units and attaches both compressors.
 - The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/][easystart], see [easystart/README.md][easystart-readme] for details.
 
+#### ThinkNode M7 LoRaWAN Gateway
+
+- [Template][elecrow-thinknode-m7] for the [Elecrow ThinkNode M7][elecrow-thinknode-m7-link], an ESP32-S3 with 8MB Quad Flash and 8MB Octal PSRAM.
+- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support.
+- Includes the on-chip temperature sensor and a plain status LED, since the board's LED is not individually addressable.
+- Flash over USB through the onboard CH343 USB-UART bridge, no external adapter needed.
+- The device's Semtech LR1110 LoRa radio is deliberately not configured: ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
+- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout. Both were established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
+- The user button is an ADC ladder with no documented threshold, exposed as a raw voltage sensor.
+
 ### Utility Templates
 
 Shared building-block includes, composed via `packages:` by the device templates and per-device configs:
@@ -211,16 +221,6 @@ Shared building-block includes, composed via `packages:` by the device templates
   - Optional substitutions:
     - `camera_resolution`: `SVGA` (800x600) by default. The OV2640 tops out at `UXGA` (1600x1200), and the larger sizes in the ESPHome list are OV5640 sizes.
 - The TF card slot is documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
-
-#### Elecrow ThinkNode M7 Board
-
-- [Template][elecrow-thinknode-m7] for the [Elecrow ThinkNode M7][elecrow-thinknode-m7-link] board, an ESP32-S3 with 8MB Quad Flash and 8MB Octal PSRAM.
-- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support.
-- Includes the on-chip temperature sensor and a plain status LED, since the board's LED is not individually addressable.
-- Flash over USB through the onboard CH343 USB-UART bridge, no external adapter needed.
-- The board's Semtech LR1110 LoRa radio is deliberately not configured: ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
-- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout. Both were established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
-- The user button is an ADC ladder with no documented threshold, exposed as a raw voltage sensor.
 
 ## Devices
 
