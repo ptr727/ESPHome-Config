@@ -1,9 +1,9 @@
 name: Test pull request action
 
-# Source lint plus change-gated compile tests, run on the ptr727/esphome-nonroot image the repo deploys.
-# - compile-test builds the easystart external component, whose C++ and codegen only fail at compile time.
+# Source lint plus a change-gated compile test, run on the ptr727/esphome-nonroot image the repo deploys.
 # - template-compile-test builds one example device per published template, so nothing ships that cannot build.
-# Both cost minutes of esp-idf build, so each runs only when what it covers moves.
+# - test/easystart.yaml is one such example device, so it also covers the easystart external component.
+# It costs minutes of esp-idf build, so it runs only when what it covers moves.
 # Operational model.
 # - develop takes direct signed commits, where push runs advisory CI.
 # - main is the promoted snapshot, where the develop -> main promotion PR runs the enforced gate.
@@ -36,8 +36,8 @@ jobs:
     permissions:
       contents: read
 
-  # Change gate for the compile tests, plus the template matrix definition.
-  # An esp-idf build costs minutes, so gate on what each test covers.
+  # Change gate for the compile test, plus the template matrix definition.
+  # An esp-idf build costs minutes, so gate on what the test covers.
   # An undeterminable diff runs everything.
   changes:
     name: Detect build-affecting changes job
@@ -45,7 +45,6 @@ jobs:
     permissions:
       contents: read
     outputs:
-      compile-test: ${{ steps.filter.outputs.compile-test }}
       template-test: ${{ steps.filter.outputs.template-test }}
       template-configs: ${{ steps.configs.outputs.template-configs }}
 
@@ -66,7 +65,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           run_all() {
-            echo "compile-test=true" >> "$GITHUB_OUTPUT"
             echo "template-test=true" >> "$GITHUB_OUTPUT"
             exit 0
           }
@@ -79,12 +77,6 @@ jobs:
             run_all
           fi
           WORKFLOW='\.github/workflows/test-pull-request\.yml$'
-          # ble-notify-race-test.yaml is a root device config, so it needs its own pattern.
-          if grep -qE "^(easystart/components/|easystart/test/|ble-notify-race-test\.yaml$|$WORKFLOW)" <<<"$DIFF"; then
-            echo "compile-test=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "compile-test=false" >> "$GITHUB_OUTPUT"
-          fi
           # test/ hosts the example devices, and test/easystart.yaml compiles easystart/components.
           if grep -qE "^(templates/|test/|easystart/components/|$WORKFLOW)" <<<"$DIFF"; then
             echo "template-test=true" >> "$GITHUB_OUTPUT"
@@ -114,48 +106,6 @@ jobs:
           CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
           echo "Template matrix: $CONFIGS"
           echo "template-configs=$CONFIGS" >> "$GITHUB_OUTPUT"
-
-  # Compile the easystart component in the deployment image, ptr727/esphome-nonroot.
-  # The build tree and HOME live under the world-writable /cache mount that the image's cache.sh initializes.
-  # /config is the repo, so the test config's `path: ../components` resolves to the real component source.
-  compile-test:
-    name: Compile test job
-    runs-on: ubuntu-latest
-    needs: [ changes ]
-    if: ${{ needs.changes.outputs.compile-test == 'true' }}
-    permissions:
-      contents: read
-
-    steps:
-
-      - name: Checkout code step
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # ble-notify-race-test.yaml resolves !secret through the board template, so it needs the dummy set.
-      # The encryption key is generated here, so no usable key is committed.
-      - name: Create dummy secrets step
-        run: |
-          set -Eeuo pipefail
-          cp secrets._yaml secrets.yaml
-          sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" secrets.yaml
-
-      - name: Compile easystart test config step
-        run: |
-          set -Eeuo pipefail
-          cache="$(mktemp -d)"
-          chmod -R 0777 "$cache" .
-          docker run --rm --user 1000:1000 \
-            --volume "$PWD":/config \
-            --volume "$cache":/cache \
-            ptr727/esphome-nonroot:latest \
-            bash -c '
-              set -Eeuo pipefail
-              /entrypoint/cache.sh
-              esphome config /config/easystart/test/compile-test.yaml > /dev/null
-              esphome compile /config/easystart/test/compile-test.yaml
-              esphome config /config/ble-notify-race-test.yaml > /dev/null
-              esphome compile /config/ble-notify-race-test.yaml
-            '
 
   # Compile one example device per published template.
   # test/ holds the configs, and the Device Builder scan is non-recursive, so they are not listed as devices.
@@ -209,7 +159,7 @@ jobs:
   check-workflow-status:
     name: Check pull request workflow status job
     runs-on: ubuntu-latest
-    needs: [ validate, changes, compile-test, template-compile-test ]
+    needs: [ validate, changes, template-compile-test ]
     if: always()
     steps:
       - name: Check workflow results step
@@ -223,13 +173,9 @@ jobs:
             echo "Job 'changes' did not succeed (${{ needs.changes.result }}); refusing to pass."
             exit 1
           fi
-          # The compile jobs are skipped when the change gate says nothing they cover moved.
+          # The compile job is skipped when the change gate says nothing it covers moved.
           # Only a real failure blocks, a skip must still pass.
           # The matrix aggregates to a single result, failure if any leg failed.
-          if [[ "${{ needs.compile-test.result }}" == "failure" ]]; then
-            echo "Job 'compile-test' failed; refusing to pass."
-            exit 1
-          fi
           if [[ "${{ needs.template-compile-test.result }}" == "failure" ]]; then
             echo "Job 'template-compile-test' failed; refusing to pass."
             exit 1
