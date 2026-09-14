@@ -4,17 +4,6 @@ How to work in this repository: reaching the ESPHome CLI, validating and flashin
 
 [`GOVERNANCE.md`][governance] is carried fleet law and byte-locked, so a durable rule specific to this repository cannot live there. It goes in whichever local doc owns the subject: ESPHome operations and repository tooling here, code and documentation style in [`CODESTYLE.md`][codestyle], the CI/CD workflow contract in [`WORKFLOW.md`][workflow].
 
-## Local Verification
-
-What verifying a change here costs, and which half of this repository's contract CI structurally cannot reach. [`GOVERNANCE.md`][governance] "Verification Discipline" points every agent at this heading for that list.
-
-- **ESPHome validation runs in the `esphome` container**, never against a host `esphome` binary. [Container and CLI][container-and-cli] has the invocation. [Config and Compile Validation][config-and-compile-validation] decides which of the two to run: `esphome config` is cheap and answers a YAML-shape change, and a compile costs minutes and is reserved for a change that can plausibly reach generated code.
-- **The doc gates run whole-tree, not against your diff.** In the hub's reusable `validate-task.yml`, markdownlint globs `**/*.md`, cspell sets `incremental_files_only: false`, and `editorconfig-checker` and actionlint read the whole checkout. Only the prose gate is diff-scoped, and it runs on a pull request alone. So a diff-scoped local pass proves nothing about the four that are not, and the local check to run is the whole-tree one the `Lint:` tasks in [`.vscode/tasks.json`](./.vscode/tasks.json) drive.
-- **Those tasks mount the working folder into third-party lint containers**, which is exactly what [Repository Tooling Hazards][repository-tooling-hazards] forbids for the live `/config` checkout, where `secrets.yaml` sits untracked beside the files being linted. Run them from a worktree, which carries no `secrets.yaml`, or build the snapshot that section describes. The rule is about the tree you mount rather than about the tasks.
-- **A green CI run does not mean anything was compiled.** `template-compile-test` is gated behind the `changes` job and runs only when the diff touches `templates/`, `test/`, `easystart/components/`, or the workflow itself, and `check-workflow-status` passes a skipped compile by design. A docs-only change, or one editing a root device YAML, goes green having built nothing.
-- **Nothing in CI touches hardware, and nothing in CI flashes.** Where the compile does run, it proves one example device per published template builds against the current ESPHome release, against a dummy `secrets.yaml` the workflow generates. It says nothing about whether the device boots, whether its pins suit the board in hand, or whether a BLE or ethernet peripheral enumerates. Those are claims about a physical flash and a log capture, per [Flashing and sdkconfig][flashing-and-sdkconfig] and [Logs and the API Connection Cap][logs-and-the-api-connection-cap].
-- **This tree is deployed state, so a broken commit on `develop` is a broken running instance.** There is no staging copy between a commit here and the ESPHome add-on reading it.
-
 ## Keeping This File Current
 
 An operational discovery is written down as part of the change that surfaced it, never left in a session note or an agent's memory. This is the local routing for the self-improvement rule in [`GOVERNANCE.md`][governance], which owns the principle.
@@ -539,18 +528,14 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
-[config-and-compile-validation]: #config-and-compile-validation
-[container-and-cli]: #container-and-cli
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
-[flashing-and-sdkconfig]: #flashing-and-sdkconfig
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
 [governance]: ./GOVERNANCE.md
 [governance-write-safety]: ./GOVERNANCE.md#repository-boundaries-and-write-safety
-[logs-and-the-api-connection-cap]: #logs-and-the-api-connection-cap
 [max17048-template]: ./templates/max17048.yaml
 [min-version-template]: ./templates/min-version.yaml
 [norvi-template]: ./templates/norvi-enet-ae06-r.yaml

@@ -279,4 +279,3 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`cspell.json`](./cspell.json), the spelling dictionary, carried at intent fidelity rather than byte-identical, so adding a word this repository needs is ordinary maintenance and not drift.
 - [`.clang-format`](./.clang-format), the single source of truth for C/C++ formatting, this repository's own and derived from ESPHome upstream, per [`CODESTYLE.md`](./CODESTYLE.md) "C++".
 - [`.github/copilot-instructions.md`](./.github/copilot-instructions.md), the Copilot review runbook, carried from the hub except for its "Disproved Claims" ledger, whose entries are each repository's own.
-- [`.vscode/`](./.vscode/), the workspace settings and the `Lint:` tasks, which are the only place the local lint invocations are written down.
