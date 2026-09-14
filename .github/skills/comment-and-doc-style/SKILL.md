@@ -40,6 +40,24 @@ Use each tool's official casing in task labels, docs, and prose: `.NET` (not `.N
   disables (for example `MD013` line length) stays disabled, do not "fix" it. `MD033` inline HTML
   stays enabled: HTML comments, and `details`/`summary` (no Markdown equivalent for a
   collapsible), are allowed, everything else with a native Markdown equivalent uses the Markdown.
+- **A repo-local exclusion goes in a nested config, never in the root one.** The shared
+  `.markdownlint-cli2.jsonc` at the repo root is fleet-fixed, and its `ignores` list covers only
+  what every repo has, third-party Markdown under `node_modules`. A repo excluding a subtree of
+  its own that it does not treat as authored prose, a committed data archive, a vendored theme,
+  or a hand-maintained record, puts a `.markdownlint-cli2.jsonc` carrying its own `ignores`
+  beside that content. A config inside a
+  tree that is re-imported or re-vendored wholesale is deleted by the next refresh, so it is
+  re-added with the import. Excluding through the CI workflow's negated glob input instead is a
+  CI-only fix, and leaves those same files flagged for anyone who runs the linter locally.
+- **What decides whether a nested config works.** It applies to the directory it sits in and to
+  every subdirectory below it, and it filters those files even when a run names them explicitly
+  as arguments, so a bare local run and the CI step honor it alike. Its `ignores` patterns
+  resolve against that directory rather than against the repo root, so an entry written
+  repo-root-relative matches nothing and reports no error saying so. Its settings
+  merge with those above it rather than replacing them, so the fleet rule block still governs
+  the files it does not exclude. And the exclusion has to be expressed as `ignores`: the `globs`
+  and `gitignore` keys are read only from the config in the directory the linter is run from, so
+  a nested copy of either is inert.
 - **Spelling is US English**, checked by CSpell against the shared `cspell.json`
   (`"language": "en-US"`, so a British spelling is flagged). Add a project term to `cspell.json`'s
   `words` list, never to a `.code-workspace`'s own `cspell.words` block.
@@ -65,15 +83,15 @@ boundary before repository mounts begin. Each Docker command has a timeout and v
 Lint containers disable networking and mount the checkout read-only. Persist approval only when
 the executor constrains that whole shape. Never allow an unconstrained `docker run` prefix.
 PSScriptAnalyzer downloads its pinned module in a separate container that has network access and
-no repository mount. `GOVERNANCE.md` "Running the Linters Locally (Known-Working Invocations)"
-owns the exact invocation and full authorization model.
+no repository mount. `GOVERNANCE.md`'s hub-only "Running the Linters Locally (Known-Working
+Invocations)" section owns the exact invocation and full authorization model.
 
 Agent-specific authorization stays in provider-labeled bullets so one agent's configuration does
 not read as a shared requirement:
 
-- **Codex:** rules cannot safely cover changing worktree paths and digests. Smart Approvals can
-  prompt per task. No-prompt operation is supported only inside an external sandbox because it
-  removes command-wide protection.
+- **Codex:** execution rules match exact argument prefixes, so they cannot safely cover changing
+  worktree paths and digests. Smart Approvals can prompt per task. No-prompt operation is
+  supported only inside an external sandbox because it removes command-wide protection.
 
 ## Markdown formatting
 
@@ -230,7 +248,7 @@ hub-hosted tool the reader runs, are in `references/carried-doc-references.md`.
 - **Rules**: no vague titles (`update stuff`, `wip`). Dependabot's default `Bump X from Y to Z`
   titles are fine as-is. No `Co-Authored-By:` lines unless the developer explicitly asks. No
   release-bump magnitude in the title ("minor", "patch", "release v0.2.0"), Nerdbank.GitVersioning
-  computes the next version from `version.json` and git history, a dependency version in a
+  computes the next version from `version.json` and git history. A dependency version in a
   dependency-bump title is fine and expected. US English spelling, and title case with lowercase
   short bind words (a, an, the, and, but, or, of, in, on, at, to, by, for, from), a hyphenated
   compound capitalizes both parts unless the second is a short preposition (*Built-in*,
@@ -241,7 +259,7 @@ Add Structured Logging Extensions to Library
 Pin softprops/action-gh-release to Commit SHA
 Drop net8.0 Multi-Targeting from Console Project
 Bump xunit.v3 from 3.2.2 to 3.3.0
-Clarify devcontainer Setup Steps in README
+Clarify Devcontainer Setup Steps in README
 ```
 
 ## Quantitative claims
