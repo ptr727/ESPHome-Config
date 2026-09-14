@@ -7,7 +7,7 @@ ESPHome configuration templates and projects.
 - **Source Code**: [GitHub][github-link] for source, issues, and CI/CD pipelines.
 - **Versioned Releases**: [GitHub Releases][releases-link] for version-tagged source archives.
 
-### Publish Status <!-- omit from toc -->
+### Build Status <!-- omit from toc -->
 
 [![Publish Status][publish-status-shield]][actions-link]\
 [![Last Commit][last-commit-shield]][commits-link]
@@ -274,11 +274,11 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 
 <!-- Shields -->
 
-[publish-status-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/publish-release.yml?branch=main&label=publish
 [github-prerelease-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?include_prereleases&label=pre-release
 [github-release-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?label=release
 [last-commit-shield]: https://img.shields.io/github/last-commit/ptr727/ESPHome-Config?label=last%20commit
 [license-shield]: https://img.shields.io/github/license/ptr727/ESPHome-Config?label=license
+[publish-status-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/publish-release.yml?branch=main&label=publish
 
 <!-- Distribution -->
 
