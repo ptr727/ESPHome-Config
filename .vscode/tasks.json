@@ -157,7 +157,8 @@
             }
         },
         {
-            // File list matches the CI spell-check step exactly, so the two surfaces cannot drift.
+            // Wider than CI, which enforces README.md and HISTORY.md only through the hub's validate-task.yml.
+            // Keeping the two in step is not possible, since that task exposes no input to widen its list.
             "label": "Lint: Spelling",
             "type": "process",
             "command": "docker",

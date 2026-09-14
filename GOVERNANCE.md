@@ -261,7 +261,7 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 
 ## Repository Layout
 
-- [`AGENTS.md`](./AGENTS.md), the agent entry point, carrying the bootstrap, the context and delegation rules, and the map to the sections below.
+- [`AGENTS.md`](./AGENTS.md), the agent entry point, carrying the bootstrap, the context and delegation rules, and the map to the sections below, and [`CLAUDE.md`](./CLAUDE.md), which does nothing but import it, since Claude Code reads that name and not `AGENTS.md`.
 - [`GOVERNANCE.md`](./GOVERNANCE.md), [`CODESTYLE.md`](./CODESTYLE.md), [`WORKFLOW.md`](./WORKFLOW.md), [`AUDIT.md`](./AUDIT.md), the governance and audit docs, where this file is the cross-cutting-rules authority.
 - [`OPERATIONS.md`](./OPERATIONS.md), the ESPHome operational authority: reaching the CLI, validating and flashing, the template and vendor-firmware patterns, and the tooling hazards. Read it before editing any YAML under this tree.
 - [`README.md`](./README.md) and [`DEVICES.md`](./DEVICES.md), the human-facing docs rather than governance. `README.md` is the template catalog written for anyone reusing one, and `DEVICES.md` the maintainer's deployed fleet and its maintenance state.
@@ -274,3 +274,5 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`host-tools.json`](./host-tools.json), what a development host needs beyond the fleet baseline, layered over it tighten-only. Empty here, because every tool this repo's procedures need is already declared at its own floor.
 - [`.devcontainer/`](./.devcontainer/), the offline debugging container described above.
 - [`.github/workflows/`](./.github/workflows/), lint plus change-gated compile tests, and the source-only release.
+- [`.github/skills/`](./.github/skills/), the fleet Skills, generated in the hub from its own sources and carried here whole. Nothing in this tree is edited locally: a defect in one is fixed at the hub and arrives on the next resync.
+- [`.markdownlint-cli2.jsonc`](./.markdownlint-cli2.jsonc), [`.editorconfig`](./.editorconfig), [`.editorconfig-checker.json`](./.editorconfig-checker.json), [`cspell.json`](./cspell.json) and [`.gitattributes`](./.gitattributes), the fleet lint and line-ending configuration, carried from the hub rather than written here.
