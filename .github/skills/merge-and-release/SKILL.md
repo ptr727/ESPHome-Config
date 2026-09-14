@@ -71,14 +71,9 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
    else error("expected exactly one registry entry for \($name), got \($m | length)") end'`. Two
    cases, `none` versus anything else. When it
    reads `none`, report that no
-   release is configured, dispatch and run-correlation (step 6) do not apply. Otherwise (`two-phase`,
-   `dispatch-only`, or `publish-on-merge` alike), dispatch explicitly, `gh workflow run
-   publish-release.yml --ref main --repo owner/repo`, or `--ref develop` only when the maintainer
-   explicitly asked for a prerelease dispatch instead. `publish-on-merge`'s automatic publish is
-   gated on the actor being the codegen App merging a Dependabot or codegen PR
-   (operational-vs-release-workflow's publishing rules), so an ordinary human promotion merge,
-   exactly what step 3 just did, never triggers it, this step's explicit dispatch is what actually
-   ships the release here, not a side effect of the merge.
+   release is configured, dispatch and run-correlation (step 6) do not apply. Otherwise, dispatch
+   explicitly, `gh workflow run publish-release.yml --ref main --repo owner/repo`, or `--ref
+   develop` only when the maintainer explicitly asked for a prerelease dispatch instead.
 6. Correlate the specific run this dispatch produced rather than assuming the newest one is it.
    `gh run list --repo owner/repo --workflow publish-release.yml --branch main --event
    workflow_dispatch --json databaseId,createdAt,headSha` (or `--branch develop` for a prerelease
