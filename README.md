@@ -29,18 +29,15 @@ See [HISTORY.md][history] for the release notes.
 
 ## Table of Contents <!-- omit from toc -->
 
-- [ESPHome-Config](#esphome-config)
-  - [Overview](#overview)
-  - [Templates](#templates)
-    - [Device Templates](#device-templates)
-    - [Utility Templates](#utility-templates)
-    - [Board and Component Helpers](#board-and-component-helpers)
-  - [Devices](#devices)
-  - [Usage](#usage)
-  - [Questions or Issues](#questions-or-issues)
-  - [Debugging](#debugging)
-  - [3rd Party Tools](#3rd-party-tools)
-  - [License](#license)
+- [Overview](#overview)
+- [Templates](#templates)
+  - [Device Templates](#device-templates)
+  - [Utility Templates](#utility-templates)
+  - [Board and Component Helpers](#board-and-component-helpers)
+- [Devices](#devices)
+- [Usage](#usage)
+- [Questions or Issues](#questions-or-issues)
+- [Debugging](#debugging)
 
 ## Overview
 
@@ -208,7 +205,7 @@ Shared building-block includes, composed via `packages:` by the device templates
   - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
   - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
 
-#### Waveshare ESP32-S3-ETH Board
+#### Waveshare ESP32-S3-ETH Devkit
 
 - [Template][waveshare-esp32-s3-eth] for the [Waveshare ESP32-S3-ETH][waveshare-esp32-s3-eth-link] board, an ESP32-S3R8 with 16MB Quad Flash and 8MB Octal PSRAM.
 - Wired networking through the onboard [W5500][waveshare-esp32-s3-eth-wiki-link] SPI Ethernet controller, with an optional IEEE 802.3af PoE module that claims no GPIO.
@@ -224,7 +221,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 ## Devices
 
-The templates above run on my own devices, whose per-device configs live in the repository root. They are documented in [DEVICES.md][devices].
+My deployed devices use the templates and helpers, and are documented in [DEVICES.md][devices].
 
 ## Usage
 
@@ -248,7 +245,7 @@ The templates above run on my own devices, whose per-device configs live in the 
 
 Building, flashing, and debugging a device outside the live ESPHome instance is documented in [OPERATIONS.md][operations-debugging]: VSCode setup, the devcontainer, Windows, Windows WSL, and PlatformIO. The framework and platform version notes are in [the same file][operations-framework-and-platform-versions].
 
-## 3rd Party Tools
+## 3rd Party Tools <!-- omit from toc -->
 
 The third-party tools, libraries, and actions this project depends on.
 
@@ -266,7 +263,7 @@ The third-party tools, libraries, and actions this project depends on.
 - [ruff][ruff-link]: Python linter and formatter.
 - [uv][uv-link]: Python package and project manager.
 
-## License
+## License <!-- omit from toc -->
 
 Licensed under the MIT License. See [LICENSE][license] for details.
 
