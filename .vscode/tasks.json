@@ -158,7 +158,8 @@
         },
         {
             // Wider than CI, which enforces README.md and HISTORY.md only through the hub's validate-task.yml.
-            // Keeping the two in step is not possible, since that task exposes no input to widen its list.
+            // That task exposes no input to widen its list, so the two can only be matched by narrowing this one.
+            // Keeping it wide is the deliberate choice: it gates nothing, and it still surfaces a typo in a nested README.
             "label": "Lint: Spelling",
             "type": "process",
             "command": "docker",

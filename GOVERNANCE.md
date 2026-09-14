@@ -275,4 +275,8 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`.devcontainer/`](./.devcontainer/), the offline debugging container described above.
 - [`.github/workflows/`](./.github/workflows/), lint plus change-gated compile tests, and the source-only release.
 - [`.github/skills/`](./.github/skills/), the fleet Skills, generated in the hub from its own sources and carried here whole. Nothing in this tree is edited locally: a defect in one is fixed at the hub and arrives on the next resync.
-- [`.markdownlint-cli2.jsonc`](./.markdownlint-cli2.jsonc), [`.editorconfig`](./.editorconfig), [`.editorconfig-checker.json`](./.editorconfig-checker.json), [`cspell.json`](./cspell.json) and [`.gitattributes`](./.gitattributes), the fleet lint and line-ending configuration, carried from the hub rather than written here.
+- [`.markdownlint-cli2.jsonc`](./.markdownlint-cli2.jsonc), [`.editorconfig`](./.editorconfig), [`.editorconfig-checker.json`](./.editorconfig-checker.json) and [`.gitattributes`](./.gitattributes), the fleet lint and line-ending configuration, byte-identical to the hub and not edited here.
+- [`cspell.json`](./cspell.json), the spelling dictionary, carried at intent fidelity rather than byte-identical, so adding a word this repository needs is ordinary maintenance and not drift.
+- [`.clang-format`](./.clang-format), the single source of truth for C/C++ formatting, this repository's own and derived from ESPHome upstream, per [`CODESTYLE.md`](./CODESTYLE.md) "C++".
+- [`.github/copilot-instructions.md`](./.github/copilot-instructions.md), the Copilot review runbook, carried from the hub except for its "Disproved Claims" ledger, whose entries are each repository's own.
+- [`.vscode/`](./.vscode/), the workspace settings and the `Lint:` tasks, which are the only place the local lint invocations are written down.
