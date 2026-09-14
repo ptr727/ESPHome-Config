@@ -9,7 +9,7 @@ ESPHome configuration templates and projects.
 
 ### Build Status <!-- omit from toc -->
 
-[![Publish Status][publish-status-shield]][actions-link]\
+[![Release Build][release-build-shield]][actions-link]\
 [![Last Commit][last-commit-shield]][commits-link]
 
 ### Releases <!-- omit from toc -->
@@ -278,7 +278,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [github-release-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?label=release
 [last-commit-shield]: https://img.shields.io/github/last-commit/ptr727/ESPHome-Config?label=last%20commit
 [license-shield]: https://img.shields.io/github/license/ptr727/ESPHome-Config?label=license
-[publish-status-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/publish-release.yml?branch=main&label=publish
+[release-build-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/ESPHome-Config/publish-release.yml?branch=main&label=Release%20Build
 
 <!-- Distribution -->
 
