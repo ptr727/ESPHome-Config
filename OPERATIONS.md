@@ -276,7 +276,7 @@ uvx ruff@0.15.22 format --check .
 uvx pyright .
 ```
 
-The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell) are the fleet set, invoked as documented in [`GOVERNANCE.md`][governance] under "Running the Linters Locally". ESPHome config and compile validation is separate, covered above.
+The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell) are the fleet set, invoked as documented in `GOVERNANCE.md` "Running the Linters Locally (Known-Working Invocations)", a hub-only section read in a hub checkout rather than carried here. ESPHome config and compile validation is separate, covered above.
 
 ## Device Builder Auto-Commits
 
