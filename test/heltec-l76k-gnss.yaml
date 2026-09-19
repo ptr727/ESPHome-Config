@@ -1,0 +1,10 @@
+# CI compile-test for templates/heltec-l76k-gnss.yaml
+# The GNSS module is an overlay, not a standalone device.
+# Composed on the board template, as heltec-l76k-gnss.yaml documents.
+substitutions:
+  device_name: heltec-l76k-gnss-test
+  device_friendly_name: "Heltec L76K GNSS Test"
+
+packages:
+  device: !include ../templates/heltec-wifi-lora32-v4-r8.yaml
+  gnss: !include ../templates/heltec-l76k-gnss.yaml

@@ -106,11 +106,14 @@ status_led:
     number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
     ignore_strapping_warning: true
 
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
+# - A mapping is replaced outright and silently, taking this bus and any RTC on it.
 # https://esphome.io/components/i2c
 i2c:
-  sda: GPIO17
-  scl: GPIO18
-  scan: true
+  - id: board_i2c
+    sda: GPIO17
+    scl: GPIO18
+    scan: true
 
 # https://esphome.io/components/output
 output:

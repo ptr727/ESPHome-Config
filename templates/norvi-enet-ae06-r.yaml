@@ -213,13 +213,15 @@ external_components:
   - source: github://ssieb/esphome_components
     components: [ analog_keypad ]
 
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
 # https://esphome.io/components/i2c
 i2c:
-  sda: GPIO16
-  scl: GPIO17
-  # Increase speed to prevent component took a long time errors
-  # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
-  frequency: 400kHz
+  - id: board_i2c
+    sda: GPIO16
+    scl: GPIO17
+    # Increase speed to prevent component took a long time errors
+    # https://github.com/esphome/issues/issues/4717#issuecomment-1643391691
+    frequency: 400kHz
 
 # Add to common.yaml time configuration
 # https://esphome.io/components/time
