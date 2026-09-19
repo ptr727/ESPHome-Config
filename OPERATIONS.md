@@ -464,11 +464,18 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
   - WSL: `lsusb`, for example `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
   - WSL: `dmesg | grep tty`, for example `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
   - WSL: `ls /dev/tty*`, for example `/dev/ttyACM0`, `/dev/ttyUSB0`
+- Grant the account access to the port.
+  - The node class follows the socket the cable is in, not the part on the board. A native USB port enumerates as `/dev/ttyACM*` through `cdc_acm`, and a port behind a bridge chip, a CP210x or a CH340, enumerates as `/dev/ttyUSB*`. A board carrying both, the ESP32-S3-DevKitC among them, presents either depending on which socket is used.
+  - Both classes are `root:dialout`, and `dialout` is the only grant flashing and logs need.
+  - WSL: `sudo usermod -aG dialout $USER`
+  - Group membership is fixed at process start. A VS Code Remote WSL server started before the change keeps its old groups, so every terminal it spawns still fails on the port while a fresh WSL tab works. Restart WSL rather than only opening a new terminal.
+    - Windows: `wsl --shutdown`
 - Install VSCode and the Remote Explorer extension.
 - Open a VSCode Remote WSL Ubuntu session.
   - Complete the [VSCode setup][vscode-setup] in the remote WSL session.
-  - List ports: `ls /dev/tty*`.
-  - Upload firmware: `esphome run --device /dev/ttyUSB0 test/esp32-s3-devkitc.yaml`
+  - List ports: `ls /dev/tty*`, and `ls -l /dev/serial/by-id/` for the stable names.
+  - Prefer a by-id name, because `ttyACM` and `ttyUSB` numbering depends on attach order once more than one board is present. A CH340 exposes no USB serial number and so gets no by-id entry at all, and `/dev/serial/by-path/` is the fallback for those.
+  - Upload firmware: `esphome run --device /dev/serial/by-id/<by-id-name> test/esp32-s3-devkitc.yaml`
 - Unbind the serial port.
   - Windows: `usbipd detach --busid 7-1`
   - Windows: `usbipd unbind --all`
