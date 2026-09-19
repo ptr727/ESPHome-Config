@@ -16,7 +16,7 @@
 # ESP32-S3R8 on an ESP32-S3-WROOM-1-N16R8 module, 16MB Quad Flash, 8MB Octal PSRAM
 # https://heltec.org/project/wifi-lora-32-v4/
 
-# Board tested: hardware verified 2026-09-18, USB and OTA flash, WiFi, OLED, both rails, GNSS UART.
+# Board tested: 2026-09-18, USB and OTA flash, WiFi, OLED, both rails, GNSS UART, battery ADC.
 # - The battery reads 1.5% to 1.8% high against a meter, which is inside resistor tolerance.
 # - The user button is untested, and the radio and front-end pins are documented rather than claimed.
 
