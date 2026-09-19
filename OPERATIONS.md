@@ -128,6 +128,15 @@ A pin ESPHome considers a strapping pin warns at every validation. Where the wir
 - **A component that takes a bare pin number still accepts the pin mapping.** `ethernet` validates `mdc_pin`, `mdio_pin`, `power_pin`, and `clk.pin` with `pins.internal_gpio_pin_number`, and `esp32_camera` validates `data_pins` and `external_clock.pin` the same way. That validator rejects only `mode` and `inverted`, then runs the full pin schema and returns just the number, so expanding the pin to a `number:` mapping carrying `ignore_strapping_warning: true` validates and silences the warning.
 - **A pin owned by an upstream package** warns from that package's own schema, so silencing it means overriding the upstream pin rather than editing this repo's YAML.
 
+## Dollar Signs in Config Values
+
+ESPHome runs its substitution pass over every parsed config value. A `$` before word characters is a substitution reference wherever it sits. A value carrying a literal one resolves as an undefined substitution, an NMEA sentence such as `$PCAS03,...` being the case that surfaced it.
+
+- **It validates, and it warns on every run.** Nothing sets strict mode, so the text survives and the bytes reach the device. `esphome config` prints a warning that the string looks like an expression each time. That is the noise [Strapping Pin Warnings][strapping-pin-warnings] exists to keep out of validation output.
+- **Quoting does not help, and there is no escape.** YAML parses first, and the substitution pass runs on the parsed string. Both `'$PCAS03'` and `"\x24PCAS03"` arrive as `$PCAS03`. The substitutions component implements no `$$` form.
+- **Route the `$` through a substitution of its own.** A lone `"$"` value is inert, since the reference pattern needs a following name character. The expansion advances its search position past the text it just inserted. The `$` it wrote is never rescanned, so `${prefix}PCAS03,...` emits exactly `$PCAS03,...`. Confirm it by decoding the base64 `!!binary` value `esphome config` dumps for a `uart.write` action.
+- **Such a substitution is machinery rather than a knob.** Overriding it corrupts every string built on it, while each action still reports success. Document it as internal, and keep it out of the optional-substitutions list. [`heltec-l76k-gnss.yaml`][heltec-gnss-template] is the worked example.
+
 ## Verifying Component Knobs
 
 When wiring up a substitution that maps to an ESPHome component field with a constrained value set - an enum or an allowed-values list - verify the valid values from the component source first. Grep the **running container's** copy, which is the version that actually validates and compiles:
@@ -202,6 +211,23 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The OV2640 tops out at UXGA.** The larger entries in ESPHome's `FRAME_SIZES` are OV5640 sizes, and the widely copied community config for this board sets `QHD`, a size the OV2640 cannot produce. That same config uses `i2c_pins:` and puts a `switch:` on GPIO8 beside `power_down_pin: GPIO8`, which fails the pin reuse check. Do not re-derive from it.
 - **Exposure is left at the ESPHome defaults.** The overlay is a board template and exposure is a property of the room, so a dark image is tuned at the device. Community reports for this board blame `agc_gain_ceiling` defaulting to `2X` rather than the auto exposure, and nothing here has measured that, so treat it as a starting point rather than as a finding.
 - **Take the protective film off the lens before judging an image.** The bench frame that prompted the exposure note above was dark for that reason and for no other, which is worth eliminating first since every other explanation costs a reflash.
+
+### Heltec WiFi LoRa 32 V4-R8 and the L76K GNSS Module
+
+[`templates/heltec-wifi-lora32-v4-r8.yaml`][heltec-template] is a board template. [`templates/heltec-l76k-gnss.yaml`][heltec-gnss-template] is an overlay for the GNSS module that plugs into its header. It composes as a second `packages:` entry, the way the camera overlay above composes onto its board template.
+
+- **What is confirmed on hardware is USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC.** The user button is untested. The radio and front-end pins are documented rather than claimed, so nothing exercises them.
+- **The board bus is an `i2c:` list entry, and a mapping there loses the bus in silence.** `merge_config` keeps only the consuming config's value when one side is a mapping and the other a list. A device composing this template and declaring its own `i2c:` list entry drops the GPIO17 and GPIO18 bus. Nothing reports it. Two list entries merge instead, which is why [Waveshare ESP32-S3-ETH Camera][waveshare-camera] takes that form.
+- **`Vext` gates the I2C bus and its pull-ups, so the rail has to come up before the bus.** The bus sets up at `BUS` priority and the `switch` raising the rail at `HARDWARE`, which is the wrong order. An `on_boot` handler at priority 1100 raises the rail first, through the IDF GPIO API. Without it the bus recovery reads SCL low and errors on every boot.
+- **The GNSS UART direction is the trap on this board, and the vendor macro names cause it.** MeshCore calls `Serial1.setPins(PIN_GPS_TX, PIN_GPS_RX)` into a signature that takes rx first. Its `PIN_GPS_RX=38` and `PIN_GPS_TX=39` therefore name the module's pins rather than the MCU's. The MCU side is tx on GPIO38 and rx on GPIO39.
+- **ESPHome writes the module nothing, which is what makes the overlay a test.** The `gps` component only reads NMEA, so a silent link is the module's own state. The `$PCAS` buttons are the only writes. They separate a dead link from a module whose saved configuration disabled NMEA output, since a version query answers in both cases.
+- **The L76K streams the full NMEA set unprompted, so no PCAS write is needed to make it talk.** It also reports `ANTENNA OPEN` once per second with a passive antenna fitted. That is the active-antenna current detector, not a fault, and satellites appear in GSV while it is asserted.
+- **A unit logging raw NMEA over `USB_SERIAL_JTAG` went silent with no host reading the port.** It ran and streamed whenever a reader was attached. It went unreachable within about a minute of the last one detaching, recovering only on an esptool reset. Dropping `uart_debug` to `WARN` cleared it, and the unit then ran unattended for 50 minutes. The mechanism is unconfirmed, so treat the remedy as what was observed to work rather than as a diagnosis.
+- **The 0db range on an S3 is about 950mV, measured rather than taken from the datasheet.** A cell reading 4.18V to 4.19V on a meter gave raw 3657 of 4095 and a calibrated 868mV at the pin. Back-solving full scale from the raw count and the meter gives 955mV to 958mV. The often quoted 1100mV is the classic ESP32's reference and overstates a reading by about 15%.
+- **Redo that measurement with a raw sensor beside the calibrated one.** Both need `allow_other_uses: true` on the pin. Two `adc` platforms on one pin otherwise fail with `Pin 1 is used in multiple places`. The nominal 4.9 ratio read 1.5% to 1.8% high against the meter, inside resistor tolerance, so the template keeps it.
+- **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
+- **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
+- **A bench unit needs both reboot timeouts disabled.** `api.yaml` and [`wifi.yaml`][wifi-template] each default to a 15 minute `reboot_timeout`. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi:` `reboot_timeout` to `0s`.
 
 ### RGB LED Status
 
@@ -536,6 +562,8 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
 [governance]: ./GOVERNANCE.md
 [governance-write-safety]: ./GOVERNANCE.md#repository-boundaries-and-write-safety
+[heltec-gnss-template]: ./templates/heltec-l76k-gnss.yaml
+[heltec-template]: ./templates/heltec-wifi-lora32-v4-r8.yaml
 [max17048-template]: ./templates/max17048.yaml
 [min-version-template]: ./templates/min-version.yaml
 [norvi-template]: ./templates/norvi-enet-ae06-r.yaml
@@ -552,6 +580,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [test]: ./test/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
 [vscode-setup]: #vscode-setup
+[waveshare-camera]: #waveshare-esp32-s3-eth-camera
 [waveshare-camera-template]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 [waveshare-template]: ./templates/waveshare-esp32-s3-eth.yaml
 [wifi-template]: ./templates/wifi.yaml
