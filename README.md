@@ -233,7 +233,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Note: the status LED is dark when healthy and blinks on a warning or error, which is the ESPHome default. That is the reverse of the [GL-S10][gls10-bluetooth-proxy] and [ThinkNode M7][elecrow-thinknode-m7] convention, whose LEDs are active low. This one is a bright white LED on a board that runs from a cell.
 - Optional substitutions:
   - `battery_voltage_multiplier`: `4.9`, the 390k / 100k divider ratio. It is a ratio rather than a calibration, so check it against a meter.
-  - `vext_power_restore_mode` and `gnss_power_restore_mode`: `ALWAYS_ON` by default. `ALWAYS_OFF` drops the rail once the switch sets up. `Vext` still comes up briefly first, so the I2C bus initialises cleanly.
+  - `vext_power_restore_mode` and `gnss_power_restore_mode`: `ALWAYS_ON` by default. `ALWAYS_OFF` drops the rail once the switch sets up. `Vext` still comes up briefly first, so the I2C bus initializes cleanly.
 - An optional [L76K GNSS overlay][heltec-l76k-gnss] configures the [Heltec L76K][heltec-project-l76-gnss-module-link] module that plugs into the board's GNSS header. It composes as a second `packages:` entry on top of this template.
   - Adds latitude, longitude, altitude, speed, course, satellite count, and HDOP sensors. Adds a GPS time source beside the Home Assistant one, so the two agreeing confirms a fix rather than just a link.
   - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. A PMTK init block copied from a MediaTek part is ignored rather than rejected.
