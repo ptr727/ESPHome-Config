@@ -1,7 +1,7 @@
 # External usage:
 # packages:
-#   Device: github://ptr727/ESPHome-Config/templates/heltec-wifi-lora32-v4-r8.yaml@main
-#   GNSS: github://ptr727/ESPHome-Config/templates/heltec-l76k-gnss.yaml@main
+#   device: github://ptr727/ESPHome-Config/templates/heltec-wifi-lora32-v4-r8.yaml@main
+#   gnss: github://ptr727/ESPHome-Config/templates/heltec-l76k-gnss.yaml@main
 # - An overlay, not a standalone device, so it is composed on a board template.
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 

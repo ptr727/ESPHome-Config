@@ -1,6 +1,6 @@
 # External usage:
 # packages:
-#   Device: github://ptr727/ESPHome-Config/templates/heltec-wifi-lora32-v4-r8.yaml@main
+#   device: github://ptr727/ESPHome-Config/templates/heltec-wifi-lora32-v4-r8.yaml@main
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
