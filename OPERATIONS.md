@@ -464,21 +464,18 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
   - WSL: `lsusb`, for example `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
   - WSL: `dmesg | grep tty`, for example `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
   - WSL: `ls /dev/tty*`, for example `/dev/ttyACM0`, `/dev/ttyUSB0`
-- Grant the account access to the port, then open a new shell, because group membership is fixed at process start.
-  - A board with a native USB peripheral, such as an ESP32-S3 or an ESP32-C3, enumerates as `/dev/ttyACM*` through `cdc_acm`. A board behind a bridge chip, such as a CP210x or a CH340, enumerates as `/dev/ttyUSB*`. Both nodes are `root:dialout`.
-  - WSL: `sudo usermod -aG dialout,plugdev $USER`
-  - Raw usbfs under `/dev/bus/usb/` is a separate grant from the tty, and is only needed to issue a USB-level reset. The rule sets the group and the `usermod` above puts the account in it, so both halves are required.
-  - The rule matches the vendor, for example `SUBSYSTEM=="usb", ATTR{idVendor}=="303a", MODE="0660", GROUP="plugdev", TAG+="uaccess"` in `/etc/udev/rules.d/`, applied with `sudo udevadm control --reload-rules && sudo udevadm trigger`.
-  - That needs a running `udev`, which WSL starts only under systemd. Set `systemd=true` under `[boot]` in `/etc/wsl.conf` and restart the distribution if `udevadm` reports no daemon.
+- Grant the account access to the port.
+  - The node class follows the socket the cable is in, not the part on the board. A native USB port enumerates as `/dev/ttyACM*` through `cdc_acm`, and a port behind a bridge chip, a CP210x or a CH340, enumerates as `/dev/ttyUSB*`. A board carrying both, the ESP32-S3-DevKitC among them, presents either depending on which socket is used.
+  - Both classes are `root:dialout`, and `dialout` is the only grant flashing and logs need.
+  - WSL: `sudo usermod -aG dialout $USER`
+  - Group membership is fixed at process start. A VS Code Remote WSL server started before the change keeps its old groups, so every terminal it spawns still fails on the port while a fresh WSL tab works. Restart WSL rather than only opening a new terminal.
+    - Windows: `wsl --shutdown`
 - Install VSCode and the Remote Explorer extension.
 - Open a VSCode Remote WSL Ubuntu session.
   - Complete the [VSCode setup][vscode-setup] in the remote WSL session.
-  - List ports: `ls -l /dev/serial/by-id/`. Select a board by its by-id name rather than by number, because `ttyACM` and `ttyUSB` numbering moves on every re-enumeration and on how many boards are attached.
+  - List ports: `ls /dev/tty*`, and `ls -l /dev/serial/by-id/` for the stable names.
+  - Prefer a by-id name, because `ttyACM` and `ttyUSB` numbering depends on attach order once more than one board is present. A CH340 exposes no USB serial number and so gets no by-id entry at all, and `/dev/serial/by-path/` is the fallback for those.
   - Upload firmware: `esphome run --device /dev/serial/by-id/<by-id-name> test/esp32-s3-devkitc.yaml`
-- **Leave a chip that was put into download mode by hand with `--after watchdog-reset`, not `--after hard-reset`.** A hard reset leaves it looping `waiting for download` after `rst:0x15 (USB_UART_CHIP_RESET)`, which reads as a stuck Boot button and is not one, because an RTS or EN pulse does not clear `force_download_boot` and the watchdog reset does. Verified on an ESP32-S3 reached over its native USB-Serial-JTAG peripheral.
-  - Scope it to that case. `--after watchdog-reset` needs an RTC watchdog the chip exposes to esptool, which not every target has, so it is not a blanket replacement for `hard-reset`. Where it is unavailable, press EN or power-cycle the board.
-  - `esphome run` and `esphome upload` expose no `--after`, so the rule cannot be applied through them. Call `esptool` directly for that step, then return to `esphome run` for ordinary uploads.
-    - `esptool --chip esp32s3 --port /dev/serial/by-id/<by-id-name> --before no-reset --after watchdog-reset write-flash 0x0 <image>`
 - Unbind the serial port.
   - Windows: `usbipd detach --busid 7-1`
   - Windows: `usbipd unbind --all`
