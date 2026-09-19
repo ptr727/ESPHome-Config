@@ -464,11 +464,16 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
   - WSL: `lsusb`, for example `Bus 001 Device 002: ID 303a:1001 Espressif USB JTAG/serial debug unit`
   - WSL: `dmesg | grep tty`, for example `cdc_acm 1-1:1.0: ttyACM0: USB ACM device`
   - WSL: `ls /dev/tty*`, for example `/dev/ttyACM0`, `/dev/ttyUSB0`
+- Grant the account access to the port, then open a new shell, because group membership is fixed at process start.
+  - A board with a native USB peripheral, such as an ESP32-S3 or an ESP32-C3, enumerates as `/dev/ttyACM*` through `cdc_acm`. A board behind a bridge chip, such as a CP210x or a CH340, enumerates as `/dev/ttyUSB*`. Both nodes are `root:dialout`.
+  - WSL: `sudo usermod -aG dialout $USER`
+  - Raw usbfs access is separate from the tty and is only needed to issue a USB-level reset. That is `plugdev`, granted by a udev rule matching the vendor, for example `SUBSYSTEM=="usb", ATTR{idVendor}=="303a", MODE="0660", GROUP="plugdev", TAG+="uaccess"` in `/etc/udev/rules.d/`, then `sudo udevadm control --reload-rules && sudo udevadm trigger`.
 - Install VSCode and the Remote Explorer extension.
 - Open a VSCode Remote WSL Ubuntu session.
   - Complete the [VSCode setup][vscode-setup] in the remote WSL session.
-  - List ports: `ls /dev/tty*`.
-  - Upload firmware: `esphome run --device /dev/ttyUSB0 test/esp32-s3-devkitc.yaml`
+  - List ports: `ls /dev/tty*`. Select a board by `ls -l /dev/serial/by-id/` rather than by number, because `ttyACM` and `ttyUSB` numbering moves on every re-enumeration.
+  - Upload firmware: `esphome run --device /dev/ttyACM0 test/esp32-s3-devkitc.yaml`
+- **Reset a USB-Serial-JTAG part with `--after watchdog-reset`, never `--after hard-reset`.** A hard reset leaves the chip looping `waiting for download` after `rst:0x15 (USB_UART_CHIP_RESET)`, which reads as a stuck Boot button and is not one. An RTS or EN pulse does not clear `force_download_boot`, and the watchdog reset does. This applies to any direct `esptool` call against a board that has no bridge chip.
 - Unbind the serial port.
   - Windows: `usbipd detach --busid 7-1`
   - Windows: `usbipd unbind --all`
