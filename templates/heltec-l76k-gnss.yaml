@@ -115,7 +115,7 @@ gps:
 time:
 
   # A second time source beside the Home Assistant one the board template carries.
-  # - The two agreeing proves GNSS time sync, which needs one satellite where a fix needs four.
+  # - Agreement between the two proves GNSS time sync, which one satellite carries.
   # https://esphome.io/components/time/gps
   - platform: gps
     id: gnss_time
