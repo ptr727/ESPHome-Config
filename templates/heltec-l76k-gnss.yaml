@@ -23,7 +23,8 @@
 # - The buttons below are diagnostics rather than a prerequisite for the module to talk.
 # - GPTXT reports "ANTENNA OPEN" continuously, which is the current detector seeing a passive antenna.
 # - That is not a fault, since satellites still appear in GSV with it asserted.
-# - Time sync lands from one decoded satellite, where a position fix needs four.
+# - Time needs one decoded satellite and a position fix needs four, so a marginal site holds neither.
+# - This overlay reached a time of day in GGA but never a date, so its time source stayed unsynced.
 
 # The board template powers the module through its "Vext Power" and "GNSS Power" switches.
 # - Both have to be on.
