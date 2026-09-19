@@ -466,14 +466,19 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
   - WSL: `ls /dev/tty*`, for example `/dev/ttyACM0`, `/dev/ttyUSB0`
 - Grant the account access to the port, then open a new shell, because group membership is fixed at process start.
   - A board with a native USB peripheral, such as an ESP32-S3 or an ESP32-C3, enumerates as `/dev/ttyACM*` through `cdc_acm`. A board behind a bridge chip, such as a CP210x or a CH340, enumerates as `/dev/ttyUSB*`. Both nodes are `root:dialout`.
-  - WSL: `sudo usermod -aG dialout $USER`
-  - Raw usbfs access is separate from the tty and is only needed to issue a USB-level reset. That is `plugdev`, granted by a udev rule matching the vendor, for example `SUBSYSTEM=="usb", ATTR{idVendor}=="303a", MODE="0660", GROUP="plugdev", TAG+="uaccess"` in `/etc/udev/rules.d/`, then `sudo udevadm control --reload-rules && sudo udevadm trigger`.
+  - WSL: `sudo usermod -aG dialout,plugdev $USER`
+  - Raw usbfs under `/dev/bus/usb/` is a separate grant from the tty, and is only needed to issue a USB-level reset. The rule sets the group and the `usermod` above puts the account in it, so both halves are required.
+  - The rule matches the vendor, for example `SUBSYSTEM=="usb", ATTR{idVendor}=="303a", MODE="0660", GROUP="plugdev", TAG+="uaccess"` in `/etc/udev/rules.d/`, applied with `sudo udevadm control --reload-rules && sudo udevadm trigger`.
+  - That needs a running `udev`, which WSL starts only under systemd. Set `systemd=true` under `[boot]` in `/etc/wsl.conf` and restart the distribution if `udevadm` reports no daemon.
 - Install VSCode and the Remote Explorer extension.
 - Open a VSCode Remote WSL Ubuntu session.
   - Complete the [VSCode setup][vscode-setup] in the remote WSL session.
-  - List ports: `ls /dev/tty*`. Select a board by `ls -l /dev/serial/by-id/` rather than by number, because `ttyACM` and `ttyUSB` numbering moves on every re-enumeration.
-  - Upload firmware: `esphome run --device /dev/ttyACM0 test/esp32-s3-devkitc.yaml`
-- **Reset a USB-Serial-JTAG part with `--after watchdog-reset`, never `--after hard-reset`.** A hard reset leaves the chip looping `waiting for download` after `rst:0x15 (USB_UART_CHIP_RESET)`, which reads as a stuck Boot button and is not one. An RTS or EN pulse does not clear `force_download_boot`, and the watchdog reset does. This applies to any direct `esptool` call against a board that has no bridge chip.
+  - List ports: `ls -l /dev/serial/by-id/`. Select a board by its by-id name rather than by number, because `ttyACM` and `ttyUSB` numbering moves on every re-enumeration and on how many boards are attached.
+  - Upload firmware: `esphome run --device /dev/serial/by-id/<by-id-name> test/esp32-s3-devkitc.yaml`
+- **Leave a chip that was put into download mode by hand with `--after watchdog-reset`, not `--after hard-reset`.** A hard reset leaves it looping `waiting for download` after `rst:0x15 (USB_UART_CHIP_RESET)`, which reads as a stuck Boot button and is not one, because an RTS or EN pulse does not clear `force_download_boot` and the watchdog reset does. Verified on an ESP32-S3 reached over its native USB-Serial-JTAG peripheral.
+  - Scope it to that case. `--after watchdog-reset` needs an RTC watchdog the chip exposes to esptool, which not every target has, so it is not a blanket replacement for `hard-reset`. Where it is unavailable, press EN or power-cycle the board.
+  - `esphome run` and `esphome upload` expose no `--after`, so the rule cannot be applied through them. Call `esptool` directly for that step, then return to `esphome run` for ordinary uploads.
+    - `esptool --chip esp32s3 --port /dev/serial/by-id/<by-id-name> --before no-reset --after watchdog-reset write-flash 0x0 <image>`
 - Unbind the serial port.
   - Windows: `usbipd detach --busid 7-1`
   - Windows: `usbipd unbind --all`
