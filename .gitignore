@@ -12,7 +12,7 @@ logs/
 .esphome/
 .device-builder*
 
-# esphome writes one here on the first compile.
+# ESPHome writes one here on the first compile.
 /test/.gitignore
 
 # Bench and test devices, not part of the deployed fleet.
