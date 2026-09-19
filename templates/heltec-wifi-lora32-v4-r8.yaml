@@ -89,7 +89,7 @@ esphome:
       then:
         - lambda: |-
             gpio_config_t vext = {};
-            vext.pin_bit_mask = 1ULL << 40;
+            vext.pin_bit_mask = 1ULL << GPIO_NUM_40;
             vext.mode = GPIO_MODE_OUTPUT;
             gpio_config(&vext);
             gpio_set_level(GPIO_NUM_40, 0); // Active low, so low is on.
