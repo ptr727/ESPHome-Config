@@ -70,10 +70,12 @@ packages:
   rgbledstatus: !include rgb-led-status.yaml
   max17048: !include max17048.yaml
 
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
 # https://esphome.io/components/i2c
 i2c:
-  sda: GPIO8
-  scl: GPIO9
+  - id: board_i2c
+    sda: GPIO8
+    scl: GPIO9
 
 # https://esphome.io/components/binary_sensor
 binary_sensor:

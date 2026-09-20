@@ -57,10 +57,12 @@ packages:
   rgbledstatus: !include rgb-led-status.yaml
   max17048: !include max17048.yaml
 
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
 # https://esphome.io/components/i2c
 i2c:
-  sda: GPIO3 # WARNING GPIO3 is a strapping PIN and should only be used for I/O with care.
-  scl: GPIO4
+  - id: board_i2c
+    sda: GPIO3 # WARNING GPIO3 is a strapping PIN and should only be used for I/O with care.
+    scl: GPIO4
 
 # https://esphome.io/components/switch
 switch:

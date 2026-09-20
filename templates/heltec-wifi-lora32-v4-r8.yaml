@@ -1,0 +1,201 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/heltec-wifi-lora32-v4-r8.yaml@main
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Required substitutions:
+# device_name - the ESPHome node name.
+# device_friendly_name - the Home Assistant display name.
+
+# Optional substitutions:
+# battery_voltage_multiplier - 4.9, the divider ratio, check it against a meter.
+# vext_power_restore_mode - ALWAYS_ON, ALWAYS_OFF drops the rail once the switch sets up.
+# gnss_power_restore_mode - ALWAYS_ON, ALWAYS_OFF suits a unit carrying no GNSS module.
+
+# Heltec WiFi LoRa 32 V4-R8
+# ESP32-S3R8 on an ESP32-S3-WROOM-1-N16R8 module, 16MB Quad Flash, 8MB Octal PSRAM
+# https://heltec.org/project/wifi-lora-32-v4/
+
+# Board tested: 2026-09-18, USB and OTA flash, WiFi, OLED, both rails, GNSS UART, battery ADC.
+# - The battery reads 1.5% to 1.8% high against a meter, which is inside resistor tolerance.
+# - The user button is untested, and the radio and front-end pins are documented rather than claimed.
+
+# The octal PSRAM claims GPIO33 to GPIO37, which is why three pins differ from the plain V4.
+# - Vext_Ctrl 36 -> 40, VGNSS_Ctrl 34 -> 42, LED 35 -> 46.
+# - GNSS_RST and ADC_Ctrl are dropped outright, a wiring change a quad part would not restore.
+
+# GPIO33, GPIO34, GPIO35, GPIO36, GPIO37 : Octal SPI PSRAM
+# GPIO19, GPIO20 : native USB, so flashing needs no adapter and no UART bridge
+# GPIO43, GPIO44 : UART0, broken out to the header as a console, unused here
+
+# GNSS header, UART1, claimed by the optional heltec-l76k-gnss.yaml overlay rather than here
+# GPIO38 : MCU tx, into the module's rx
+# GPIO39 : MCU rx, out of the module's tx
+# - The direction is the trap on this board, so read that overlay before trusting either pin.
+
+# GPIO40 : Vext_Ctrl, active low, powers the OLED, its I2C pull-ups, the header, and the GNSS module
+# GPIO42 : VGNSS_Ctrl, active low, powers the GNSS module
+# GPIO7  : VFEM_Ctrl, active high, powers the LoRa front-end, unclaimed here
+# - Both rails are PMOS switched, so a low output turns the rail on.
+
+# GPIO0  : USER button, pull-up, active low, also the BOOT strapping pin
+# GPIO46 : white LED, active high
+# GPIO1  : battery ADC, unit 1 channel 0, behind an always-connected 390k / 100k divider
+# - ADC unit 2 channel 0 is GPIO11, the radio's MISO, so never read the ADC there.
+
+# SSD1306 128x64 OLED, I2C 0x3c
+# GPIO17 : sda
+# GPIO18 : scl
+# GPIO21 : reset
+# - The display is unconfigured, since an ESPHome display needs a font asset this repository does not carry.
+# - A device wanting it adds its own font and an ssd1306_i2c display on reset_pin GPIO21.
+
+# Semtech SX1262 LoRa on SPI2, documented rather than configured
+# GPIO9  : sclk
+# GPIO10 : mosi
+# GPIO11 : miso
+# GPIO8  : nss
+# GPIO13 : busy
+# GPIO14 : dio1
+# GPIO12 : reset
+
+# KCT8103L front-end
+# GPIO7  : VFEM_Ctrl, active high, the front-end LDO
+# GPIO2  : CSD, chip enable, active high, also the front-end detect pin
+# GPIO5  : CTX, high selects the transmit path and low the receive path
+# - The sx126x component reaches an RF switch only through the radio's own DIO2.
+# - CTX flips per packet, which that component cannot do, so a configured radio transmits through the LNA.
+# - https://esphome.io/components/sx126x
+
+# https://esphome.io/components/substitutions
+substitutions:
+  # The divider ratio is (390 + 100) / 100 rather than a measurement.
+  battery_voltage_multiplier: "4.9"
+  vext_power_restore_mode: ALWAYS_ON
+  gnss_power_restore_mode: ALWAYS_ON
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+  # Vext gates the I2C pull-ups, and the bus sets up before the switch that raises the rail.
+  # - Without this the bus recovery reads SCL low and errors on every boot.
+  # - The IDF API is used because the switch's own pin object does not exist this early.
+  # - The rail comes up here whatever the restore mode is, and the switch then applies that mode.
+  # https://esphome.io/components/esphome#esphome-on_boot
+  on_boot:
+    - priority: 1100
+      then:
+        - lambda: |-
+            gpio_config_t vext = {};
+            vext.pin_bit_mask = 1ULL << GPIO_NUM_40;
+            vext.mode = GPIO_MODE_OUTPUT;
+            gpio_config(&vext);
+            gpio_set_level(GPIO_NUM_40, 0); // Active low, so low is on.
+
+# https://esphome.io/components/esp32
+esp32:
+  # PlatformIO carries no V4 board definition, and the fitted module programs as the DevKitC-1 profile.
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
+  board: esp32-s3-devkitc-1
+
+  # The board definition does not set this, ESPHome defaults to 4MB.
+  flash_size: 16MB
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/components/psram
+# The R8 part carries 8MB in package, so octal, and ESPHome has no default mode on the S3.
+psram:
+  mode: octal
+  speed: 80MHz
+
+# https://esphome.io/components/packages#local-packages
+packages:
+  common: !include common.yaml
+  temperature: !include temperature.yaml
+
+# USB is the chip's own port, with no UART bridge on this board.
+# https://esphome.io/components/logger
+logger:
+  hardware_uart: USB_SERIAL_JTAG # UART0, UART1, USB_CDC, USB_SERIAL_JTAG
+
+# The pin is not inverted, so the LED is dark when healthy and blinks on a warning or error.
+# - A lit white LED spends current on a board that runs from a cell.
+# https://esphome.io/components/status_led
+status_led:
+  pin:
+    number: GPIO46 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+    ignore_strapping_warning: true
+
+# The scan works because on_boot above raises Vext ahead of the bus.
+# - A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
+# https://esphome.io/components/i2c
+i2c:
+  - id: board_i2c
+    sda: GPIO17
+    scl: GPIO18
+    scan: true
+
+    # 50kHz makes a full SSD1306 frame a 219ms blocking write.
+    frequency: 400kHz
+
+# https://esphome.io/components/switch
+switch:
+
+  # Turning this off takes the OLED, the I2C pull-ups, the header, and the GNSS module with it.
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    name: "Vext Power"
+    id: vext_power
+    pin:
+      number: GPIO40
+      inverted: true
+    restore_mode: ${vext_power_restore_mode}
+    entity_category: config
+
+  # The GNSS module draws from this rail and from Vext, so both have to be on.
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    name: "GNSS Power"
+    id: gnss_power
+    pin:
+      number: GPIO42
+      inverted: true
+    restore_mode: ${gnss_power_restore_mode}
+    entity_category: config
+
+# https://esphome.io/components/binary_sensor
+binary_sensor:
+
+  # https://esphome.io/components/binary_sensor/gpio
+  - platform: gpio
+    name: "User Button"
+    id: user_button
+    pin:
+      number: GPIO0 # BOOT strapping pin, fixed board wiring, so the warning is acknowledged.
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+      ignore_strapping_warning: true
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # 0db measures to about 950mV on an S3, confirmed here against a cell and a meter.
+  # - A ratio under about 4.42 puts a full cell past the range, where the reading saturates low.
+  # https://esphome.io/components/sensor/adc
+  - platform: adc
+    name: "Battery Voltage"
+    id: battery_voltage
+    pin: GPIO1
+    attenuation: 0db
+    device_class: voltage
+    entity_category: diagnostic
+    update_interval: 60s
+    filters:
+      - multiply: ${battery_voltage_multiplier}

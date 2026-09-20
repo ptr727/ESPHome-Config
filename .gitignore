@@ -12,6 +12,9 @@ logs/
 .esphome/
 .device-builder*
 
+# ESPHome writes one here on the first compile.
+/test/.gitignore
+
 # Bench and test devices, not part of the deployed fleet.
 # A root config named *-test.yaml needs no commit history, see OPERATIONS.md "Documenting a Device".
 /*-test.yaml
