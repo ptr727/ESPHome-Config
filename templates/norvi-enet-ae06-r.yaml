@@ -14,35 +14,38 @@
 ##
 ## April 2023, purchased a SensOper SC-EN-I6-RO4 from IiotProducts online store.
 ##   Norvi online store did not ship to the US.
-##   Norvi products sold under the SonsOper brand in the US.
-##   GPIO pins for inputs are incorrectly documented in SensOper docs, use the Norvi docs instead.
-##   DS3231: My unit was missing the DS3231 RTC as advertised, per Norvi early units did not have RTC's, current units should have RTC's.
-##   ADS1115: My unit was missing the ADS1115 ADC as advertised, per Norvi the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
-##   Still waiting for SensOper to send me a correct unit that includes the DS3221.
+##   Norvi products are sold under the SensOper brand in the US.
+##   GPIO pins for inputs are incorrectly documented in SensOper docs, so use the Norvi docs instead.
+##   DS3231: My unit was missing the DS3231 RTC that was advertised.
+##     Per Norvi, early units did not have RTCs, and current units should have them.
+##   ADS1115: My unit was missing the ADS1115 ADC that was advertised.
+##     Per Norvi, the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
+##   Still waiting for SensOper to send me a correct unit that includes the DS3231.
 ## December 2023, purchased a NORVI-ENET-AE06-R from the CarTFT online store.
 ##   In stock and fast shipping to the US.
 ## December 2023, purchased a NORVI-ENET-AE06-R from the Norvi online store.
-##   Norvi online store did now offer US shipping.
+##   Norvi online store now offered US shipping, unlike in April.
 ##   Took almost a month to receive the unit.
 ## January 2024, all 3 units suffering from some sort of stability issue.
-##   SensOper from IiotProduct never worked correctly, ADC drift, no WiFi on bench PSU, and missing RTC.
+##   SensOper from IiotProducts never worked correctly, ADC drift, no WiFi on bench PSU, and missing RTC.
 ##   Norvi from Norvi never worked correctly, ADC drift and no WiFi on bench PSU.
-##   Norvi from CarTFT worked fine for about 2 weeks, then ADC started drifting.
+##   Norvi from CarTFT worked fine for about 2 weeks, and then the ADC started drifting.
 ##   Returning all units to Norvi for inspection.
 ## May 2024, received new units from Norvi with design changes.
 ##   GPIO36/ADC1-0/SENS_VP input GND resistor changed from 47K to 10K, improves button V scale.
 ##   GPIO39/ADC1-3/SENS_VN has been grounded, reduces interference and drift on GPIO36 ADC.
 ##   Observations - SensOper SC-EN-I6-RO4:
 ##     This unit does have a DS3231 RTC, ok.
-##     GPIO39 ADC does not appear to be grounded, ADC on GPIO39 measure 3V+.
+##     GPIO39 ADC does not appear to be grounded, and the ADC on GPIO39 measures 3V+.
 ##     GPIO36 button ADC, started at 0.14V, drifting up over time.
-##     ADC is not fixed, contacted Norvi on 25 June 2024 to arrange a device swap.
+##     ADC is not fixed.
+##     Contacted Norvi on 25 June 2024 to arrange a device swap.
 ##   Observations - NORVI-ENET-AE06-R (tested two units):
-##     GPIO39 ADC appears to be grounded, ADC on GPIO39 measures ~0.09V/~0.14V.
+##     GPIO39 ADC appears to be grounded, and the ADC on GPIO39 measures ~0.09V/~0.14V.
 ##     GPIO36 button ADC, appears to remain stable at ~0.07V/~0.14V, up~=0.42V/~0.43V, down~=0.75V/~0.77V, enter~=1.61V/~1.66V, within safe ADC range.
 ##     ADC is fixed.
 ## July 2024, updated to using one_wire and dallas_temp in ESPHome 2024.6
-##   Discovered that new 1-wire implementation drives GPIO high before bus read, and observed that all input status LEDs briefly turns on.
+##   Discovered that new 1-wire implementation drives GPIO high before bus read, and observed that all input status LEDs briefly turn on.
 ##   Confirmed that when configuring GPIO15 as input and output, and turning GPIO15 on, all input status LEDs light up.
 ##   See https://gist.github.com/ptr727/66d9972591fde997dd904ecea1597130 for simple repro using ESP-IDF.
 ##   Waiting on Norvi support for an explanation.
@@ -178,7 +181,7 @@
 
 # ESPHome resolves `includes:` against the device config's directory, not this template's.
 # The default suits a device config in the repository root.
-# An including config elsewhere overrides it, see test/norvi-enet-ae06-r.yaml.
+# An including config elsewhere overrides it, so see test/norvi-enet-ae06-r.yaml.
 substitutions:
   templates_dir: templates
 
