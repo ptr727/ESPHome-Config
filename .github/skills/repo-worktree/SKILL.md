@@ -62,17 +62,19 @@ from `develop` unless the task is explicitly about `main`-only content, per `GOV
 is whatever it last fetched rather than the branch it names.
 
 The base clone is a fetch source, not a place to do task work. `fetch` and `worktree add` run
-against it for that purpose, and outside "Listing and Cleanup"'s own terminal step below, nothing
-else does: never `checkout`, `pull`, `reset`, `commit`, or any other command that mutates its own
-working tree, index, or HEAD while a task is in progress. That distinction is the one a real
-incident missed, where an agent reused a primary checkout as the working directory itself rather
-than only as the source a worktree is created from. On a machine carrying the hub's agent-safety
-install, Claude Code also makes this a mechanical stop for most of that list.
-`merge --ff-only`/`pull --ff-only` stay exempt even there, and so does a `checkout <ref>`/`switch <ref>`
-naming exactly one positional that resolves as a ref, with no force flag and no `--` separator,
-which is the shape this skill's own cleanup step runs. A `checkout -- .` or a `switch -c <new>` is
-denied, being neither. Prose remains the only enforcement for a non-Claude-Code agent, for a
-machine without that install, and for the shapes the hook itself exempts.
+against it for that purpose, and outside two steps below, nothing else mutates its working tree,
+index, or HEAD while a task is in progress: never `checkout`, `pull`, `reset`, `commit`, or any
+other such command. Those two are "Listing and Cleanup"'s own terminal step and "Creating a
+Worktree"'s return of the base clone to its own working branch where a continuation finds the task
+branch checked out there. That distinction is the one a real incident missed, where an agent
+reused a primary checkout as the working directory itself rather than only as the source a
+worktree is created from. On a machine carrying the hub's agent-safety install, Claude Code also
+makes this a mechanical stop for most of that list. `merge --ff-only`/`pull --ff-only` stay exempt
+even there, and so does a `checkout <ref>`/`switch <ref>` naming exactly one positional that
+resolves as a ref, with no force flag and no `--` separator, which is the shape both of this
+skill's own steps below run. A `checkout -- .` or a `switch -c <new>` is denied, being neither.
+Prose remains the only enforcement for a non-Claude-Code agent, for a machine without that
+install, and for the shapes the hook itself exempts.
 
 ## Creating a Worktree
 
@@ -181,9 +183,19 @@ When the base clone holds only the remote-tracking ref, the same command creates
 tracking `origin/<task-branch>` through git's ordinary checkout guessing, so a fresh clone needs
 no separate branch setup. Git refuses to attach a branch that is already checked out somewhere
 else, and that refusal is the mandate working, since the branch sitting checked out in a shared
-tree is the hazard the continuation rule exists for. Return that checkout to its own working
-branch first when its tree is clean, and stop when it is not, because a dirty tree there may be
-another task's uncommitted work.
+tree is the hazard the continuation rule exists for. `git worktree list` names the checkout
+holding it and prints the base clone first, and what to do there depends on which checkout that is.
+
+The base clone holding it is the case "The Base Branch" excepts. Return it to its own working
+branch when its tree is clean, `git -C ~/repos/<Repo> checkout develop`, and then create the
+worktree. Stop when it is not clean, because a dirty shared checkout is the signal that another
+task may be live there.
+
+A previous session's own worktree holding it is retired rather than switched. It normally sits at
+the very `~/repos/worktrees/<Repo>-<task-slug>` path the command above wants, so `worktree add`
+aborts on the existing directory whatever its branch is. Remove it when it is clean, and stop when
+it is not, because a dirty tree there may be uncommitted work. `backlog-burndown` calls this
+retire-then-dispatch and cites this skill for it.
 
 A machine not yet migrated to this layout still isolates exactly the same way, since the mandate
 is the isolation rather than the path: create the worktree beside whatever layout the machine

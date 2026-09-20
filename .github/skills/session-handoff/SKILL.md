@@ -178,7 +178,7 @@ falls to the next session that has one. The rules below settle which case applie
 
 <!-- include: GOVERNANCE.md > Communicating with the User -->
 
-- **Reference every pull request as a clickable link.** When you mention a PR on a surface that renders Markdown (chat, a summary, a report), render it as a Markdown link to the PR (`[#123](https://github.com/OWNER/REPO/pull/123)`), never a bare `#123`. The same applies to issues and commits. **The form follows the surface.** Some surfaces link neither a Markdown link nor a bare URL, an interactive prompt's question and option text among them, and pasting a full URL into one of those does not rescue it, since the reader gets a string to copy, which is the outcome this rule exists to prevent. There the reference is a bare `#123`, and the clickable link goes in the message that comes **before** the prompt rather than merely alongside it, because the prompt blocks on an answer and a message emitted after it is read once that answer is already given, which is the one moment the link is no longer any use. The test is whether the reader can click it where it is read, not whether it was written in the syntax that works elsewhere.
+- **Reference every pull request as a clickable link.** When you mention a PR on a surface that renders Markdown (chat, a summary, a report), render it as a Markdown link to the PR (`[#N](https://github.com/OWNER/REPO/pull/N)`), never a bare `#N`. The same applies to issues and commits. **The form follows the surface.** Some surfaces link neither a Markdown link nor a bare URL, an interactive prompt's question and option text among them, and pasting a full URL into one of those does not rescue it, since the reader gets a string to copy, which is the outcome this rule exists to prevent. There the reference is a bare `#N`, and the clickable link goes in the message that comes **before** the prompt rather than merely alongside it, because the prompt blocks on an answer and a message emitted after it is read once that answer is already given, which is the one moment the link is no longer any use. The test is whether the reader can click it where it is read, not whether it was written in the syntax that works elsewhere.
 - **Ask for input as a numbered list.** When you need the user to decide or answer, present the questions, and any options, as a numbered list so they can reply per number. A single inline question is fine, and two or more are always numbered.
 - **Raise work blocked on the user as a direct interactive prompt.** When progress needs a decision, an authorization, or an answer only the user can give, ask for it through the interface's own prompt mechanism, at the point the work stops. Never leave it as prose in a summary: a handoff buried in a paragraph is a handoff that did not happen, because a summary reads as a report of finished work and the one line still waiting on the user is the easiest in it to skim past. The blocked item is the message, not a closing remark on a message about something else. **The options offered are the actions themselves**, and the one that unblocks the work names the action it authorizes ("squash and merge it"), so selecting it is the go-ahead rather than a note to act on later. Offering only ways to wait is the same failure in interactive clothing, since a prompt whose every choice is inaction reports the block rather than clearing it, and where the agent may not perform the authorized action itself, the option says who does it. This supersedes the numbered-list rule above wherever an interactive prompt is available, and the numbered list is the fallback where none is.
 - **A question filed as an issue is parked rather than asked, and it stays owed.** Where the work cannot continue without the answer, the bullet above governs and the question is asked at the point the work stops. Wherever the question is recorded rather than asked, whether because the work can continue without the answer or because the question was asked once and deferred, recording it is the right thing to do and recording it is still not asking it, so the issue carries the fleet's `decision` label and, when the filing session knows the choices the question is between, states them, which is what lets a later session, one that was not there when the issue was filed, find the question and put it to the user without inventing its answers. **The parked queue is the failure, not the parking.** An issue holding a question the user has never seen reads to every later session as tracked work rather than as a block, so each session files correctly and moves on, and presenting the accumulation is the step nobody owns.
@@ -238,19 +238,13 @@ names the command that applies the fleet label set except where the label read f
 which is the one case where the label's absence is unproven rather than established.
 
 Creating an issue, commenting on one, closing one, and editing a body are each outward-facing
-writes. `new` creates, comments, and closes, the label riding inside the one create call rather
-than being a write of its own. `link` edits a body, comments, and closes. Filing a handoff link is authorized standing by `AGENTS.md` "Session Scope", which
-requires one at every session close and allows no substitute that records the round, so a session
-ending unattended can comply with it. **That authorization reaches the filing and nothing else**,
-meaning the three writes that rule enumerates and the two of them `link` makes where it completes
-a filing that stopped part way. It covers the repository `AGENTS.md` "Session Scope" sends the link to, the one holding the work
-the next session resumes, and no other, and reading it wider is the self-grant `GOVERNANCE.md`
-"Repository Boundaries and Write Safety" forbids. `link`'s body edit is outside it, since that
-rule has the new link name its predecessor at create time and so describes no after-the-fact edit,
-which makes the repair its own act needing its own go-ahead. `link` also reaches an issue this
-chain never created, since the caller names both numbers and its refusals ask for a block and a
-label to be added by hand first, so the two issues it is given are chosen deliberately rather than
-swept up.
+writes. `new` creates, comments, and closes, the label riding inside the one create call rather than
+being a write of its own. `link` edits a body, comments, and closes. Each of them is bound by
+`GOVERNANCE.md` "Repository Boundaries and Write Safety" exactly as any other write is. Point them
+at the repository `AGENTS.md` "Session Scope" sends the link to, the one holding the work the next
+session resumes, and at no other. `link` also reaches an issue this chain never created, since the
+caller names both numbers and its refusals ask for a block and a label to be added by hand first, so
+the two issues it is given are chosen deliberately rather than swept up.
 
 Where the caller names an issue, which is `link` alone, it reads both live before writing and
 writes only what those reads returned. Every other identifier a write targets is captured from a
