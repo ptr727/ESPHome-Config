@@ -4,6 +4,9 @@ ESPHome configuration templates and projects.
 
 ## Release History
 
+- Version 2.2:
+  - Added Heltec WiFi LoRa 32 V4-R8 support.
+  - Added Heltec L76K GNSS module support.
 - Version 2.1:
   - Updated to use ESPHome's [CH390 ethernet controller][esphome-blog-ch390-link] after my [PR][esphome-pr-18226-link] landed.
   - Updated deprecated `rgb_order` to `channel_colors`.

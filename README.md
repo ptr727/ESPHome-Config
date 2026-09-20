@@ -19,11 +19,10 @@ ESPHome configuration templates and projects.
 
 ### Release Notes <!-- omit from toc -->
 
-**Version 2.1**:
+**Version 2.2**:
 
-- Updated to use ESPHome's [CH390 ethernet controller][esphome-blog-ch390-link] after my [PR][esphome-pr-18226-link] landed.
-- Updated deprecated `rgb_order` to `channel_colors`.
-- Added ESPHome `min_version` to templates (required to use `CH390` and `channel_colors`).
+- Added Heltec WiFi LoRa 32 V4-R8 support.
+- Added Heltec L76K GNSS module support.
 
 See [HISTORY.md][history] for the release notes.
 
@@ -371,13 +370,11 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [efun-sh331w-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
 [elecrow-thinknode-m7-link]: https://www.elecrow.com/thinknode-m7-wireless-communication-gateway-for-lorawan-powered-by-esp32-s3-and-lr1110.html
 [elecrow-thinknode-m7-wiki-link]: https://www.elecrow.com/wiki/ThinkNode_M7_LoRaWAN_Wireless_Communication_Gateway_Support_PoE_Power.html
-[esphome-blog-ch390-link]: https://esphome.io/blog/2026/08/19/esphome-2026-8/#new-hardware-support
 [esphome-components-ethernet-link]: https://esphome.io/components/ethernet/
 [esphome-components-gps-link]: https://esphome.io/components/gps/
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
 [esphome-components-sx126x-link]: https://esphome.io/components/sx126x/
 [esphome-link]: https://esphome.io
-[esphome-pr-18226-link]: https://github.com/esphome/esphome/pull/18226
 [espressif-esp32-s3-devkitc-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 [gh-release-link]: https://github.com/marketplace/actions/gh-release
 [github-actions-link]: https://github.com/actions
