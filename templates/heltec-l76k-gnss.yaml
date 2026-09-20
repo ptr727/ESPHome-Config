@@ -23,7 +23,7 @@
 # - The buttons below are diagnostics rather than a prerequisite for the module to talk.
 # - GPTXT reports "ANTENNA OPEN" continuously, which is the current detector seeing a passive antenna.
 # - That is not a fault, since satellites still appear in GSV with it asserted.
-# - Time needs one decoded satellite and a position fix needs four, so a marginal site holds neither.
+# - Time needs one decoded satellite, a 2D fix three with altitude held, and a 3D fix four.
 # - This overlay saw no valid RMC or ZDA indoors, so it never had a date and its time stayed unsynced.
 # - The same hardware reaches 8 satellites and a fix outdoors, though under other firmware.
 # - Sky view is what indoors lacks, so this overlay itself is untested against a fix.

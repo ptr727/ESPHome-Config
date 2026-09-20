@@ -223,6 +223,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 - [Template][heltec-wifi-lora32-v4-r8] for the [Heltec WiFi LoRa 32 V4-R8][heltec-project-wifi-lora-32-v4-link] board. It is an ESP32-S3R8 with 16MB Quad Flash, 8MB Octal PSRAM, and a Semtech SX1262 LoRa radio.
 - Includes the on-chip temperature sensor, the white LED as status LED, and the user button. Adds a battery voltage sensor and a switch for each of the two software controlled power rails.
+- Note: USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC are confirmed on hardware. The user button is not, and the radio and front-end pins are documented rather than claimed.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
 - `Vext Power` feeds the OLED, the I2C pull-ups, the expansion header, and the GNSS module. `GNSS Power` feeds the GNSS module alone. Both default to on, so a unit carrying no GNSS module can drop the second.
 - The octal PSRAM claims GPIO33 through GPIO37, which is why three pins moved from the plain V4 and the V4.3. Those are both rail controls and the LED. The V4's GNSS reset and ADC enable pins are dropped outright instead, a wiring change a quad part would not undo. Either way a V4 pinout does not describe this board, see the [template][heltec-wifi-lora32-v4-r8] header for the full map.
@@ -235,13 +236,14 @@ Shared building-block includes, composed via `packages:` by the device templates
   - `battery_voltage_multiplier`: `4.9`, the 390k / 100k divider ratio. It is a ratio rather than a calibration, so check it against a meter.
   - `vext_power_restore_mode` and `gnss_power_restore_mode`: `ALWAYS_ON` by default. `ALWAYS_OFF` drops the rail once the switch sets up. `Vext` still comes up briefly first, so the I2C bus initializes cleanly.
 - An optional [L76K GNSS overlay][heltec-l76k-gnss] configures the [Heltec L76K][heltec-project-l76-gnss-module-link] module that plugs into the board's GNSS header. It composes as a second `packages:` entry on top of this template.
-  - Adds latitude, longitude, altitude, speed, course, satellite count, and HDOP sensors. Adds a GPS time source beside the Home Assistant one. Agreement between the two time sources confirms the module is decoding rather than merely answering. Time needs one decoded satellite and a position fix needs four, so a marginal site reaches neither quickly.
+  - Adds latitude, longitude, altitude, speed, course, satellite count, and HDOP sensors. Adds a GPS time source beside the Home Assistant one. Agreement between the two time sources confirms the module is decoding rather than merely answering. Time needs one decoded satellite, a 2D position fix needs three with altitude held, and a 3D fix needs four, so a marginal site reaches none of them quickly.
+  - Note: the overlay is untested against an actual fix, because the bench unit had no sky view. The link, the direction and the protocol are confirmed.
   - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. A PMTK init block copied from a MediaTek part is ignored rather than rejected.
   - ESPHome's [GPS][esphome-components-gps-link] component only reads NMEA and sends the module nothing. That makes the overlay a clean test of whether a module streams on its own. Buttons cover the writes worth making: query the firmware version, enable NMEA output, save the configuration, cold start, and factory reset.
   - A module whose saved configuration disabled NMEA output answers the version query and then stays silent, which reads like a wiring fault. Those buttons tell the two cases apart, and the factory reset is the remedy for the second.
   - A raw UART tap is always built and silent by default. Set `gnss_uart_log_level` to `DEBUG` to log every sentence crossing the link, and keep it at `WARN` otherwise.
   - Optional substitutions:
-    - `gnss_tx_pin` and `gnss_rx_pin`: `GPIO38` and `GPIO39`, the MCU side of the link. The vendor and MeshCore pin macros name the module's pins rather than the MCU's, so reading them literally swaps the pair.
+    - `gnss_tx_pin` and `gnss_rx_pin`: `GPIO38` and `GPIO39`, the MCU side of the link. MeshCore's `PIN_GPS_RX` and `PIN_GPS_TX` name the module's pins rather than the MCU's, so reading those literally swaps the pair. Check any other source's macros against the MCU side rather than assuming a convention.
     - `gnss_baud_rate`: `9600`, the module's factory rate.
     - `gnss_update_interval`: `30s`.
     - `gnss_uart_log_level`: `WARN`.
