@@ -15,9 +15,11 @@
 ## April 2023, purchased a SensOper SC-EN-I6-RO4 from IiotProducts online store.
 ##   Norvi online store did not ship to the US.
 ##   Norvi products sold under the SensOper brand in the US.
-##   GPIO pins for inputs are incorrectly documented in SensOper docs, use the Norvi docs instead.
-##   DS3231: My unit was missing the DS3231 RTC that was advertised, per Norvi, early units did not have RTCs, current units should have RTCs.
-##   ADS1115: My unit was missing the ADS1115 ADC that was advertised, per Norvi, the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
+##   GPIO pins for inputs are incorrectly documented in SensOper docs, so use the Norvi docs instead.
+##   DS3231: My unit was missing the DS3231 RTC that was advertised.
+##     Per Norvi, early units did not have RTCs, and current units should.
+##   ADS1115: My unit was missing the ADS1115 ADC that was advertised.
+##     Per Norvi, the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
 ##   Still waiting for SensOper to send me a correct unit that includes the DS3231.
 ## December 2023, purchased a NORVI-ENET-AE06-R from the CarTFT online store.
 ##   In stock and fast shipping to the US.
