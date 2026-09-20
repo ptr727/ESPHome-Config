@@ -35,7 +35,7 @@ esp32_ble:
   max_connections: 2
 
 # https://esphome.io/components/esp32_ble_tracker
-# ble_client needs the tracker, no need for active scanning.
+# The ble_client component needs the tracker, and needs no active scanning.
 esp32_ble_tracker:
   scan_parameters:
     active: false

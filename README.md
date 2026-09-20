@@ -77,9 +77,9 @@ Every template also opens with an `External usage:` comment block showing how to
 - [Template][sonoff-s31] for the [Sonoff S31][amazon-sonoff-monitoring-certified-assistant-supporting-dp-link] US 120V AC WiFi power monitoring wall plug.
 - Follow the Tasmota [guide][tasmota-sonoff-s31-link] for flashing instructions.
 
-#### Norvi NORVI-ENET-AE06-R DIN Controller
+#### NORVI-ENET-AE06-R DIN Controller
 
-- [Template][norvi-enet-ae06-r] for the [Norvi NORVI-ENET-AE06-R][shop-products-norvi-enet-ae06-r-link] or [SensOper SC-EN-I6-RO4][sensoper-shop-sc-en-i6-ro4-link] ESP32 DIN form factor controllers.
+- [Template][norvi-enet-ae06-r] for the [NORVI-ENET-AE06-R][shop-products-norvi-enet-ae06-r-link] or [SensOper SC-EN-I6-RO4][sensoper-shop-sc-en-i6-ro4-link] ESP32 DIN form factor controllers.
 - Flash over USB.
 - Note:
   - Norvi devices are sold under the [SensOper Controls][sensoper-link] brand in the US and available at the [SensOper store][sensoper-shop-link].
@@ -128,29 +128,27 @@ Every template also opens with an `External usage:` comment block showing how to
 #### Elecrow ThinkNode M7 LoRaWAN Gateway
 
 - [Template][elecrow-thinknode-m7] for the [Elecrow ThinkNode M7][elecrow-thinknode-m7-link], an ESP32-S3 with 8MB Quad Flash and 8MB Octal PSRAM.
-- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support.
-- Includes the on-chip temperature sensor and a plain status LED, since the board's LED is not individually addressable.
+- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support. Includes the on-chip temperature sensor, a plain status LED since the board's LED is not individually addressable, and the user button as a raw voltage sensor.
 - Flash over USB through the onboard CH343 USB-UART bridge, no external adapter needed.
-- The device's Semtech LR1110 LoRa radio is deliberately not configured: ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
-- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout. Both were established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
-- The user button is an ADC ladder with no documented threshold, exposed as a raw voltage sensor.
+- The Semtech LR1110 LoRa radio is deliberately not configured, since ESPHome has no LR11xx component and the SX126x command set does not fit.
+- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout, so see the [template][elecrow-thinknode-m7] header for the pin assignments established by hand.
 
 ### Utility Templates
 
 Shared building-block includes, composed via `packages:` by the device templates and per-device configs:
 
-- [`api.yaml`][api] - API with encryption and a configurable `api_reboot_timeout`.
-- [`ota.yaml`][ota] - ESPHome OTA with password.
-- [`logger.yaml`][logger] - logger configuration.
-- [`time.yaml`][time] - Home Assistant time source.
-- [`wifi.yaml`][wifi] - managed WiFi credentials from secrets.
-- [`basic.yaml`][basic] - restart button plus status, uptime, and version sensors.
-- [`common.yaml`][common] - bundles the api / ota / logger / time / wifi / basic includes for a typical device.
-- [`debug.yaml`][debug] - debug component and debug text sensors.
-- [`temperature.yaml`][temperature] - on-chip internal temperature sensor.
-- [`ethernet-sensor.yaml`][ethernet-sensor] - Ethernet IP / MAC info text sensors.
+- [`api.yaml`][api] configures the API with encryption and a configurable `api_reboot_timeout`.
+- [`ota.yaml`][ota] configures ESPHome OTA with a password.
+- [`logger.yaml`][logger] configures the logger.
+- [`time.yaml`][time] configures the Home Assistant time source.
+- [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets.
+- [`basic.yaml`][basic] adds a restart button plus status, uptime, and version sensors.
+- [`common.yaml`][common] bundles the api, ota, logger, time, wifi, and basic includes for a typical device.
+- [`debug.yaml`][debug] adds the debug component and its text sensors.
+- [`temperature.yaml`][temperature] adds the on-chip internal temperature sensor.
+- [`ethernet-sensor.yaml`][ethernet-sensor] adds Ethernet IP and MAC info text sensors.
 - [`min-version.yaml`][min-version] sets the ESPHome `min_version` floor, the single place that version is written.
-- [`secrets.yaml`][secrets] - re-exports the root `secrets.yaml` so templates can resolve secrets.
+- [`secrets.yaml`][secrets] re-exports the root `secrets.yaml` so templates can resolve secrets.
 
 ### Board and Component Helpers
 
@@ -221,32 +219,16 @@ Shared building-block includes, composed via `packages:` by the device templates
 
 #### Heltec WiFi LoRa 32 V4-R8 Devkit
 
-- [Template][heltec-wifi-lora32-v4-r8] for the [Heltec WiFi LoRa 32 V4-R8][heltec-project-wifi-lora-32-v4-link] board. It is an ESP32-S3R8 with 16MB Quad Flash, 8MB Octal PSRAM, and a Semtech SX1262 LoRa radio.
-- Includes the on-chip temperature sensor, the white LED as status LED, and the user button. Adds a battery voltage sensor and a switch for each of the two software controlled power rails.
-- Note: USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC are confirmed on hardware. The user button is not, and the radio and front-end pins are documented rather than claimed.
+- [Template][heltec-wifi-lora32-v4-r8] for the [Heltec WiFi LoRa 32 V4-R8][heltec-project-wifi-lora-32-v4-link] board, an ESP32-S3R8 with 16MB Quad Flash, 8MB Octal PSRAM, and a Semtech SX1262 LoRa radio.
+- Includes the on-chip temperature sensor, the white LED as status LED, the user button, a battery voltage sensor, and a switch for each of the two software controlled power rails.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
-- `Vext Power` feeds the OLED, the I2C pull-ups, the expansion header, and the GNSS module. `GNSS Power` feeds the GNSS module alone. Both default to on, so a unit carrying no GNSS module can drop the second.
-- The octal PSRAM claims GPIO33 through GPIO37, which is why three pins moved from the plain V4 and the V4.3. Those are both rail controls and the LED. The V4's GNSS reset and ADC enable pins are dropped outright instead, a wiring change a quad part would not undo. Either way a V4 pinout does not describe this board, see the [template][heltec-wifi-lora32-v4-r8] header for the full map.
-- `Vext` powers the I2C bus and its pull-ups, and the bus would otherwise set up before the rail is raised. An `on_boot` handler raises the rail first, so the bus scan finds the OLED as normal.
-- The board's I2C bus is an `i2c:` list entry with `id: board_i2c` rather than the mapping shorthand. A config composing this template and adding its own bus uses a list entry too. A mapping on either side makes the merge keep one bus and drop the other. Nothing reports it.
-- The onboard SSD1306 OLED is documented in the [template][heltec-wifi-lora32-v4-r8] header but not configured. An ESPHome display needs a font asset this repository does not carry.
-- The SX1262 radio is not configured. ESPHome's [SX126x][esphome-components-sx126x-link] component reaches an RF switch only through the radio's own DIO2. This board wires its KCT8103L front-end to three ESP32 pins instead, one selecting the transmit or receive path per packet.
-- Note: the status LED is dark when healthy and blinks on a warning or error, which is the ESPHome default. That is the reverse of the [GL-S10][gls10-bluetooth-proxy] and [ThinkNode M7][elecrow-thinknode-m7] convention, whose LEDs are active low. This one is a bright white LED on a board that runs from a cell.
-- Optional substitutions:
-  - `battery_voltage_multiplier`: `4.9`, the 390k / 100k divider ratio. It is a ratio rather than a calibration, so check it against a meter.
-  - `vext_power_restore_mode` and `gnss_power_restore_mode`: `ALWAYS_ON` by default. `ALWAYS_OFF` drops the rail once the switch sets up. `Vext` still comes up briefly first, so the I2C bus initializes cleanly.
-- An optional [L76K GNSS overlay][heltec-l76k-gnss] configures the [Heltec L76K][heltec-project-l76-gnss-module-link] module that plugs into the board's GNSS header. It composes as a second `packages:` entry on top of this template.
-  - Adds latitude, longitude, altitude, speed, course, satellite count, and HDOP sensors. Adds a GPS time source beside the Home Assistant one. Agreement between the two time sources confirms the module is decoding rather than merely answering. Time needs one decoded satellite, a 2D position fix needs three with altitude held, and a 3D fix needs four, so a marginal site reaches none of them quickly.
+- The octal PSRAM claims GPIO33 through GPIO37, so three pins moved from the plain V4 and the V4.3. Two more were dropped outright, a wiring change a quad part would not restore. A V4 pinout does not describe this board, see the [template][heltec-wifi-lora32-v4-r8] header for the full map, the optional substitutions, and the I2C and power rail ordering a composing config has to respect.
+- The onboard SSD1306 OLED and the SX1262 radio are documented in the [template][heltec-wifi-lora32-v4-r8] header rather than configured. The display needs a font asset this repository does not carry, and ESPHome's [SX126x][esphome-components-sx126x-link] component reaches an RF switch only through the radio's own DIO2, while this board's KCT8103L front-end flips its transmit and receive path per packet from an ESP32 pin.
+- Note: USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC are confirmed on hardware. The user button is not, and the radio and front-end pins are documented rather than claimed.
+- Note: the status LED is dark when healthy and blinks on a warning or error, the ESPHome default, which is the reverse of the [GL-S10][gls10-bluetooth-proxy] and [ThinkNode M7][elecrow-thinknode-m7] convention.
+- An optional [L76K GNSS overlay][heltec-l76k-gnss] configures the [Heltec L76K][heltec-project-l76-gnss-module-link] module that plugs into the board's GNSS header, composed as a second `packages:` entry on top of this template. It adds position, speed, course, satellite count and HDOP sensors, a GPS time source beside the Home Assistant one, and buttons for the handful of writes worth making, since ESPHome's [GPS][esphome-components-gps-link] component only reads NMEA and sends the module nothing.
+  - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. Its substitutions, and the pin direction trap that swaps the UART pair if MeshCore's macros are read literally, are in the [overlay][heltec-l76k-gnss] header.
   - Note: the overlay is untested against an actual fix, because the bench unit had no sky view. The link, the direction and the protocol are confirmed.
-  - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. A PMTK init block copied from a MediaTek part is ignored rather than rejected.
-  - ESPHome's [GPS][esphome-components-gps-link] component only reads NMEA and sends the module nothing. That makes the overlay a clean test of whether a module streams on its own. Buttons cover the writes worth making: query the firmware version, enable NMEA output, save the configuration, cold start, and factory reset.
-  - A module whose saved configuration disabled NMEA output answers the version query and then stays silent, which reads like a wiring fault. Those buttons tell the two cases apart, and the factory reset is the remedy for the second.
-  - A raw UART tap is always built and silent by default. Set `gnss_uart_log_level` to `DEBUG` to log every sentence crossing the link, and keep it at `WARN` otherwise.
-  - Optional substitutions:
-    - `gnss_tx_pin` and `gnss_rx_pin`: `GPIO38` and `GPIO39`, the MCU side of the link. MeshCore's `PIN_GPS_RX` and `PIN_GPS_TX` name the module's pins rather than the MCU's, so reading those literally swaps the pair. Check any other source's macros against the MCU side rather than assuming a convention.
-    - `gnss_baud_rate`: `9600`, the module's factory rate.
-    - `gnss_update_interval`: `30s`.
-    - `gnss_uart_log_level`: `WARN`.
 
 ## Devices
 

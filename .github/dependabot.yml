@@ -4,7 +4,7 @@
 version: 2
 updates:
 
-# main
+# Main branch.
 - package-ecosystem: "devcontainers"
   target-branch: "main"
   directory: "/"
@@ -25,7 +25,7 @@ updates:
       patterns:
         - "*"
 
-# develop
+# Develop branch.
 - package-ecosystem: "devcontainers"
   target-branch: "develop"
   directory: "/"

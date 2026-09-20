@@ -4,15 +4,15 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # WEMOS LOLIN32 Lite
 # https://web.archive.org/web/20191002041532/https://wiki.wemos.cc/products:lolin32:lolin32_lite
 # https://web.archive.org/web/20190902005100/https://wiki.wemos.cc/_media/products:lolin32:sch_lolin32_lite_v1.0.0.pdf
 # https://templates.blakadder.com/wemos_LOLIN32_Lite_v1.html
 
-# E.g. Screek Bluetooth Proxy, screek.io/bp1
+# For example the Screek Bluetooth Proxy, screek.io/bp1
 
 # JST, 3.7V LiPo charger, Blue LED
 # ESP32-D0WDQ6-V3, 520KB SRAM, 4MB Flash

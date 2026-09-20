@@ -4,8 +4,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # https://tasmota.github.io/docs/devices/Sonoff-S31/
 # https://templates.blakadder.com/sonoff_S31.html

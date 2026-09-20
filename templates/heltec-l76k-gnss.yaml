@@ -6,11 +6,11 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Optional substitutions:
-# gnss_tx_pin - GPIO38, the ESP32 pin driving the module's RX.
-# gnss_rx_pin - GPIO39, the ESP32 pin reading the module's TX.
-# gnss_baud_rate - 9600, the module's factory rate.
-# gnss_update_interval - 30s.
-# gnss_uart_log_level - WARN, set DEBUG to log every sentence crossing the link.
+# - gnss_tx_pin - GPIO38, the ESP32 pin driving the module's RX.
+# - gnss_rx_pin - GPIO39, the ESP32 pin reading the module's TX.
+# - gnss_baud_rate - 9600, the module's factory rate.
+# - gnss_update_interval - 30s.
+# - gnss_uart_log_level - WARN, set DEBUG to log every sentence crossing the link.
 
 # One more substitution is machinery rather than a knob, so it is absent from the list above.
 # - gnss_nmea_start carries the leading $, and overriding it makes the module ignore every sentence.
