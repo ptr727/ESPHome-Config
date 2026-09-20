@@ -4,8 +4,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # https://devices.esphome.io/devices/Sonoff-TH10
 # https://templates.blakadder.com/sonoff_TH.html

@@ -5,8 +5,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # Notes:
 
@@ -19,9 +19,9 @@
 ##   DS3231: My unit was missing the DS3231 RTC as advertised, per Norvi early units did not have RTC's, current units should have RTC's.
 ##   ADS1115: My unit was missing the ADS1115 ADC as advertised, per Norvi the SensOper documentation is incorrect and the dedicated ADC is only present in analog input units.
 ##   Still waiting for SensOper to send me a correct unit that includes the DS3221.
-## December 2023, purchased a Norvi NORVI-ENET-AE06-R from CarTFT online store.
+## December 2023, purchased a NORVI-ENET-AE06-R from the CarTFT online store.
 ##   In stock and fast shipping to the US.
-## December 2023, purchased a Norvi NORVI-ENET-AE06-R from the Norvi online store.
+## December 2023, purchased a NORVI-ENET-AE06-R from the Norvi online store.
 ##   Norvi online store did now offer US shipping.
 ##   Took almost a month to receive the unit.
 ## January 2024, all 3 units suffering from some sort of stability issue.
@@ -37,7 +37,7 @@
 ##     GPIO39 ADC does not appear to be grounded, ADC on GPIO39 measure 3V+.
 ##     GPIO36 button ADC, started at 0.14V, drifting up over time.
 ##     ADC is not fixed, contacted Norvi on 25 June 2024 to arrange a device swap.
-##   Observations - Norvi NORVI-ENET-AE06-R (tested two units):
+##   Observations - NORVI-ENET-AE06-R (tested two units):
 ##     GPIO39 ADC appears to be grounded, ADC on GPIO39 measures ~0.09V/~0.14V.
 ##     GPIO36 button ADC, appears to remain stable at ~0.07V/~0.14V, up~=0.42V/~0.43V, down~=0.75V/~0.77V, enter~=1.61V/~1.66V, within safe ADC range.
 ##     ADC is fixed.
@@ -52,7 +52,7 @@
 # - Norvi to advise on use of GPIO15 affecting input LED signal state.
 
 
-# Norvi NORVI-ENET-AE06-R
+# NORVI-ENET-AE06-R
 # https://shop.norvi.lk/products/norvi-enet-ae06-r
 # https://norvi.lk/product/industrial-esp32-ethernet/
 # https://norvi.lk/docs/norvi-enet-ae06-r-norvi-enet-ae06-r-user-guide/
@@ -81,7 +81,7 @@
 # Rbutton = 1 / (1/R2 + 1/R3 + 1/R4)
 # Vbutton = (Vin x R6) / (Rbutton + R6)
 # S3 | S2 | S1 | Rbutton     | Vbutton     | Delta       | % of 3.3v
-# 0  | 0  | 0  | ∞           | 0           |             |
+# 0  | 0  | 0  | inf         | 0           |             |
 # 0  | 0  | 1  | 67000       | 0.428571429 | 0.428571429 | 12.98701299
 # 0  | 1  | 0  | 33000       | 0.76744186  | 0.338870432 | 10.26880097
 # 0  | 1  | 1  | 22110       | 1.027717222 | 0.260275362 | 7.887132169
@@ -123,7 +123,7 @@
 ## Reset IO21
 ## Battery Backup YES
 
-# microSD Card
+# MicroSD Card
 ## SCK IO18
 ## MISO IO19
 ## MOSI IO23

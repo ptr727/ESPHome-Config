@@ -4,8 +4,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # Adafruit ESP32-S3 Feather
 # Adafruit ESP32-S3 8MB Flash 5323, 5885 w.FL

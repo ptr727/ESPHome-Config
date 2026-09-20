@@ -48,8 +48,7 @@ ethernet:
   phy_addr: 1
   power_pin: GPIO16
 
-  # Use a static IP to improve Z2M reliability
-  # tubeszb.home.insanegenius.net
+  # Use a static IP to improve Z2M reliability, the host being tubeszb.home.insanegenius.net.
   manual_ip:
     static_ip: 192.168.1.6
     gateway: 192.168.1.1

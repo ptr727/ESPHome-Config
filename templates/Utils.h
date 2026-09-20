@@ -33,7 +33,7 @@ class DisplayHelper {
 // Rbutton = 1 / (1/R2 + 1/R3 + 1/R4)
 // Vbutton = (Vin x R6) / (Rbutton + R6)
 // S3 | S2 | S1 | Rbutton     | Vbutton     | Delta       | % of 3.3v
-// 0  | 0  | 0  | ∞           | 0           |             |
+// 0  | 0  | 0  | inf         | 0           |             |
 // 0  | 0  | 1  | 67000       | 1.360526316 | 1.360526316 | 41.22807018
 // 0  | 1  | 0  | 33000       | 1.93875     | 0.578223684 | 17.52192982
 // 0  | 1  | 1  | 22110       | 2.2442483   | 0.3054983   | 9.257524237
@@ -53,7 +53,7 @@ class DisplayHelper {
 // Rbutton = 1 / (1/R2 + 1/R3 + 1/R4)
 // Vbutton = (Vin x R6) / (Rbutton + R6)
 // S3 | S2 | S1 | Rbutton     | Vbutton     | Delta       | % of 3.3v
-// 0  | 0  | 0  | ∞           | 0           |             |
+// 0  | 0  | 0  | inf         | 0           |             |
 // 0  | 0  | 1  | 67000       | 0.428571429 | 0.428571429 | 12.98701299
 // 0  | 1  | 0  | 33000       | 0.76744186  | 0.338870432 | 10.26880097
 // 0  | 1  | 1  | 22110       | 1.027717222 | 0.260275362 | 7.887132169
@@ -127,8 +127,6 @@ class NorviButtonHelper {
     for (int i = 0; i < Count; i++) {
       ESP_LOGI("NorviButtonHelper", "S3: %d, S2: %d, S1: %d, V: %f", buttonValues[i].S3, buttonValues[i].S2,
                buttonValues[i].S1, buttonValues[i].Volt);
-      // std::cout << "NorviButtonHelper: Index: " << i << " S3: " << buttonValues[i].S3 << " S2: " <<
-      // buttonValues[i].S2 << " S1: " << buttonValues[i].S1 << " V: " << buttonValues[i].Volt << std::endl;
     }
     delete[] buttonValues;
     buttonValues = nullptr;
@@ -173,6 +171,6 @@ class NorviButtonHelper {
     return buttonValues;
   }
 
-  // Need C++ 17+ for inline in header
-  // static inline ButtonValue* ButtonValues = NorviButtonHelper::CalculateButtonValues();
+  // Needs C++17 or later for `inline` in a header:
+  // `static inline ButtonValue* ButtonValues = NorviButtonHelper::CalculateButtonValues();`
 };

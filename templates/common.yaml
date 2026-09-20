@@ -4,13 +4,13 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
+# - device_name
 
 # Required secrets:
-# wifi_ssid
-# wifi_password
-# wifi_domain
-# ota_password
+# - wifi_ssid
+# - wifi_password
+# - wifi_domain
+# - ota_password
 
 # https://esphome.io/components/packages
 packages:

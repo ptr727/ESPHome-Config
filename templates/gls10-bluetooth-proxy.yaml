@@ -4,8 +4,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # https://www.gl-inet.com/products/gl-s10/
 # https://static.gl-inet.com/www/images/products/datasheet/s10_datasheet_20230602.pdf
@@ -125,8 +125,9 @@ output:
 
 # I2C not connected to anything internal on the GL-S10
 # https://esphome.io/components/i2c
+# WARNING: GPIO15 is a strapping pin and should only be used for I/O with care.
 # i2c:
-#   sda: GPIO15 # WARNING GPIO15 is a strapping PIN and should only be used for I/O with care.
+#   sda: GPIO15
 #   scl: GPIO13
 #   scan: true
 

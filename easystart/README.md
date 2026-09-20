@@ -98,7 +98,7 @@ Full detail with the validated byte-offset table is in [PROTOCOL.md][protocol].
 - Transport is the **Laird VSP** service `d973f2e0-...`, no pairing / PIN / handshake:
   - `d973f2e1-...` = **notify** characteristic (module -> host, has the `0x2902` CCCD)
   - `d973f2e2-...` = **write** characteristic (host -> module, write-no-response)
-  - Note: `e1`/`e2` are the opposite of the usual Laird convention - confirmed via nRF Connect.
+  - Note: `e1` and `e2` are the opposite of the usual Laird convention, confirmed via nRF Connect.
 - Poll by writing the ASCII string `{"Cmd": ReadLive}` to the write characteristic.
 - Each poll yields two notifications on the notify characteristic:
   - An **18-byte binary live frame**.
@@ -113,9 +113,9 @@ Full detail with the validated byte-offset table is in [PROTOCOL.md][protocol].
 
 To locate this in the decompiled app, the key classes are:
 
-- `Status` / `Status$onCreateView$$inlined$scheduleAtFixedRate$1` - polls `ReadLive`, parses the live frame (byte offsets -> current, state, frequency, counters).
-- `MainActivityKt$gattCallBack$1` - GATT callback; response framing and buffer accumulation.
-- `Connect` - connection sequence, service/characteristic discovery, notify subscription.
+- `Status` and `Status$onCreateView$$inlined$scheduleAtFixedRate$1` poll `ReadLive` and parse the live frame (byte offsets -> current, state, frequency, counters).
+- `MainActivityKt$gattCallBack$1` is the GATT callback, covering response framing and buffer accumulation.
+- `Connect` is the connection sequence, service and characteristic discovery, and notify subscription.
 
 ### Live Validation (nRF Connect + Python monitor)
 
@@ -131,7 +131,7 @@ See [PROTOCOL.md section 7][protocol] for the validation table.
   ```
 
 - Real device MACs are kept out of the repo, discover your own with `--discover` and store them only in the git-ignored ESPHome `secrets.yaml` (read by `hvac-compressor-sensor.yaml` via `!secret`).
-- Only one BLE central can connect at a time - close the phone app before running the monitor.
+- Only one BLE central can connect at a time, so close the phone app before running the monitor.
 
 #### Note: HCI snoop logs are filtered on stock Pixel
 
@@ -145,8 +145,8 @@ An unfiltered `btsnoop_hci.log` would need root or a different device.
 A hardware-validated ESPHome external component (uses `ble_client`, derives compressor-running from the BLE connection, publishes current, an estimated power (`current * line_voltage * power_factor`,
 defaults 240 V / 1.0), line frequency, last-start peak, short-cycle delay, system state, and start/fault/learned-start counters). Flashed on a GL-S10 proxy and confirmed against both live modules: both clients connect, every decoded field matches, and both `running` sensors report `on` in Home Assistant:
 
-- [`components/easystart/easystart.h`][easystart-header] - the C++ component (BLE + frame parsing).
-- [`components/easystart/__init__.py`][easystart-init] - ESPHome codegen / config schema (one instance per module).
+- [`components/easystart/easystart.h`][easystart-header] is the C++ component, covering BLE and frame parsing.
+- [`components/easystart/__init__.py`][easystart-init] is the ESPHome codegen and config schema, one instance per module.
 
 Wire it into a Bluetooth proxy with the reusable template [`../templates/easystart.yaml`][easystart-template] (include once per module, with `vars` for the MAC + label).
 A complete two-module example is [`../hvac-compressor-sensor.yaml`][hvac-compressor-sensor], a dedicated ProS3D sited at the units that attaches both compressors. Place the host close to the units: EasyStart BLE is very short range, it would not connect from across the room and needed the proxy relocated near the modules; an external-antenna ESP32 helps if the signal is marginal.

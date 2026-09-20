@@ -105,8 +105,9 @@ sensor:
 # https://esphome.io/components/number/ld2412
 # Per-gate sensitivity, the only way to mute a distance band, and unexposed by the vendor package.
 # All fourteen gates are declared because a threshold write sends the whole array and dereferences every entry.
-# esphome/esphome#18194 fixes that dereference and was verified on this device on 2026-08-08.
-# Revisit declaring only the gates in use once the fix ships in a release.
+# An upstream fix for that dereference was verified on this device on 2026-08-08.
+# https://github.com/esphome/esphome/pull/18194
+# Revisit declaring only the gates in use once that fix ships in an ESPHome release.
 number:
   - platform: ld2412
     gate_0:
