@@ -28,7 +28,7 @@ jobs:
   plan:
     name: Plan release job
     needs: [assert-dispatch-ref]
-    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@3084c2269d456c947fbda92e65f9979a291f8a9a # 2.0.635
+    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@3a5c11376c17f33d61bd64bf9f05a6d46e9ea4f3 # 2.0.648
     with:
       event_name: ${{ github.event_name }}
       actor: ${{ github.actor }}
@@ -38,7 +38,7 @@ jobs:
     name: Validate sources job
     needs: [plan]
     if: ${{ needs.plan.outputs.publish == 'true' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@3084c2269d456c947fbda92e65f9979a291f8a9a # 2.0.635
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@3a5c11376c17f33d61bd64bf9f05a6d46e9ea4f3 # 2.0.648
     permissions:
       contents: read
 
@@ -46,7 +46,7 @@ jobs:
     name: Publish project release job
     needs: [plan, validate]
     if: ${{ needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@3084c2269d456c947fbda92e65f9979a291f8a9a # 2.0.635
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@3a5c11376c17f33d61bd64bf9f05a6d46e9ea4f3 # 2.0.648
     permissions:
       contents: write
       actions: write
