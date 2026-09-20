@@ -114,6 +114,18 @@ inflates the number this run reports as the backlog by one for every lane in use
 count this fleet reports wrong is a failure with its own history, so filter the label out of the
 ranking and out of every count of the open backlog rather than out of the ranking alone.
 
+An issue carrying the `blocked` label is counted and is not ranked while its blocker stands. It
+records real work this repository owes, which is why it stays in the count, and the label says the
+work cannot start yet, per `GOVERNANCE.md` "Durable Knowledge and Self-Improvement". So until the
+blocker clears it has no group, no worker, and no claim, and spends none of the round's four worker
+slots. Whether the blocker still stands is read from what its body names rather than from the label,
+since the label comes off by hand and lags the fix, and a fix merged into `develop` leaves the issue
+it fixes open, per "Grouping and File Claims" below on closing keywords. Where that read cannot be
+made, from a private or deleted repository or a reference nothing can be read from, the blocker
+stands rather than being assumed cleared. The round's report names every issue it held back this way
+and the blocker each one waits on, since the maintainer reads the report rather than the issue
+bodies, and a stuck issue nobody names reads as ordinary backlog that simply never moves.
+
 An issue that asks a question rather than states a defect is not ranked and is never guessed at.
 It has no group, no worker, and no claim, so nothing in "Raising a Blocked Question" applies to it
 except how the question travels. It goes to the maintainer at the end of ranking, per
@@ -486,17 +498,17 @@ body when it lands rather than leaving the issue to be closed by hand.
 The run ends at either of two points, and they are different endings.
 
 - **The backlog is worked out**, meaning a full re-rank finds no open issue this skill can act on.
-  That is not the same as zero open issues, since a backlog of nothing but maintainer questions is
-  a finished run. Report it as finished, with the questions put to the maintainer.
+  That is not the same as zero open issues, since a backlog of nothing but maintainer questions and
+  issues whose blockers still stand is a finished run. Report it as finished, with the questions put to the maintainer.
 - **The session ends**, for a context limit or because the maintainer stops it. The run ends with
   it, since the merge authorization was bounded to that session. What the rounds already landed
   stands on its own in GitHub, and the branches, claim comments, and questions left behind are
   what a later run reads to pick the work up. That later run is a new run, named again, not this
   one continuing.
 
-Report at every round boundary and at either ending: what merged to develop, what the promotion
-pull request carries, what was newly filed, what is stopped and on which question, and what the
-next round would pick.
+Report at every round boundary and at either ending: what merged to develop, what the promotion pull
+request carries, what was newly filed, what is stopped and on which question, what was held back and
+on which blocker, and what the next round would pick.
 
 ## Mechanics Live Elsewhere
 
