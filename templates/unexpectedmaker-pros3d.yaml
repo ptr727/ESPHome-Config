@@ -4,12 +4,12 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # Optional substitutions:
-# external_antenna_restore_mode (default ALWAYS_OFF, onboard PCB antenna, ALWAYS_ON selects the u.FL connector)
-# ldo2_power_restore_mode       (default ALWAYS_ON, powers the 3V3_2 rail feeding the RGB LED and the 3V3_2 header pin)
+# - external_antenna_restore_mode (default ALWAYS_OFF, onboard PCB antenna, ALWAYS_ON selects the u.FL connector)
+# - ldo2_power_restore_mode       (default ALWAYS_ON, powers the 3V3_2 rail feeding the RGB LED and the 3V3_2 header pin)
 
 # Unexpected Maker ProS3D
 # ESP32-S3, 16MB Quad Flash, 8MB Quad PSRAM
@@ -70,10 +70,12 @@ packages:
   rgbledstatus: !include rgb-led-status.yaml
   max17048: !include max17048.yaml
 
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
 # https://esphome.io/components/i2c
 i2c:
-  sda: GPIO8
-  scl: GPIO9
+  - id: board_i2c
+    sda: GPIO8
+    scl: GPIO9
 
 # https://esphome.io/components/binary_sensor
 binary_sensor:

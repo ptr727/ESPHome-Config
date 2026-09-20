@@ -5,8 +5,8 @@ publishes the decoded live frame. Configure as a single mapping or a list (one p
 See ../../PROTOCOL.md.
 """
 
-# esphome is supplied by the ESPHome toolchain when it runs this codegen, not by the editor's
-# Python environment, so Pylance/pyright cannot resolve these imports standalone.
+# The esphome package is supplied by the ESPHome toolchain when it runs this codegen rather than by the editor's Python environment.
+# So Pylance and pyright cannot resolve these imports standalone.
 # pyright: reportMissingImports=false
 
 import esphome.codegen as cg
@@ -54,8 +54,8 @@ _INSTANCE_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(EasyStart),
-            # Estimated-power inputs: the module reports single-leg current only, so power is
-            # current * line_voltage * power_factor (defaults: US 240 V split-phase, PF 1.0).
+            # Estimated-power inputs, since the module reports single-leg current only.
+            # Power is current * line_voltage * power_factor, defaulting to US 240 V split-phase at a power factor of 1.0.
             cv.Optional(CONF_LINE_VOLTAGE, default=240.0): cv.positive_float,
             cv.Optional(CONF_POWER_FACTOR, default=1.0): cv.positive_float,
             cv.Optional(CONF_CURRENT): sensor.sensor_schema(

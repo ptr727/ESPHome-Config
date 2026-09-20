@@ -32,7 +32,7 @@ jobs:
 
   validate:
     name: Validate sources job
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@3084c2269d456c947fbda92e65f9979a291f8a9a # 2.0.635
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@3a5c11376c17f33d61bd64bf9f05a6d46e9ea4f3 # 2.0.648
     permissions:
       contents: read
 
@@ -77,7 +77,7 @@ jobs:
             run_all
           fi
           WORKFLOW='\.github/workflows/test-pull-request\.yml$'
-          # test/ hosts the example devices, and test/easystart.yaml compiles easystart/components.
+          # The test/ tree hosts the example devices, and test/easystart.yaml compiles easystart/components.
           if grep -qE "^(templates/|test/|easystart/components/|$WORKFLOW)" <<<"$DIFF"; then
             echo "template-test=true" >> "$GITHUB_OUTPUT"
           else
@@ -108,9 +108,9 @@ jobs:
           echo "template-configs=$CONFIGS" >> "$GITHUB_OUTPUT"
 
   # Compile one example device per published template.
-  # test/ holds the configs, and the Device Builder scan is non-recursive, so they are not listed as devices.
+  # The test/ tree holds the configs, and the Device Builder scan is non-recursive, so they are not listed as devices.
   # The matrix comes from the changes job, which also enforces that every template has an example device.
-  # fail-fast is off so one broken template does not mask the others.
+  # Turning fail-fast off keeps one broken template from masking the others.
   template-compile-test:
     name: Compile template ${{ matrix.config }} job
     runs-on: ubuntu-latest
@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Templates resolve !secret via templates/secrets.yaml, which re-exports the root secrets.yaml.
-      # secrets._yaml supplies the key names.
+      # The secrets._yaml file supplies the key names.
       # The encryption key is generated here, so no usable key is committed.
       - name: Create dummy secrets step
         run: |

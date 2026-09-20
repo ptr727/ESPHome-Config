@@ -4,8 +4,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # SmartHomeShop CeilSense v1 Complete (WiFi, LD2412 + SCD4x)
 # https://ceilsense.nl/en/
@@ -19,7 +19,7 @@
 # ../OPERATIONS.md "SmartHome CeilSense" covers the strip in full.
 
 substitutions:
-  # base.yaml expects these for esphome.name / friendly_name
+  # The base.yaml package expects these for esphome.name and friendly_name.
   name: ${device_name}
   friendly_name: ${device_friendly_name}
 

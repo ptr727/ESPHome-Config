@@ -3,6 +3,7 @@
         // Prose paragraphs and data-heavy tables or URLs are intentionally long.
         // Reflowing at 80 columns hurts readability and churns diffs.
         "MD013": false,
+        "MD024": { "siblings_only": true },
         // MD033 (inline HTML) stays enabled so native Markdown wins.
         // HTML comments, used as reference-link dividers, pass it.
         // The details and summary elements are allowed for GitHub collapsibles, which have no Markdown equivalent.

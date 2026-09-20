@@ -1,0 +1,188 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/heltec-wifi-lora32-v4-r8.yaml@main
+#   gnss: github://ptr727/ESPHome-Config/templates/heltec-l76k-gnss.yaml@main
+# - An overlay, not a standalone device, so it is composed on a board template.
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Optional substitutions:
+# - gnss_tx_pin - GPIO38, the ESP32 pin driving the module's RX.
+# - gnss_rx_pin - GPIO39, the ESP32 pin reading the module's TX.
+# - gnss_baud_rate - 9600, the module's factory rate.
+# - gnss_update_interval - 30s.
+# - gnss_uart_log_level - WARN, set DEBUG to log every sentence crossing the link.
+
+# One more substitution is machinery rather than a knob, so it is absent from the list above.
+# - gnss_nmea_start carries the leading $, and overriding it makes the module ignore every sentence.
+
+# Heltec L76K GNSS module
+# Quectel L76K, CASIC / Uranus chipset, reports firmware id URANUS5, 1.25mm 8 pin connector
+# https://heltec.org/project/l76-gnss-module/
+
+# Module tested: hardware verified 2026-09-18, streams the full NMEA set at 1Hz with nothing written to it.
+# - The buttons below are diagnostics rather than a prerequisite for the module to talk.
+# - GPTXT reports "ANTENNA OPEN" continuously, which is the current detector seeing a passive antenna.
+# - That is not a fault, since satellites still appear in GSV with it asserted.
+# - Time needs one decoded satellite, a 2D fix three with altitude held, and a 3D fix four.
+# - This overlay saw no valid RMC or ZDA indoors, so it never had a date and its time stayed unsynced.
+# - The same hardware reaches 8 satellites and a fix outdoors, though under other firmware.
+# - Sky view is what indoors lacks, so this overlay itself is untested against a fix.
+
+# The board template powers the module through its "Vext Power" and "GNSS Power" switches.
+# - Both have to be on.
+# - Another board overrides the two pin substitutions and powers the module itself.
+# - The V4-R8 exposes no GNSS reset pin, so nothing here configures one.
+
+# Pin direction is the trap here, since the vendor macro names describe the module rather than the MCU.
+# - MeshCore calls Serial1.setPins(PIN_GPS_TX, PIN_GPS_RX) into a signature that takes rx first.
+# - The MCU side is tx on GPIO38 and rx on GPIO39, which is what these defaults are.
+
+# The gps component only reads NMEA and writes the module nothing.
+# - That makes this overlay a clean test of whether a module streams on its own.
+# - A module with NMEA output disabled answers a version query and then stays quiet.
+
+# The module speaks CASIC PCAS sentences rather than u-blox UBX or MediaTek PMTK.
+# - A PMTK sentence is ignored rather than rejected, so an init block from a MediaTek part looks like it worked.
+# - The sentence semantics come from the CASIC protocol documentation and are unconfirmed here.
+# - The checksums are computed and exact.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  gnss_tx_pin: GPIO38
+  gnss_rx_pin: GPIO39
+  gnss_baud_rate: "9600"
+  gnss_update_interval: 30s
+  gnss_uart_log_level: WARN
+
+  # ESPHome reads a bare $ before word characters as a substitution reference, and NMEA opens with one.
+  # - A literal validates but warns on every run, so the prefix comes through a substitution instead.
+  gnss_nmea_start: "$"
+
+# The debug tap logs under the uart_debug tag, which this gates rather than the global level.
+# https://esphome.io/components/logger
+logger:
+  logs:
+    uart_debug: ${gnss_uart_log_level}
+
+# https://esphome.io/components/uart
+uart:
+  - id: gnss_uart
+    tx_pin: ${gnss_tx_pin}
+    rx_pin: ${gnss_rx_pin}
+    baud_rate: ${gnss_baud_rate}
+
+    # Always built and silent by default, so raising gnss_uart_log_level is all a bring-up needs.
+    # Line delimited, since a sentence is the unit worth reading.
+    # https://esphome.io/components/uart#uart-debugging
+    debug:
+      direction: BOTH
+      after:
+        delimiter: "\n"
+      sequence:
+        - lambda: UARTDebug::log_string(direction, bytes);
+
+# Every sensor carries an id so a consuming config can render it.
+# - Read those states with an isnan check rather than has_state().
+# - The component publishes on its own interval whether or not a sentence arrived.
+# - Every value but the satellite count reads NaN until one is parsed, and that count reads 0.
+# https://esphome.io/components/gps
+gps:
+  - id: gnss
+    uart_id: gnss_uart
+    update_interval: ${gnss_update_interval}
+    latitude:
+      name: "Latitude"
+      id: gnss_latitude
+    longitude:
+      name: "Longitude"
+      id: gnss_longitude
+    altitude:
+      name: "Altitude"
+      id: gnss_altitude
+    speed:
+      name: "Speed"
+      id: gnss_speed
+    course:
+      name: "Course"
+      id: gnss_course
+    satellites:
+      name: "Satellites"
+      id: gnss_satellites
+    hdop:
+      name: "HDOP"
+      id: gnss_hdop
+
+# https://esphome.io/components/time
+time:
+
+  # A second time source beside the Home Assistant one the board template carries.
+  # - Agreement between the two proves GNSS time sync, which one satellite carries.
+  # https://esphome.io/components/time/gps
+  - platform: gps
+    id: gnss_time
+    gps_id: gnss
+
+# https://esphome.io/components/button
+button:
+
+  # $PCAS06,0 asks for the firmware id, which a module with NMEA output disabled still answers.
+  # An answer here with no NMEA after it points at the module's saved configuration, not at the wiring.
+  # https://esphome.io/components/button/template
+  - platform: template
+    name: "GNSS Query Version"
+    id: gnss_query_version
+    entity_category: diagnostic
+    on_press:
+      - uart.write:
+          id: gnss_uart
+          data: "${gnss_nmea_start}PCAS06,0*1B\r\n"
+
+  # $PCAS03 sets the output rate of each sentence type in turn.
+  # - The order is GGA, GLL, GSA, GSV, RMC, VTG, ZDA, ANT, DHV, LPS, two reserved fields, UTC, GST.
+  # - The first eight go on, more than the gps component reads, so a bring-up sees everything offered.
+  # https://esphome.io/components/button/template
+  - platform: template
+    name: "GNSS Enable NMEA Output"
+    id: gnss_enable_nmea
+    entity_category: config
+    on_press:
+      - uart.write:
+          id: gnss_uart
+          data: "${gnss_nmea_start}PCAS03,1,1,1,1,1,1,1,1,0,0,,,0,0*02\r\n"
+
+  # $PCAS00 writes the running configuration to the module's own storage, so it survives a power cycle.
+  # Nothing else here persists anything, which is why re-enabling NMEA output alone does not stick.
+  # https://esphome.io/components/button/template
+  - platform: template
+    name: "GNSS Save Configuration"
+    id: gnss_save_config
+    entity_category: config
+    on_press:
+      - uart.write:
+          id: gnss_uart
+          data: "${gnss_nmea_start}PCAS00*01\r\n"
+
+  # $PCAS10,2 restarts the receiver and discards the ephemeris, so the next fix is a full cold acquisition.
+  # Use it to tell a stale almanac apart from a module that never had a fix, and give it minutes outdoors.
+  # https://esphome.io/components/button/template
+  - platform: template
+    name: "GNSS Cold Start"
+    id: gnss_cold_start
+    entity_category: config
+    on_press:
+      - uart.write:
+          id: gnss_uart
+          data: "${gnss_nmea_start}PCAS10,2*1E\r\n"
+
+  # $PCAS10,3 is the factory start, discarding the saved configuration along with the ephemeris.
+  # - This is the remedy for a module left mute by a saved configuration.
+  # - It is the only button here that discards state someone may have set deliberately.
+  # https://esphome.io/components/button/template
+  - platform: template
+    name: "GNSS Factory Reset"
+    id: gnss_factory_reset
+    entity_category: config
+    on_press:
+      - uart.write:
+          id: gnss_uart
+          data: "${gnss_nmea_start}PCAS10,3*1F\r\n"

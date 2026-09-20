@@ -19,11 +19,10 @@ ESPHome configuration templates and projects.
 
 ### Release Notes <!-- omit from toc -->
 
-**Version 2.1**:
+**Version 2.2**:
 
-- Updated to use ESPHome's [CH390 ethernet controller][esphome-blog-ch390-link] after my [PR][esphome-pr-18226-link] landed.
-- Updated deprecated `rgb_order` to `channel_colors`.
-- Added ESPHome `min_version` to templates (required to use `CH390` and `channel_colors`).
+- Added Heltec WiFi LoRa 32 V4-R8 support.
+- Added Heltec L76K GNSS module support.
 
 See [HISTORY.md][history] for the release notes.
 
@@ -77,9 +76,9 @@ Every template also opens with an `External usage:` comment block showing how to
 - [Template][sonoff-s31] for the [Sonoff S31][amazon-sonoff-monitoring-certified-assistant-supporting-dp-link] US 120V AC WiFi power monitoring wall plug.
 - Follow the Tasmota [guide][tasmota-sonoff-s31-link] for flashing instructions.
 
-#### Norvi NORVI-ENET-AE06-R DIN Controller
+#### NORVI-ENET-AE06-R DIN Controller
 
-- [Template][norvi-enet-ae06-r] for the [Norvi NORVI-ENET-AE06-R][shop-products-norvi-enet-ae06-r-link] or [SensOper SC-EN-I6-RO4][sensoper-shop-sc-en-i6-ro4-link] ESP32 DIN form factor controllers.
+- [Template][norvi-enet-ae06-r] for the [NORVI-ENET-AE06-R][shop-products-norvi-enet-ae06-r-link] or [SensOper SC-EN-I6-RO4][sensoper-shop-sc-en-i6-ro4-link] ESP32 DIN form factor controllers.
 - Flash over USB.
 - Note:
   - Norvi devices are sold under the [SensOper Controls][sensoper-link] brand in the US and available at the [SensOper store][sensoper-shop-link].
@@ -125,32 +124,30 @@ Every template also opens with an `External usage:` comment block showing how to
 - Used by [`hvac-compressor-sensor.yaml`][hvac-compressor-sensor], which sits outside next to the HVAC units and attaches both compressors.
 - The reverse-engineered Bluetooth protocol, the ESPHome external component, and a live BLE monitor utility are in [easystart/][easystart], see [easystart/README.md][easystart-readme] for details.
 
-#### ThinkNode M7 LoRaWAN Gateway
+#### Elecrow ThinkNode M7 LoRaWAN Gateway
 
 - [Template][elecrow-thinknode-m7] for the [Elecrow ThinkNode M7][elecrow-thinknode-m7-link], an ESP32-S3 with 8MB Quad Flash and 8MB Octal PSRAM.
-- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support.
-- Includes the on-chip temperature sensor and a plain status LED, since the board's LED is not individually addressable.
+- Wired networking through the onboard WCH CH390 SPI Ethernet controller, using ESPHome's core `CH390` support. Includes the on-chip temperature sensor, a plain status LED since the board's LED is not individually addressable, and the user button as a raw voltage sensor.
 - Flash over USB through the onboard CH343 USB-UART bridge, no external adapter needed.
-- The device's Semtech LR1110 LoRa radio is deliberately not configured: ESPHome has no LR11xx component, and the SX126x components do not fit because the command sets differ.
-- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout. Both were established by hand instead, see the [template][elecrow-thinknode-m7] header for the pin assignments.
-- The user button is an ADC ladder with no documented threshold, exposed as a raw voltage sensor.
+- The Semtech LR1110 LoRa radio is deliberately not configured, since ESPHome has no LR11xx component and the SX126x command set does not fit.
+- Neither Elecrow's product page nor its [wiki][elecrow-thinknode-m7-wiki-link] documents the Ethernet controller or a pinout, so see the [template][elecrow-thinknode-m7] header for the pin assignments established by hand.
 
 ### Utility Templates
 
 Shared building-block includes, composed via `packages:` by the device templates and per-device configs:
 
-- [`api.yaml`][api] - API with encryption and a configurable `api_reboot_timeout`.
-- [`ota.yaml`][ota] - ESPHome OTA with password.
-- [`logger.yaml`][logger] - logger configuration.
-- [`time.yaml`][time] - Home Assistant time source.
-- [`wifi.yaml`][wifi] - managed WiFi credentials from secrets.
-- [`basic.yaml`][basic] - restart button plus status, uptime, and version sensors.
-- [`common.yaml`][common] - bundles the api / ota / logger / time / wifi / basic includes for a typical device.
-- [`debug.yaml`][debug] - debug component and debug text sensors.
-- [`temperature.yaml`][temperature] - on-chip internal temperature sensor.
-- [`ethernet-sensor.yaml`][ethernet-sensor] - Ethernet IP / MAC info text sensors.
+- [`api.yaml`][api] configures the API with encryption and a configurable `api_reboot_timeout`.
+- [`ota.yaml`][ota] configures ESPHome OTA with a password.
+- [`logger.yaml`][logger] configures the logger.
+- [`time.yaml`][time] configures the Home Assistant time source.
+- [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets.
+- [`basic.yaml`][basic] adds a restart button plus status, uptime, and version sensors.
+- [`common.yaml`][common] bundles the api, ota, logger, time, wifi, and basic includes for a typical device.
+- [`debug.yaml`][debug] adds the debug component and its text sensors.
+- [`temperature.yaml`][temperature] adds the on-chip internal temperature sensor.
+- [`ethernet-sensor.yaml`][ethernet-sensor] adds Ethernet IP and MAC info text sensors.
 - [`min-version.yaml`][min-version] sets the ESPHome `min_version` floor, the single place that version is written.
-- [`secrets.yaml`][secrets] - re-exports the root `secrets.yaml` so templates can resolve secrets.
+- [`secrets.yaml`][secrets] re-exports the root `secrets.yaml` so templates can resolve secrets.
 
 ### Board and Component Helpers
 
@@ -218,6 +215,19 @@ Shared building-block includes, composed via `packages:` by the device templates
   - Optional substitutions:
     - `camera_resolution`: `SVGA` (800x600) by default. The OV2640 tops out at `UXGA` (1600x1200), and the larger sizes in the ESPHome list are OV5640 sizes.
 - The TF card slot is documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
+
+#### Heltec WiFi LoRa 32 V4-R8 Devkit
+
+- [Template][heltec-wifi-lora32-v4-r8] for the [Heltec WiFi LoRa 32 V4-R8][heltec-project-wifi-lora-32-v4-link] board, an ESP32-S3R8 with 16MB Quad Flash, 8MB Octal PSRAM, and a Semtech SX1262 LoRa radio.
+- Includes the on-chip temperature sensor, the white LED as status LED, the user button, a battery voltage sensor, and a switch for each of the two software-controlled power rails.
+- Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
+- The octal PSRAM claims GPIO33 through GPIO37, so three pins moved from the plain V4 and the V4.3. Two more were dropped outright, a wiring change a quad part would not restore. A V4 pinout does not describe this board, see the [template][heltec-wifi-lora32-v4-r8] header for the full map, the optional substitutions, and the I2C and power rail ordering a composing config has to respect.
+- The onboard SSD1306 OLED and the SX1262 radio are documented in the [template][heltec-wifi-lora32-v4-r8] header rather than configured. The display needs a font asset this repository does not carry, and ESPHome's [SX126x][esphome-components-sx126x-link] component reaches an RF switch only through the radio's own DIO2, while this board wires its KCT8103L front-end to three ESP32 pins, one of which flips the transmit and receive path per packet.
+- Note: USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC are confirmed on hardware. The user button is not, and the radio and front-end pins are documented rather than claimed.
+- Note: the status LED is dark when healthy and blinks on a warning or error, the ESPHome default, which is the reverse of the [GL-S10][gls10-bluetooth-proxy] and [ThinkNode M7][elecrow-thinknode-m7] convention.
+- An optional [L76K GNSS overlay][heltec-l76k-gnss] configures the [Heltec L76K][heltec-project-l76-gnss-module-link] module that plugs into the board's GNSS header, composed as a second `packages:` entry on top of this template. It adds position, speed, course, satellite count and HDOP sensors, a GPS time source beside the Home Assistant one, and buttons for the handful of writes worth making, since ESPHome's [GPS][esphome-components-gps-link] component only reads NMEA and sends the module nothing.
+  - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. Its substitutions, and the pin direction trap that swaps the UART pair if MeshCore's macros are read literally, are in the [overlay][heltec-l76k-gnss] header.
+  - Note: the overlay is untested against an actual fix, because the bench unit had no sky view. The link, the direction and the protocol are confirmed.
 
 ## Devices
 
@@ -307,6 +317,8 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [esp32-s3-wroom-2-n32r8v]: ./templates/esp32-s3-wroom-2-n32r8v.yaml
 [ethernet-sensor]: ./templates/ethernet-sensor.yaml
 [gls10-bluetooth-proxy]: ./templates/gls10-bluetooth-proxy.yaml
+[heltec-l76k-gnss]: ./templates/heltec-l76k-gnss.yaml
+[heltec-wifi-lora32-v4-r8]: ./templates/heltec-wifi-lora32-v4-r8.yaml
 [history]: ./HISTORY.md
 [hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
 [kincony-kc868-asr]: ./templates/kincony-kc868-asr.yaml
@@ -358,11 +370,11 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [efun-sh331w-link]: https://www.amazon.com/gp/product/B07DCJ7TDR
 [elecrow-thinknode-m7-link]: https://www.elecrow.com/thinknode-m7-wireless-communication-gateway-for-lorawan-powered-by-esp32-s3-and-lr1110.html
 [elecrow-thinknode-m7-wiki-link]: https://www.elecrow.com/wiki/ThinkNode_M7_LoRaWAN_Wireless_Communication_Gateway_Support_PoE_Power.html
-[esphome-blog-ch390-link]: https://esphome.io/blog/2026/08/19/esphome-2026-8/#new-hardware-support
 [esphome-components-ethernet-link]: https://esphome.io/components/ethernet/
+[esphome-components-gps-link]: https://esphome.io/components/gps/
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
+[esphome-components-sx126x-link]: https://esphome.io/components/sx126x/
 [esphome-link]: https://esphome.io
-[esphome-pr-18226-link]: https://github.com/esphome/esphome/pull/18226
 [espressif-esp32-s3-devkitc-link]: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 [gh-release-link]: https://github.com/marketplace/actions/gh-release
 [github-actions-link]: https://github.com/actions
@@ -374,6 +386,8 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [github-ptr727-esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [github-smarthomeshop-ceilsense-link]: https://github.com/smarthomeshop/ceilsense/blob/main/ceilsense-v1/ceilsense-complete-wifi-ld2412.yaml
 [gl-inet-products-gl-s10-link]: https://www.gl-inet.com/products/gl-s10/
+[heltec-project-l76-gnss-module-link]: https://heltec.org/project/l76-gnss-module/
+[heltec-project-wifi-lora-32-v4-link]: https://heltec.org/project/wifi-lora-32-v4/
 [home-assistant-blog-2023-link]: https://www.home-assistant.io/blog/2023/11/06/removal-of-myq-integration/
 [improv-wifi-link]: https://www.improv-wifi.com/
 [itead-product-sonoff-th-link]: https://itead.cc/product/sonoff-th/

@@ -1,10 +1,10 @@
 # EasyStart Bluetooth Protocol
 
 Reverse-engineered from `net.microair.easystart` v4.2 (versionCode 19) by APK static analysis
-(apktool smali). Status: **fully decoded and hardware-validated** (live BLE capture;
-see section 7).
+(apktool smali). Status: **fully decoded and hardware-validated** by a live BLE capture,
+see section 7.
 
-## 1. Transport - Laird VSP (Virtual Serial Port)
+## 1. Transport: Laird VSP (Virtual Serial Port)
 
 The module uses a Laird BLE module exposing the Laird VSP service. Application data is a
 byte/ASCII stream tunnelled over GATT.
@@ -16,8 +16,8 @@ byte/ASCII stream tunnelled over GATT.
 | **Write** (host -> module, commands) | `d973f2e2-b19e-11e2-9e96-0800200c9a66` | WRITE, WRITE NO RESPONSE |
 
 > Roles confirmed via nRF Connect against one of the installed modules (advertised name
-> `EasyStart_XXXX`; identifiers redacted - this is a public repo).
-> Note: `e1` is **notify**, `e2` is **write** - the opposite of the usual Laird VSP convention.
+> `EasyStart_XXXX`, with identifiers redacted because this is a public repo).
+> Note: `e1` is **notify** and `e2` is **write**, the opposite of the usual Laird VSP convention.
 > Device advertises name `EASYSTART_<id>` (matches the app's `ESbluetoothID` config).
 
 - The module advertises with a device name the app matches against a user-configured ID
@@ -26,13 +26,13 @@ byte/ASCII stream tunnelled over GATT.
   contains no `createBond`, `setPin`, `passkey`, or auth strings.
 - Connection sequence (from `Connect.smali` / `MainActivityKt$gattCallBack$1`):
   1. Connect GATT.
-  2. Request larger MTU (app requests one; `onMtuChanged` logs "Allowed MTU=").
-  3. Discover services; locate the VSP service + write/notify characteristics.
+  2. Request larger MTU (the app requests one, and `onMtuChanged` logs "Allowed MTU=").
+  3. Discover services, then locate the VSP service and the write and notify characteristics.
   4. Subscribe to notifications on the notify characteristic (write the CCCD `0x2902`
      descriptor to enable notify).
-  5. Write a command string to the write characteristic; responses arrive as notifications.
+  5. Write a command string to the write characteristic, and responses arrive as notifications.
   - On connect the app issues `{"Cmd": ReadEEP}` to load config. For live monitoring this is
-    **not required** - you can go straight to `ReadLive`.
+    **not required**, so you can go straight to `ReadLive`.
 
 ## 2. Commands (host -> module)
 
@@ -49,8 +49,8 @@ Commands are ASCII strings written to the write characteristic. Note the loose,
 | `{"Cmd": OtaBegin/OtaPrep/OtaWrt/OtaEnd/OtaAbort}` | OTA firmware update |
 | `{"Int": FlashBuff}` / `{"Wrt": FlashBuff}` / `{"End": FlashBuff}` | Flash buffer transfer |
 
-For our use case only **`{"Cmd": ReadLive}`** is needed. Poll it on an interval; the app polls
-on a fixed-rate timer at ~1 Hz (confirmed in capture). Our ESPHome component defaults to 2 s.
+For our use case only **`{"Cmd": ReadLive}`** is needed. Poll it on an interval, where the app
+polls on a fixed-rate timer at ~1 Hz (confirmed in capture). Our ESPHome component defaults to 2 s.
 
 ## 3. Response framing (module -> host)
 
@@ -68,19 +68,19 @@ From `MainActivityKt$gattCallBack$1.onCharacteristicChanged`:
 - The buffer length (`esNotifyLiveDataLength`) accumulates across fragments, so a response
   **may span multiple notifications**. It is reset before each new request.
 
-**Confirmed:** a `ReadLive` poll produces **two notifications** - the **18-byte** binary live
-frame, and a short ASCII status marker `{"Sts": Success}` (or a `Fail` variant). nRF Connect
+**Confirmed:** a `ReadLive` poll produces **two notifications**, the **18-byte** binary live
+frame and a short ASCII status marker `{"Sts": Success}` (or a `Fail` variant). nRF Connect
 only displays the most recent value, which is why it showed `{"Sts": Success}`.
 
 **Robust host strategy:** on each poll, clear a receive buffer, send `{"Cmd": ReadLive}` to
 the write char (`e2`), and for each notification on the notify char (`e1`): if it starts with
 `{` treat it as the ASCII status marker (ignore for live values / use as completion), else it
-is the binary frame - decode it. See section 4.
+is the binary frame, so decode it. See section 4.
 
 ## 4. Live-data frame layout (`ReadLive` response)
 
 **The live frame is exactly 18 bytes.** Decoded from `Status.smali` and **validated against
-live hardware** (one of the installed modules, 2026-07-21) - the app's on-screen values matched
+live hardware** (one of the installed modules, 2026-07-21), where the app's on-screen values matched
 the decode exactly (current, peak 24.5 A, freq 59.8 Hz, total starts 4947). Multi-byte values
 are **little-endian, unsigned**.
 
@@ -100,9 +100,9 @@ are **little-endian, unsigned**.
 Notes:
 
 - Line frequency is a **period**, not a scaled integer: `Hz = 500000 / (b[6] + b[7]*256)`.
-  ~8361 -> 59.8 Hz (US 60 Hz mains; the +/-3 LSB jitter is +/-0.02 Hz).
+  ~8361 -> 59.8 Hz (US 60 Hz mains, where the +/-3 LSB jitter is +/-0.02 Hz).
 - Total starts is a **32-bit** little-endian counter spanning [0x0E]-[0x11].
-- The live current is the primary compressor-draw signal; see section 6.
+- The live current is the primary compressor-draw signal, see section 6.
 
 ## 5. System-state / fault codes (byte [2])
 
@@ -133,25 +133,25 @@ the connection. This makes **BLE presence the primary running signal**:
 - **Primary:** compressor running <-> the module is connectable / the GATT connection is up.
   In ESPHome, drive the running `binary_sensor` from the `ble_client` connection state, not a
   current threshold. On disconnect -> running = false and the data sensors go stale/unavailable.
-- **Consequence:** you will never observe an idle/standby current over BLE - every reading is
+- **Consequence:** you will never observe an idle or standby current over BLE, since every reading is
   "running" current, so the /10 scaling is validated against the running value only. A current
   threshold is redundant for on/off but current magnitude is still useful telemetry.
-- **Corroborating:** system-state byte [2] - a running compressor shows current with state
-  `Normal (0)`; `Short Cycle Delay (2)` means commanded-on but waiting.
-- Each compressor power-on produces a fresh advertise -> connect -> service-discovery handshake;
+- **Corroborating:** system-state byte [2], where a running compressor shows current with state
+  `Normal (0)`, and `Short Cycle Delay (2)` means commanded-on but waiting.
+- Each compressor power-on produces a fresh advertise -> connect -> service-discovery handshake, so
   expect a short delay after power-on before the module is connectable, and auto-reconnect
   churn as it cycles.
 
-## 6a. Earlier HCI (btsnooz) attempt - superseded
+## 6a. Earlier HCI (btsnooz) attempt, superseded
 
-Historical note. A Pixel 7a bugreport `btsnooz_hci.log` (filtered mode - ATT payloads
+Historical note. A Pixel 7a bugreport `btsnooz_hci.log` (filtered mode, with ATT payloads
 truncated to the first ~3 bytes) gave only partial confirmation before the full-payload
 validation in section 7 replaced it:
 
-- Confirmed the GATT handles - notify `0x000e` (CCCD `0x000f`), write `0x0011` - and that the
+- Confirmed the GATT handles, notify `0x000e` (CCCD `0x000f`) and write `0x0011`, and that the
   write payload begins `7b 22 43` = ASCII `{"C...` (`{"Cmd": ReadLive}`).
 - The truncated 3 bytes tracked a compressor start->run->stop cycle (load data present).
-- Its framing estimate (~20-byte value) was slightly off due to truncation; the full capture
+- Its framing estimate (~20-byte value) was slightly off due to truncation, and the full capture
   showed the frame is **18 bytes** (section 4).
 
 > Takeaway: Pixel/AOSP "Enable Bluetooth HCI snoop log" runs FILTERED, stripping ATT payloads,
@@ -164,7 +164,7 @@ modules, with app-displayed values as ground truth:
 
 | Field | App | Decode |
 |-------|-----|--------|
-| Live current | 6.6 A | yes (/10; frame instant read 6.3 A) |
+| Live current | 6.6 A | yes (/10, frame instant read 6.3 A) |
 | Last start peak | 24.5 A | yes exact |
 | Line frequency | 59.8 Hz | yes exact (`500000/period`) |
 | Total starts | 4947 | yes exact (u32) |
@@ -173,8 +173,8 @@ modules, with app-displayed values as ground truth:
 Characteristic roles, command string, framing, and the full 18-byte layout are all confirmed.
 
 **Independent cross-check:** this from-scratch decode matches the community ESPHome
-implementations byte-for-byte - [Keen-coffee][github-keen-coffee-home-assistant-link]
-(original) and [DerekSeaman][github-derekseaman-esphome-micro-air-easystart-link] - including
+implementations byte-for-byte, [Keen-coffee][github-keen-coffee-home-assistant-link]
+(original) and [DerekSeaman][github-derekseaman-esphome-micro-air-easystart-link], including
 the non-obvious `500000/period` frequency, the u32 total-starts, the two-notification framing,
 and write=`e2`/notify=`e1`. This decode additionally reads byte `[3]` = learned starts, which
 neither of those implementations decodes.
@@ -183,11 +183,11 @@ neither of those implementations decodes.
 
 The protocol is complete for monitoring. A few low-value details are not fully pinned down:
 
-- Byte [1] is always `0` in captures; byte [0] is a constant `0x10` (assumed a frame
+- Byte [1] is always `0` in captures, and byte [0] is a constant `0x10` (assumed a frame
   length/opcode). Neither is needed to decode the data.
 - The other commands (`ReadEEP`, `NormMode`, `ProgMode`, OTA/flash) are identified but their
-  request/response payloads were not reverse-engineered - not needed for read-only monitoring.
-- Exact poll interval the app uses (~1 s observed) - irrelevant for our own polling.
+  request/response payloads were not reverse-engineered, not being needed for read-only monitoring.
+- The exact poll interval the app uses (~1 s observed) is irrelevant for our own polling.
 
 <!-- External -->
 

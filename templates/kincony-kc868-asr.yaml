@@ -4,8 +4,8 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
-# device_name
-# device_friendly_name
+# - device_name
+# - device_friendly_name
 
 # Kincony KC868-ASR
 
@@ -67,11 +67,13 @@ esp32:
 packages:
   common: !include common.yaml
 
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
 # https://esphome.io/components/i2c
 i2c:
-  sda: GPIO26
-  scl: GPIO27
-  frequency: 400kHz
+  - id: board_i2c
+    sda: GPIO26
+    scl: GPIO27
+    frequency: 400kHz
 
 # Add to common.yaml time configuration
 # https://esphome.io/components/time

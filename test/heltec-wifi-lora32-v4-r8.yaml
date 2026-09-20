@@ -1,0 +1,7 @@
+# CI compile-test for templates/heltec-wifi-lora32-v4-r8.yaml
+substitutions:
+  device_name: heltec-wifi-lora32-v4-r8-test
+  device_friendly_name: "Heltec WiFi LoRa 32 V4-R8 Test"
+
+packages:
+  device: !include ../templates/heltec-wifi-lora32-v4-r8.yaml

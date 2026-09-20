@@ -29,9 +29,9 @@ change from one resync to the next.
 
 Read RESYNC.md section 0. A repo with no instruction set at all, or a partial one, is not this
 skill's job, it is STANDUP.md sections 1A and 2 instead, since an absent carried file is a
-baseline that never arrived rather than drift to converge. Run `spec/audit.py <RepoName>`, the
-target's `registry/repos.json` `name` field rather than an `owner/repo` slug or a checkout path,
-and read whether the findings are letters (absent) or drift (present but stale) before doing
+baseline that never arrived rather than drift to converge. Run `python3 spec/audit.py <RepoName>`,
+the target's `registry/repos.json` `name` field rather than an `owner/repo` slug or a checkout
+path, and read whether the findings are letters (absent) or drift (present but stale) before doing
 anything else. The finding kind names the procedure the repo is owed.
 
 ## Reach the hub and measure before changing anything
@@ -48,9 +48,15 @@ to govern goes uncaught. A compound command is judged whole, so a copy chained t
 write does not run either. Prose is the enforcement here, and following it is not optional. Verify
 the host with `python3 scripts/host_gate.py --repo <path-to-target-worktree>`, run from your hub
 worktree, since `scripts/` is hub-hosted and no carrier holds it. Then run the audit end to end,
-`RESYNC.md` section 2, against the target's `main` branch, never `develop`. A finding is a
-snapshot, so quote the run stamp in anything derived from it and re-run before acting on a finding
-read earlier in the session. File any hub defect this work exposes against
+`RESYNC.md` section 2. `python3 spec/audit.py <RepoName>` measures the target's ground-truth
+branch, which the registry's `groundTruthBranch` names and which is `main` for every cataloged
+repo today, never `develop`. That is the invocation "Confirm the procedure before starting"
+already ran, run again here. Convergence lands on a ref `main` does not hold yet, so a run that
+previews in-flight work names that ref: `python3 spec/audit.py --branch <ref> <RepoName>`. Use it
+to check whether a fix landed, since a run against `main` still reports what the in-flight ref
+already fixed. Section 2 carries two further commands that neither of these replaces. A finding is
+a snapshot, so quote the run stamp in anything derived from it and re-run before acting on a
+finding read earlier in the session. File any hub defect this work exposes against
 `ptr727/ProjectTemplate`. Examples include bugs, conflicting sources, unclear or incomplete
 instructions, missing capabilities, and Copilot findings about any of them. Search open and closed
 issues first, then update the matching issue or file a new one. Preserve the evidence `RESYNC.md`
@@ -71,7 +77,7 @@ repo, or agent memory.
 5. **Settings, rulesets, and secrets.** Run
    `repo-config/configure.sh check "<owner>/<repo>" release` (substitute `operational` for an
    operational repo) from the hub at `main`, then `apply` for what it reports, never from a
-   carried copy. Run `spec/audit.py [RepoName]` from the same checkout for secrets.
+   carried copy. Run `python3 spec/audit.py <RepoName>` from the same checkout for secrets.
 6. **Intent files last, and by hand,** since nothing mechanical judges these.
 
 Reconcile the registry entry (`status`, `types`, `releaseTrigger`, `workflowModel`,

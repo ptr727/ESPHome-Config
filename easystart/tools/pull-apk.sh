@@ -5,11 +5,10 @@
 #   <package-or-keyword>  exact package name, or a substring to search for
 #   [output-dir]          where to write (default: current directory)
 #
-# Output: <package>-<versionName>-<versionCode>.apk  (single APK), or a directory of the same
-# name containing base.apk + split config APKs when the app is split.
+# Output: <package>-<versionName>-<versionCode>.apk for a single APK, or a directory of the same name containing base.apk plus the split config APKs when the app is split.
 #
-# Requires: adb on PATH (winget Google.PlatformTools), phone plugged in with USB debugging
-# authorized. Works in Git Bash (Windows) and macOS/Linux bash (3.2-safe: no mapfile).
+# Requires adb on PATH, from winget Google.PlatformTools, and a phone plugged in with USB debugging authorized.
+# Works in Git Bash on Windows and in macOS or Linux bash, staying 3.2-safe by not using mapfile.
 
 set -Eeuo pipefail
 

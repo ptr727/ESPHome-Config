@@ -34,8 +34,8 @@ import sys
 from datetime import datetime
 
 try:
-    # bleak is installed at runtime by uv from the PEP 723 inline metadata, not into the
-    # editor's environment, so pyright cannot resolve it standalone.
+    # The bleak package is installed at runtime by uv from the PEP 723 inline metadata rather than into the editor's environment.
+    # So pyright cannot resolve it standalone.
     from bleak import BleakClient, BleakScanner  # pyright: ignore[reportMissingImports]
 except ImportError:
     sys.exit(
@@ -111,8 +111,8 @@ class Monitor:
     def on_notify(self, _char, data: bytearray):
         b = bytes(data)
         ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        # The module replies with two notifications per ReadLive: the binary live frame and an
-        # ASCII status marker like {"Sts": Success}. Show both; only decode the binary one.
+        # The module replies with two notifications per ReadLive, the binary live frame and an ASCII status marker such as {"Sts": Success}.
+        # Both are shown, and only the binary one is decoded.
         if b[:1] == b"{" or all(32 <= x < 127 for x in b):
             print(f"\n[{ts}] TEXT ({len(b)}): {b.decode('ascii', 'replace')}")
             return
