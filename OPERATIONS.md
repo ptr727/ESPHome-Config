@@ -101,7 +101,7 @@ if [ ! -f "$config_dir/secrets.yaml" ]; then
     echo "secrets.yaml not generated" >&2
   fi
 fi
-docker run --rm --user "$(id -u):$(id -g)" \
+[ -f "$config_dir/secrets.yaml" ] && docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$config_dir":/config --volume "$cache":/cache \
   ptr727/esphome-nonroot:latest \
   bash -c '
