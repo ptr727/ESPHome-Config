@@ -140,7 +140,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - [`ota.yaml`][ota] configures ESPHome OTA with a password.
 - [`logger.yaml`][logger] configures the logger.
 - [`time.yaml`][time] configures the Home Assistant time source.
-- [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets.
+- [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets, with a configurable `wifi_reboot_timeout`.
 - [`basic.yaml`][basic] adds a restart button plus status, uptime, and version sensors.
 - [`common.yaml`][common] bundles the api, ota, logger, time, wifi, and basic includes for a typical device.
 - [`debug.yaml`][debug] adds the debug component and its text sensors.
@@ -237,10 +237,10 @@ My deployed devices use the templates and helpers, and are documented in [DEVICE
 
 - The standard [ESPHome][docker-hub-esphome-link] container does not support running as non-root. Deploy the [ESPHome-NonRoot][github-ptr727-esphome-nonroot-link] container for non-root operation if desired.
 - Set directory permissions:
-  - `sudo chown -R nonroot:users /data/appdata/esphome`
-  - `sudo chmod -R ug=rwx,o=rx /data/appdata/esphome`
+  - `sudo chown -R nonroot:users <esphome-data-dir>`
+  - `sudo chmod -R ug=rwx,o=rx <esphome-data-dir>`
 - Clone Git repository in ESPHome config folder, or copy files.
-  - `cd /data/appdata/esphome/config`
+  - `cd <esphome-data-dir>/config`
   - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
 - Deploy `secrets.yaml`, use `secrets._yaml` as a template for required secrets.
 - In VSCode open remote SSH workspace on the docker host, and open the workspace from config directory.

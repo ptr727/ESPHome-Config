@@ -49,7 +49,7 @@ This is a public repository whose primary audience is people reusing the templat
 This directory is the `/config` mount of a running ESPHome instance, so the tree you are editing is live state, not a checkout that gets deployed later.
 
 - Top-level `*.yaml` files are the per-device configs. [`templates/`][templates] holds the shared device and utility templates they include via `packages:`.
-- ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. The host path `/data/appdata/esphome/config` is mounted at `/config` inside the container.
+- ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. The directory holding this repository is mounted at `/config` inside the container.
 - Every ESPHome CLI invocation runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
 
 ```shell
@@ -73,6 +73,31 @@ docker exec esphome esphome compile /config/<device>.yaml
 ```
 
 A compile costs minutes, so reserve it for changes that can plausibly affect generated code. For pure YAML-shape changes, meaning renaming entities, adjusting intervals, or swapping substitution values that map to enum members, `config` is usually enough, but compile when in doubt.
+
+### Compiling the Way CI Does
+
+Any copy of this repository compiles without the running instance. Mount its directory at `/config` in a throwaway container and run the CLI there. This is what [`test-pull-request.yml`][test-workflow] does, so a local pass and a CI pass mean the same thing.
+
+```shell
+config_dir=<directory holding the config>
+cache="$(mktemp -d)"
+cp "$config_dir/secrets._yaml" "$config_dir/secrets.yaml"
+sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" "$config_dir/secrets.yaml"
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$config_dir":/config --volume "$cache":/cache \
+  ptr727/esphome-nonroot:latest \
+  bash -c '
+    set -Eeuo pipefail
+    /entrypoint/cache.sh
+    esphome compile /config/test/<template>.yaml
+  '
+```
+
+- **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
+- **The templates need a `secrets.yaml` beside the config**, so generate one from [`secrets._yaml`][secrets-example] rather than copying a real one. The root `.gitignore` excludes `/secrets.yaml`.
+- **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects. A compile without it re-fetches the platform toolchain every run.
+- **The container runs as the invoking user**, which keeps `.esphome/` and everything else it writes owned by that user.
+- **Delete the generated `secrets.yaml` and `.esphome/` afterwards.** Both are ignored, and leaving them makes the next `git status` read as a dirty tree.
 
 ## Flashing and sdkconfig
 
@@ -173,7 +198,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 ### Apollo PLT-1B
 
-[`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/data/appdata/esphome/cache/data/packages/8bc80dd7/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
+[`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/cache/data/packages/<hash>/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
 
 Three substitutions are exposed for per-plant override:
 
@@ -232,7 +257,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit on any template needs both reboot timeouts disabled.** `api.yaml` and [`wifi.yaml`][wifi-template] each default to a 15 minute `reboot_timeout`, so this reaches every template that includes them rather than this board alone. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi:` `reboot_timeout` to `0s`.
+- **A bench unit on any template needs both reboot timeouts disabled.** `api.yaml` and [`wifi.yaml`][wifi-template] each default to a 15 minute `reboot_timeout`, so this reaches every template that includes them rather than this board alone. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`.
 
 ### RGB LED Status
 
@@ -355,7 +380,7 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
 
 ## Contributing Upstream to ESPHome
 
-Core-component fixes are developed in the fork clone at `/home/pieter/esphome-esphome`, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork, so `git push origin <branch>` is what updates it and nothing is ever pushed to `esphome/esphome` directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
+Core-component fixes are developed in a clone of the fork, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork, so `git push origin <branch>` is what updates it and nothing is ever pushed to `esphome/esphome` directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
 
 ### Staging on the Fork First
 
