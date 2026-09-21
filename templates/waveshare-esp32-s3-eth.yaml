@@ -62,6 +62,7 @@
 
 # https://esphome.io/components/substitutions
 substitutions:
+  # Used by rgb-led-status.yaml
   rgb_led_pin: GPIO21
 
 # https://esphome.io/components/esphome

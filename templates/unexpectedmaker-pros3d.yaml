@@ -35,6 +35,7 @@
 
 # https://esphome.io/components/substitutions
 substitutions:
+  # Used by rgb-led-status.yaml
   rgb_led_pin: GPIO18
   external_antenna_restore_mode: ALWAYS_OFF
   ldo2_power_restore_mode: ALWAYS_ON

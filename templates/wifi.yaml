@@ -3,9 +3,6 @@
 #   wifi: github://ptr727/ESPHome-Config/templates/wifi.yaml@main
 # - Needs wifi_ssid, wifi_password, and wifi_domain in a secrets.yaml beside the including config.
 
-# Required substitutions:
-# - device_name
-
 # Optional substitutions:
 # - wifi_signal_update_interval (60s, drop it to a few seconds to survey placement)
 # - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)

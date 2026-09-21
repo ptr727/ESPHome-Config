@@ -7,6 +7,9 @@
 # - device_name
 # - device_friendly_name
 
+# Optional substitutions:
+# - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
+
 # Konnected blaQ Garage Door Controller
 # https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
 # https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml

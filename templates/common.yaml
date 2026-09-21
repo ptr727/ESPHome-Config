@@ -3,9 +3,6 @@
 #   common: github://ptr727/ESPHome-Config/templates/common.yaml@main
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
-# Required substitutions:
-# - device_name
-
 # Required secrets:
 # - wifi_ssid
 # - wifi_password

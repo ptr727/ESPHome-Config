@@ -2,9 +2,6 @@
 # packages:
 #   temperature: github://ptr727/ESPHome-Config/templates/temperature.yaml@main
 
-# Required substitutions:
-# - device_name
-
 # https://esphome.io/components/sensor
 sensor:
 

@@ -32,6 +32,12 @@ Four templates deviate from the plain shorthand, and each says so in its own blo
 - [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
+Every substitution a template touches is declared in that same template's header, and nowhere else, so a consumer reads one file to know the contract:
+
+- **`Required substitutions:` lists what the template interpolates but does not define**, including what a template it includes locally needs. A name that nothing in the template or its includes reads is a stale claim rather than a contract.
+- **`Optional substitutions:` lists what the template defines with a default and a consumer may override**, each with its default and what moving it does. A knob defined here and documented in a consuming template instead is documented where nobody overriding it will look.
+- **A substitution that is neither carries a one-line comment at its definition and no header entry.** Board plumbing such as `rgb_led_pin`, and a value the template must route rather than expose such as `gnss_nmea_start`, are consumed internally, so a header entry would advertise them as knobs.
+
 Renaming or moving a template breaks every one of these blocks and the [`README.md`][readme] paths, and nothing in CI notices, because the local test config is renamed alongside it and stays green. Re-check the block whenever a template's filename changes.
 
 ## Documenting a Device
@@ -76,13 +82,15 @@ A compile costs minutes, so reserve it for changes that can plausibly affect gen
 
 ### Compiling the Way CI Does
 
-Any copy of this repository compiles without the running instance. Mount its directory at `/config` in a throwaway container and run the CLI there. This is what [`test-pull-request.yml`][test-workflow] does, so a local pass and a CI pass mean the same thing.
+Any copy of this repository compiles without the running instance. Mount its directory at `/config` in a throwaway container and run the CLI there. The container invocation is the one the compile job in [`test-pull-request.yml`][test-workflow] runs, so a compile that fails here fails there.
 
 ```shell
-config_dir=<directory holding the config>
+config_dir=<absolute path to the repository root>
 cache="$(mktemp -d)"
-cp "$config_dir/secrets._yaml" "$config_dir/secrets.yaml"
-sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" "$config_dir/secrets.yaml"
+if [ ! -f "$config_dir/secrets.yaml" ]; then
+  cp "$config_dir/secrets._yaml" "$config_dir/secrets.yaml"
+  sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" "$config_dir/secrets.yaml"
+fi
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$config_dir":/config --volume "$cache":/cache \
   ptr727/esphome-nonroot:latest \
@@ -93,11 +101,12 @@ docker run --rm --user "$(id -u):$(id -g)" \
   '
 ```
 
+- **`config_dir` is the repository root and the path is absolute.** Docker reads a relative `--volume` source as a named volume, so a relative value mounts an empty volume and the compile fails on a path that exists on disk.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
-- **The templates need a `secrets.yaml` beside the config**, so generate one from [`secrets._yaml`][secrets-example] rather than copying a real one. The root `.gitignore` excludes `/secrets.yaml`.
+- **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects. A compile without it re-fetches the platform toolchain every run.
-- **The container runs as the invoking user**, which keeps `.esphome/` and everything else it writes owned by that user.
-- **Delete the generated `secrets.yaml` and `.esphome/` afterwards.** Both are ignored, and leaving them makes the next `git status` read as a dirty tree.
+- **The container runs as the invoking user**, which keeps `.esphome/` and everything else it writes owned by that user. Both it and a generated `secrets.yaml` are ignored, so neither reaches a commit, and keeping `.esphome/` is what makes the next compile incremental.
+- **A local compile is not the whole gate.** CI also runs source lint, and it fails when a template carries no example device in [`test/`][test], so a new template needs one added there.
 
 ## Flashing and sdkconfig
 
