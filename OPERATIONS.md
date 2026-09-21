@@ -217,10 +217,10 @@ Four substitutions are exposed for per-plant override:
 
 - `sleep_duration_hours` defaults to `12` and is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
 - `prevent_sleep_default` defaults to `ON`, either `ON` or `OFF`, and is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
-- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it reboots a unit Prevent Sleep holds awake whenever Home Assistant is unreachable, and a sleeping one only below the 90 second wake window.
+- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it puts a unit Prevent Sleep holds awake into a reboot cycle while Home Assistant is unreachable. A sleeping unit loops only when the value is below the 90 second wake window.
 - `wifi_reboot_timeout` defaults to `15min`, ESPHome's own default, since Apollo sets no WiFi reboot timeout.
 
-The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. Apollo's own factory reset clears it too, but only while the unit is awake, since a sleeping one has no wakeup pin. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
