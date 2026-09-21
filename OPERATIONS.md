@@ -89,8 +89,17 @@ config_dir=<absolute path to a checkout, never the deployed tree>
 cache=<absolute path to a cache directory you keep>
 mkdir -p "$cache"
 if [ ! -f "$config_dir/secrets.yaml" ]; then
-  cp "$config_dir/secrets._yaml" "$config_dir/secrets.yaml"
-  sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" "$config_dir/secrets.yaml"
+  key="$(openssl rand -base64 32)"
+  tmp=""
+  if [ -n "$key" ] && grep -q REPLACE_WITH_BASE64_32_BYTE_KEY "$config_dir/secrets._yaml" \
+    && tmp="$(mktemp /tmp/esphome-secrets.XXXXXX)" \
+    && sed "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" "$config_dir/secrets._yaml" > "$tmp" \
+    && mv "$tmp" "$config_dir/secrets.yaml"; then
+    echo "secrets.yaml generated"
+  else
+    [ -z "$tmp" ] || rm -f "$tmp"
+    echo "secrets.yaml not generated" >&2
+  fi
 fi
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$config_dir":/config --volume "$cache":/cache \

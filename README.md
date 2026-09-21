@@ -242,7 +242,7 @@ My deployed devices use the templates and helpers, and are documented in [DEVICE
   - `sudo chmod -R ug=rwx,o=rx <esphome-data-dir>`
 - Clone Git repository in ESPHome config folder, or copy files.
   - `cd <esphome-data-dir>/config`
-  - `git clone -b develop https://github.com/ptr727/ESPHome-Config .`
+  - `git clone -b main https://github.com/ptr727/ESPHome-Config .`, or `-b develop` to track changes before they are promoted to `main`.
 - Deploy `secrets.yaml`, use `secrets._yaml` as a template for required secrets.
 - In VSCode open remote SSH workspace on the docker host, and open the workspace from config directory.
 
