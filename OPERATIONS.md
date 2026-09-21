@@ -82,7 +82,7 @@ A compile costs minutes, so reserve it for changes that can plausibly affect gen
 
 ### Compiling the Way CI Does
 
-Any copy of this repository compiles without the running instance. Mount that copy at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls are the compile job's in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
+Any copy of this repository compiles without the running instance. Mount that copy at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
 
 ```shell
 config_dir=<absolute path to a checkout, never the deployed tree>
