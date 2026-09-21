@@ -7,8 +7,10 @@
 # - device_name
 # - device_friendly_name
 
+# The name and friendly_name substitutions are machinery for the vendor's base package, not knobs.
+
 # Optional substitutions:
-# - api_reboot_timeout (15min, 0s on a bench unit with no Home Assistant to reach)
+# - api_reboot_timeout (15min, ESPHome's own default, 0s on a bench unit with no Home Assistant to reach)
 # - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
 
 # SmartHomeShop CeilSense v1 Complete (WiFi, LD2412 + SCD4x)

@@ -32,11 +32,11 @@ Four templates deviate from the plain shorthand, and each says so in its own blo
 - [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
-Every substitution a template touches is declared in that template's own header, so a consumer reads one file to know the contract. [`README.md`][readme] still catalogs the same knobs for an adopter choosing a template, and the header is what that catalog has to agree with.
+Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs the same knobs for an adopter choosing a template, and the header is what that catalog has to agree with.
 
 - **`Required substitutions:` lists what the template interpolates but does not define**, including what a template it includes locally needs. A name that nothing in the template or its includes reads is a stale claim rather than a contract.
 - **`Optional substitutions:` lists what the template defines with a default and a consumer may override**, each with its default and what moving it does. A knob defined here and documented in a consuming template instead is documented where nobody overriding it will look.
-- **A substitution that is machinery rather than a knob is named in the header as such.** [`heltec-l76k-gnss.yaml`][heltec-gnss-template] is the pattern. `gnss_nmea_start` sits below the list, marked as absent from it, and the line beside it says overriding the value breaks every sentence the module sends. Leaving it out entirely is what a later reader has to reverse engineer.
+- **A substitution that is machinery stays out of both lists and says so in the header**, per [Dollar Signs in Config Values][dollar-signs]. A value the template bridges to a vendor package, such as the `name` a vendor entry point reads, is the other common case. Leaving it out entirely is what a later reader has to reverse engineer.
 
 Renaming or moving a template breaks every one of these blocks and the [`README.md`][readme] paths, and nothing in CI notices, because the local test config is renamed alongside it and stays green. Re-check the block whenever a template's filename changes.
 
@@ -87,6 +87,7 @@ Any copy of this repository compiles without the running instance. Mount that co
 ```shell
 config_dir=<absolute path to a checkout, never the deployed tree>
 cache=<absolute path to a cache directory you keep>
+mkdir -p "$cache"
 if [ ! -f "$config_dir/secrets.yaml" ]; then
   cp "$config_dir/secrets._yaml" "$config_dir/secrets.yaml"
   sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" "$config_dir/secrets.yaml"
@@ -108,8 +109,8 @@ docker run --rm --user "$(id -u):$(id -g)" \
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
 - **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. CI uses one regardless, since it discards the runner.
-- **The container runs as the invoking user**, which keeps `.esphome/` and everything else it writes owned by that user. Both it and a generated `secrets.yaml` are ignored, so neither reaches a commit. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files as a different user.
-- **A local compile is not the whole gate.** CI also runs source lint, and it fails when a template carries no example device in [`test/`][test], so a new template needs one added there.
+- **The container runs as the invoking user**, which keeps what it writes owned by that user, including the cache directory it populates on the first run. The image points its build tree and its data directory at `/cache`, so the only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files as a different user.
+- **A local compile is not the whole gate.** CI also runs source lint, and its change-detection job fails when a template carries no example device in [`test/`][test], so a new template needs one added there.
 
 ## Flashing and sdkconfig
 
@@ -269,7 +270,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit on any template needs both reboot timeouts disabled.** Every template defaults both to a 15 minute `reboot_timeout`, so this reaches the whole tree rather than this board alone. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`.
+- **A bench unit needs both reboot timeouts disabled.** Every template configuring an `api:` block reads `api_reboot_timeout`, and every template configuring a `wifi:` block reads `wifi_reboot_timeout`, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition, so override both to `0s`.
 
 ### RGB LED Status
 
@@ -392,7 +393,7 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
 
 ## Contributing Upstream to ESPHome
 
-Core-component fixes are developed in a clone of the fork, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork, so `git push origin <branch>` is what updates it and nothing is ever pushed to `esphome/esphome` directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
+Core-component fixes are developed in a clone of the fork, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork. `git push origin <branch>` is what updates it, and nothing is ever pushed to [`esphome/esphome`][esphome-upstream-link] directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
 
 ### Staging on the Fork First
 
@@ -604,6 +605,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
 [devices]: ./DEVICES.md
+[dollar-signs]: #dollar-signs-in-config-values
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
