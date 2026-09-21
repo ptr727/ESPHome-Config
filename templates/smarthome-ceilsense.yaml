@@ -7,6 +7,12 @@
 # - device_name
 # - device_friendly_name
 
+# The name and friendly_name substitutions are machinery for the vendor's base package, not knobs.
+
+# Optional substitutions:
+# - api_reboot_timeout (15min, ESPHome's own default, 0s on a bench unit with no Home Assistant to reach)
+# - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
+
 # SmartHomeShop CeilSense v1 Complete (WiFi, LD2412 + SCD4x)
 # https://ceilsense.nl/en/
 # https://docs.smarthomeshop.io/en/ceilsense/ceilsense-index-en
@@ -16,12 +22,14 @@
 # Assembled from the base, ld2412, and scd4x sub-packages rather than the vendor's complete entry point.
 # That entry point pulls in a wifi.yaml whose on_boot list forces the Improv and BLE stack.
 # The list carries no ids, and a list item without one cannot be removed.
-# ../OPERATIONS.md "SmartHome CeilSense" covers the strip in full.
 
 substitutions:
   # The base.yaml package expects these for esphome.name and friendly_name.
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  # Override per-device where a reboot loop is more dangerous than a stale connection.
+  api_reboot_timeout: 15min
+  wifi_reboot_timeout: 15min
 
 # https://esphome.io/components/esphome
 esphome:
@@ -70,6 +78,7 @@ ota:
 
 # Extend base.yaml's bare api: with encryption.
 api:
+  reboot_timeout: ${api_reboot_timeout}
   encryption:
     key: !secret api_encryption_key
 
@@ -98,7 +107,7 @@ wifi:
   ssid:     !secret wifi_ssid
   password: !secret wifi_password
   domain:   !secret wifi_domain
-  reboot_timeout: 15min
+  reboot_timeout: ${wifi_reboot_timeout}
   min_auth_mode: WPA2
 
 # Match templates/basic.yaml convention: Uptime in minutes + API-connected

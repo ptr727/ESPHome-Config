@@ -32,6 +32,12 @@ Four templates deviate from the plain shorthand, and each says so in its own blo
 - [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
+Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs knobs for an adopter choosing a template, and where it names one, the header is what it has to agree with.
+
+- **`Required substitutions:` lists what the template interpolates but does not define**, including what a template it includes locally needs. A name that nothing in the template or its includes reads is a stale claim rather than a contract.
+- **`Optional substitutions:` lists what the template defines with a default and a consumer may override**, each with its default and what moving it does. A knob defined here and documented in a consuming template instead is documented where nobody overriding it will look.
+- **A substitution that is machinery stays out of both lists and says so in the header**, per [Dollar Signs in Config Values][dollar-signs]. A value the template bridges to a vendor package, such as the `name` a vendor entry point reads, is the other common case. Leaving it out entirely is what a later reader has to reverse engineer.
+
 Renaming or moving a template breaks every one of these blocks and the [`README.md`][readme] paths, and nothing in CI notices, because the local test config is renamed alongside it and stays green. Re-check the block whenever a template's filename changes.
 
 ## Documenting a Device
@@ -49,7 +55,7 @@ This is a public repository whose primary audience is people reusing the templat
 This directory is the `/config` mount of a running ESPHome instance, so the tree you are editing is live state, not a checkout that gets deployed later.
 
 - Top-level `*.yaml` files are the per-device configs. [`templates/`][templates] holds the shared device and utility templates they include via `packages:`.
-- ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. The host path `/data/appdata/esphome/config` is mounted at `/config` inside the container.
+- ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. The directory holding this repository is mounted at `/config` inside the container.
 - Every ESPHome CLI invocation runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
 
 ```shell
@@ -73,6 +79,47 @@ docker exec esphome esphome compile /config/<device>.yaml
 ```
 
 A compile costs minutes, so reserve it for changes that can plausibly affect generated code. For pure YAML-shape changes, meaning renaming entities, adjusting intervals, or swapping substitution values that map to enum members, `config` is usually enough, but compile when in doubt.
+
+### Compiling the Way CI Does
+
+Any copy of this repository compiles without the running instance. Mount that copy at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
+
+```shell
+config_dir=<absolute path to a checkout, never the deployed tree>
+cache=<absolute path to a cache directory you keep>
+mkdir -p "$cache"
+if [ ! -f "$config_dir/secrets.yaml" ]; then
+  key="$(openssl rand -base64 32)"
+  tmp=""
+  if [ -n "$key" ] && grep -q REPLACE_WITH_BASE64_32_BYTE_KEY "$config_dir/secrets._yaml" \
+    && tmp="$(mktemp /tmp/esphome-secrets.XXXXXX)" \
+    && sed "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" "$config_dir/secrets._yaml" > "$tmp" \
+    && mv "$tmp" "$config_dir/secrets.yaml"; then
+    echo "secrets.yaml generated"
+  else
+    [ -z "$tmp" ] || rm -f "$tmp"
+    echo "secrets.yaml not generated" >&2
+  fi
+fi
+[ -f "$config_dir/secrets.yaml" ] && docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$config_dir":/config --volume "$cache":/cache \
+  ptr727/esphome-nonroot:latest \
+  bash -c '
+    set -Eeuo pipefail
+    /entrypoint/cache.sh
+    esphome config /config/test/<template>.yaml > /dev/null
+    esphome compile /config/test/<template>.yaml
+  '
+```
+
+- **Both paths are absolute.** Docker reads a relative `--volume` source as a named volume. A relative value therefore mounts an empty volume, and the compile fails on a path the caller can see on disk.
+- **Point `config_dir` at a checkout rather than at the deployed tree.** The running container has that tree mounted already, and a second compile in it shares one `.esphome/`.
+- **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
+- **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
+- **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
+- **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. CI uses one regardless, since it discards the runner.
+- **The container runs as the invoking user**, so what it writes stays owned by that user. The image points its build tree and its data directory at `/cache`. The only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files differently.
+- **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when a device template has no example device in [`test/`][test]. A new utility include joins that job's exemption list instead.
 
 ## Flashing and sdkconfig
 
@@ -159,7 +206,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 - **Remove by id** with `- id: !remove <id>` when the unwanted thing is one item in a list shared with entities you keep, such as a cloud `select` item, a firmware-update `button`, the glue `script`, or the `http_request` OTA platform. ESPHome's `merge_config` in `esphome/config_helpers.py` matches on the id. A dangling reference left behind fails at `compile` rather than `config`, so compile once after this kind of change.
 - **Project identity and Update Manager:** prefer `esphome: project: !remove`, as Apollo and CeilSense do. Fall back to overriding `project_version: "0.0.0"` only when upstream lambdas reference the `ESPHOME_PROJECT_NAME` or `ESPHOME_PROJECT_VERSION` macros, as Konnected's do. Grep the upstream package before removing the block.
 - **Override local environment:** `wifi: ap: !remove` plus `!secret` ssid, password, and domain, then `api.encryption.key`, and the OTA password via `- id: !extend <ota_id>`.
-- **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference: the SCD41 and AHT humidity still tracks ambient and outdoor humidity and is not tunable away. Add such knobs only when a concrete problem demands one.
+- **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference. The AHT humidity still tracks ambient and outdoor humidity, and it is not tunable away. Add such knobs only when a concrete problem demands one.
 
 ## Template Notes
 
@@ -173,15 +220,16 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 ### Apollo PLT-1B
 
-[`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/data/appdata/esphome/cache/data/packages/8bc80dd7/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
+[`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/cache/data/packages/<hash>/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
 
-Three substitutions are exposed for per-plant override:
+Four substitutions are exposed for per-plant override:
 
-- `sleep_duration_hours` is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
-- `prevent_sleep_default`, either `ON` or `OFF`, is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
-- `aht_variant`, either `AHT10` or `AHT20`, is the AHT chip init mode. It is compile-time and takes effect on the next flash.
+- `sleep_duration_hours` defaults to `12` and is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
+- `prevent_sleep_default` defaults to `ON`, with `OFF` the only other value. It is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
+- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it puts a unit that Prevent Sleep holds awake into a reboot cycle while Home Assistant is unreachable. A sleeping unit loops only when the timeout is below Apollo's own `run_duration`, 90 seconds in the cached package.
+- `wifi_reboot_timeout` defaults to `15min`, ESPHome's own `DEFAULT_REBOOT_TIMEOUT`, since Apollo sets no WiFi reboot timeout of its own.
 
-The NVS-versus-substitution semantics matter: for any of these knobs to change behavior on a previously deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, wipe NVS with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
@@ -232,7 +280,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit on any template needs both reboot timeouts disabled.** `api.yaml` and [`wifi.yaml`][wifi-template] each default to a 15 minute `reboot_timeout`, so this reaches every template that includes them rather than this board alone. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi:` `reboot_timeout` to `0s`.
+- **A bench unit needs both reboot timeouts disabled.** Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`. Every template that sets a reboot timeout reads the matching substitution, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition.
 
 ### RGB LED Status
 
@@ -355,7 +403,7 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
 
 ## Contributing Upstream to ESPHome
 
-Core-component fixes are developed in the fork clone at `/home/pieter/esphome-esphome`, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork, so `git push origin <branch>` is what updates it and nothing is ever pushed to `esphome/esphome` directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
+Core-component fixes are developed in a clone of the fork, whose `origin` is [`ptr727/esphome-esphome`][esphome-fork-link] and whose `upstream` is [`esphome/esphome`][esphome-upstream-link]. An upstream pull request is opened from a branch on the fork. `git push origin <branch>` is what updates it, and nothing is ever pushed to [`esphome/esphome`][esphome-upstream-link] directly. Confirm that with `gh pr view <n> --repo esphome/esphome --json headRepositoryOwner` before assuming a push target.
 
 ### Staging on the Fork First
 
@@ -568,6 +616,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [common-template]: ./templates/common.yaml
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
+[dollar-signs]: #dollar-signs-in-config-values
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml

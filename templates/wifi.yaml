@@ -3,11 +3,9 @@
 #   wifi: github://ptr727/ESPHome-Config/templates/wifi.yaml@main
 # - Needs wifi_ssid, wifi_password, and wifi_domain in a secrets.yaml beside the including config.
 
-# Required substitutions:
-# - device_name
-
 # Optional substitutions:
 # - wifi_signal_update_interval (60s, drop it to a few seconds to survey placement)
+# - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
 
 # Required secrets:
 # - wifi_ssid
@@ -17,13 +15,15 @@
 # https://esphome.io/components/substitutions
 substitutions:
   wifi_signal_update_interval: 60s
+  # Override per-device where a reboot loop is more dangerous than a stale WiFi connection.
+  wifi_reboot_timeout: 15min
 
 # https://esphome.io/components/wifi
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   domain: !secret wifi_domain
-  reboot_timeout: 15min
+  reboot_timeout: ${wifi_reboot_timeout}
   min_auth_mode: WPA2
 
 # https://esphome.io/components/text_sensor
