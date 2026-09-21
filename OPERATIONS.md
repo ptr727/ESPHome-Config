@@ -197,7 +197,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 - **Remove by id** with `- id: !remove <id>` when the unwanted thing is one item in a list shared with entities you keep, such as a cloud `select` item, a firmware-update `button`, the glue `script`, or the `http_request` OTA platform. ESPHome's `merge_config` in `esphome/config_helpers.py` matches on the id. A dangling reference left behind fails at `compile` rather than `config`, so compile once after this kind of change.
 - **Project identity and Update Manager:** prefer `esphome: project: !remove`, as Apollo and CeilSense do. Fall back to overriding `project_version: "0.0.0"` only when upstream lambdas reference the `ESPHOME_PROJECT_NAME` or `ESPHOME_PROJECT_VERSION` macros, as Konnected's do. Grep the upstream package before removing the block.
 - **Override local environment:** `wifi: ap: !remove` plus `!secret` ssid, password, and domain, then `api.encryption.key`, and the OTA password via `- id: !extend <ota_id>`.
-- **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference: the SCD41 and AHT humidity still tracks ambient and outdoor humidity and is not tunable away. Add such knobs only when a concrete problem demands one.
+- **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference. The AHT humidity still tracks ambient and outdoor humidity, and it is not tunable away. Add such knobs only when a concrete problem demands one.
 
 ## Template Notes
 
@@ -213,13 +213,14 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 [`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/cache/data/packages/<hash>/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
 
-Three substitutions are exposed for per-plant override:
+Four substitutions are exposed for per-plant override:
 
-- `sleep_duration_hours` is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
-- `prevent_sleep_default`, either `ON` or `OFF`, is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
-- `aht_variant`, either `AHT10` or `AHT20`, is the AHT chip init mode. It is compile-time and takes effect on the next flash.
+- `sleep_duration_hours` defaults to `12` and is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
+- `prevent_sleep_default` defaults to `ON`, with `OFF` the only other value. It is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
+- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it puts a unit that Prevent Sleep holds awake into a reboot cycle while Home Assistant is unreachable. A sleeping unit loops only when the timeout is below Apollo's own `run_duration`, 90 seconds in the cached package.
+- `wifi_reboot_timeout` defaults to `15min`, ESPHome's own `DEFAULT_REBOOT_TIMEOUT`, since Apollo sets no WiFi reboot timeout of its own.
 
-The NVS-versus-substitution semantics matter: for any of these knobs to change behavior on a previously deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, wipe NVS with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
