@@ -216,7 +216,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 Four substitutions are exposed for per-plant override:
 
 - `sleep_duration_hours` defaults to `12` and is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
-- `prevent_sleep_default` defaults to `ON`, either `ON` or `OFF`, and is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
+- `prevent_sleep_default` defaults to `ON`, with `OFF` the only other value. It is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
 - `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it puts a unit Prevent Sleep holds awake into a reboot cycle while Home Assistant is unreachable. A sleeping unit loops only below Apollo's own `run_duration`, 90 seconds in the cached package.
 - `wifi_reboot_timeout` defaults to `15min`, ESPHome's own `DEFAULT_REBOOT_TIMEOUT`, since Apollo sets no WiFi reboot timeout of its own.
 
