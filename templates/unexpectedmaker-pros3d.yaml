@@ -10,6 +10,7 @@
 # Optional substitutions:
 # - external_antenna_restore_mode (default ALWAYS_OFF, onboard PCB antenna, ALWAYS_ON selects the u.FL connector)
 # - ldo2_power_restore_mode       (default ALWAYS_ON, powers the 3V3_2 rail feeding the RGB LED and the 3V3_2 header pin)
+# - rgb_led_pin                   (default GPIO18, the on-board RGB LED, move it for a board revision wiring it elsewhere)
 
 # Unexpected Maker ProS3D
 # ESP32-S3, 16MB Quad Flash, 8MB Quad PSRAM
@@ -35,6 +36,7 @@
 
 # https://esphome.io/components/substitutions
 substitutions:
+  # Used by rgb-led-status.yaml
   rgb_led_pin: GPIO18
   external_antenna_restore_mode: ALWAYS_OFF
   ldo2_power_restore_mode: ALWAYS_ON

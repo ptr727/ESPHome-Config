@@ -3,11 +3,15 @@
 #   api: github://ptr727/ESPHome-Config/templates/api.yaml@main
 # - Needs api_encryption_key in a secrets.yaml beside the including config.
 
-# https://esphome.io/components/api
+# Optional substitutions:
+# - api_reboot_timeout (15min, 0s on a bench unit with no Home Assistant to reach)
+
+# https://esphome.io/components/substitutions
 substitutions:
   # Override per-device where a reboot loop is more dangerous than a stale Home Assistant connection.
   api_reboot_timeout: 15min
 
+# https://esphome.io/components/api
 api:
   id: api_server
   reboot_timeout: ${api_reboot_timeout}

@@ -7,6 +7,9 @@
 # - device_name
 # - device_friendly_name
 
+# Optional substitutions:
+# - rgb_led_pin (GPIO21, the on-board RGB LED, move it for a board revision wiring it elsewhere)
+
 # Waveshare ESP32-S3-ETH
 # ESP32-S3R8, 16MB Quad Flash (W25Q128), 8MB Octal PSRAM
 
@@ -62,6 +65,7 @@
 
 # https://esphome.io/components/substitutions
 substitutions:
+  # Used by rgb-led-status.yaml
   rgb_led_pin: GPIO21
 
 # https://esphome.io/components/esphome
