@@ -32,7 +32,7 @@ substitutions:
   # Default sleep duration and prevent sleep state if not already set in NVS, else HA owns runtime config.
   sleep_duration_hours: "12"
   prevent_sleep_default: "ON"
-  # Apollo sets 0s upstream, so raising api_reboot_timeout reintroduces a reboot loop on a unit Home Assistant cannot reach.
+  # Apollo sets 0s upstream, so raising api_reboot_timeout reboots a unit Prevent Sleep holds awake while Home Assistant is away.
   api_reboot_timeout: 0s
   # Apollo sets no WiFi reboot timeout, so this one is ESPHome's own default.
   wifi_reboot_timeout: 15min
