@@ -220,7 +220,7 @@ Four substitutions are exposed for per-plant override:
 - `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it puts a unit Prevent Sleep holds awake into a reboot cycle while Home Assistant is unreachable. A sleeping unit loops only when the value is below the 90 second wake window.
 - `wifi_reboot_timeout` defaults to `15min`, ESPHome's own default, since Apollo sets no WiFi reboot timeout.
 
-The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, wipe NVS with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
