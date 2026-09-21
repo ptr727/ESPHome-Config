@@ -215,12 +215,12 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 Four substitutions are exposed for per-plant override:
 
-- `sleep_duration_hours` is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
-- `prevent_sleep_default`, either `ON` or `OFF`, is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
-- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value, so raising it puts a sleeping sensor on a reboot loop whenever Home Assistant is unreachable.
+- `sleep_duration_hours` defaults to `12` and is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
+- `prevent_sleep_default` defaults to `ON`, either `ON` or `OFF`, and is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
+- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it reboots a unit Prevent Sleep holds awake whenever Home Assistant is unreachable, and a sleeping one only below the 90 second wake window.
 - `wifi_reboot_timeout` defaults to `15min`, ESPHome's own default, since Apollo sets no WiFi reboot timeout.
 
-The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, the stored value has to go first. A USB `esptool.py erase_flash` plus a reflash does it. So does Apollo's own "Factory Reset ESP" button, which a ten second hold of the onboard button also fires. An OTA reflash on its own preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
