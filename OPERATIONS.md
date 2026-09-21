@@ -32,7 +32,7 @@ Four templates deviate from the plain shorthand, and each says so in its own blo
 - [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
-Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs the same knobs for an adopter choosing a template, and the header is what that catalog has to agree with.
+Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs knobs for an adopter choosing a template, and where it names one, the header is what it has to agree with.
 
 - **`Required substitutions:` lists what the template interpolates but does not define**, including what a template it includes locally needs. A name that nothing in the template or its includes reads is a stale claim rather than a contract.
 - **`Optional substitutions:` lists what the template defines with a default and a consumer may override**, each with its default and what moving it does. A knob defined here and documented in a consuming template instead is documented where nobody overriding it will look.
@@ -270,7 +270,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit needs both reboot timeouts disabled.** Every template that sets a reboot timeout reads these two substitutions, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition, so override both to `0s`.
+- **A bench unit needs both reboot timeouts disabled.** Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`. Every template that sets a reboot timeout reads the matching substitution, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition.
 
 ### RGB LED Status
 

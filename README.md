@@ -142,7 +142,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - [`time.yaml`][time] configures the Home Assistant time source.
 - [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets, with a configurable `wifi_reboot_timeout`.
 - [`basic.yaml`][basic] adds a restart button plus status, uptime, and version sensors.
-- [`common.yaml`][common] bundles the api, ota, logger, time, wifi, and basic includes for a typical device.
+- [`common.yaml`][common] bundles the api, ota, logger, time, wifi, basic, debug, and min-version includes for a typical device.
 - [`debug.yaml`][debug] adds the debug component and its text sensors.
 - [`temperature.yaml`][temperature] adds the on-chip internal temperature sensor.
 - [`ethernet-sensor.yaml`][ethernet-sensor] adds Ethernet IP and MAC info text sensors.
@@ -201,7 +201,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Optional substitutions:
   - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
   - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
-  - `rgb_led_pin`: `GPIO18` is the on-board RGB LED, moved for a board revision wiring it elsewhere.
+  - `rgb_led_pin`: `GPIO18` is the on-board RGB LED, override it where a board revision wires it elsewhere.
 
 #### Waveshare ESP32-S3-ETH Devkit
 
