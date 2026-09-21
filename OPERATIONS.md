@@ -90,7 +90,7 @@ cache=<absolute path to a cache directory you keep>
 mkdir -p "$cache"
 if [ ! -f "$config_dir/secrets.yaml" ]; then
   key="$(openssl rand -base64 32)"
-  tmp="$(mktemp)"
+  tmp="$(mktemp /tmp/esphome-secrets.XXXXXX)"
   if [ -n "$key" ] && grep -q REPLACE_WITH_BASE64_32_BYTE_KEY "$config_dir/secrets._yaml" \
     && sed "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" "$config_dir/secrets._yaml" > "$tmp" \
     && mv "$tmp" "$config_dir/secrets.yaml"; then
