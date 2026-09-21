@@ -201,6 +201,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Optional substitutions:
   - `external_antenna_restore_mode`: `ALWAYS_OFF` selects the onboard PCB antenna, `ALWAYS_ON` selects the u.FL connector.
   - `ldo2_power_restore_mode`: `ALWAYS_ON` powers the `3V3_2` rail, which feeds the RGB LED and the `3V3_2` header pin, `ALWAYS_OFF` leaves both off.
+  - `rgb_led_pin`: `GPIO18` is the on-board RGB LED, moved for a board revision wiring it elsewhere.
 
 #### Waveshare ESP32-S3-ETH Devkit
 

@@ -4,6 +4,7 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required secrets:
+# - api_encryption_key
 # - wifi_ssid
 # - wifi_password
 # - wifi_domain

@@ -109,8 +109,8 @@ docker run --rm --user "$(id -u):$(id -g)" \
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
 - **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. CI uses one regardless, since it discards the runner.
-- **The container runs as the invoking user**, which keeps what it writes owned by that user, including the cache directory it populates on the first run. The image points its build tree and its data directory at `/cache`, so the only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files as a different user.
-- **A local compile is not the whole gate.** CI also runs source lint, and its change-detection job fails when a template carries no example device in [`test/`][test], so a new template needs one added there.
+- **The container runs as the invoking user**, so what it writes stays owned by that user. The image points its build tree and its data directory at `/cache`. The only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files differently.
+- **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when a device template has no example device in [`test/`][test]. A new utility include joins that job's exemption list instead.
 
 ## Flashing and sdkconfig
 
@@ -270,7 +270,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit needs both reboot timeouts disabled.** Every template configuring an `api:` block reads `api_reboot_timeout`, and every template configuring a `wifi:` block reads `wifi_reboot_timeout`, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition, so override both to `0s`.
+- **A bench unit needs both reboot timeouts disabled.** Every template that sets a reboot timeout reads these two substitutions, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition, so override both to `0s`.
 
 ### RGB LED Status
 
@@ -605,8 +605,8 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
 [devices]: ./DEVICES.md
-[dollar-signs]: #dollar-signs-in-config-values
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
+[dollar-signs]: #dollar-signs-in-config-values
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
