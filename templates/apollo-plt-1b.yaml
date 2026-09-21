@@ -12,7 +12,7 @@
 # Optional substitutions:
 # - sleep_duration_hours (12, the first-boot value of the Home Assistant number, NVS owns it after that)
 # - prevent_sleep_default (ON, the first-boot state of the Home Assistant switch, NVS owns it after that)
-# - api_reboot_timeout (0s, Apollo's own value, which disables the reboot watchdog, so raising it cycles a unit Prevent Sleep holds awake while Home Assistant is away)
+# - api_reboot_timeout (0s, Apollo's own value, which disables the reboot watchdog, so raising it cycles a unit that Prevent Sleep holds awake while Home Assistant is away)
 # - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
 
 # Apollo PLT-1B Plant Sensor
@@ -32,7 +32,7 @@ substitutions:
   # Default sleep duration and prevent sleep state if not already set in NVS, else HA owns runtime config.
   sleep_duration_hours: "12"
   prevent_sleep_default: "ON"
-  # Apollo sets 0s upstream, so raising api_reboot_timeout cycles a unit Prevent Sleep holds awake while Home Assistant is away.
+  # Apollo sets 0s upstream, so raising api_reboot_timeout cycles a unit that Prevent Sleep holds awake while Home Assistant is away.
   api_reboot_timeout: 0s
   # Apollo sets no WiFi reboot timeout, so this one is ESPHome's own default.
   wifi_reboot_timeout: 15min
