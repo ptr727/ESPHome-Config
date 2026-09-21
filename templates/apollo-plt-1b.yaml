@@ -10,6 +10,7 @@
 # Optional substitutions:
 # - sleep_duration_hours (12, the first-boot value of the Home Assistant number, NVS owns it after that)
 # - prevent_sleep_default (ON, the first-boot state of the Home Assistant switch, NVS owns it after that)
+# - api_reboot_timeout (15min, 0s on a bench unit with no Home Assistant to reach)
 # - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
 
 # Apollo PLT-1B Plant Sensor
@@ -29,7 +30,8 @@ substitutions:
   # Default sleep duration and prevent sleep state if not already set in NVS, else HA owns runtime config.
   sleep_duration_hours: "12"
   prevent_sleep_default: "ON"
-  # Override per-device where a reboot loop is more dangerous than a stale WiFi connection.
+  # Override per-device where a reboot loop is more dangerous than a stale connection.
+  api_reboot_timeout: 15min
   wifi_reboot_timeout: 15min
 
 # https://esphome.io/components/esphome
@@ -72,6 +74,7 @@ ota:
 
 # Extend Apollo's api: with encryption
 api:
+  reboot_timeout: ${api_reboot_timeout}
   encryption:
     key: !secret api_encryption_key
 

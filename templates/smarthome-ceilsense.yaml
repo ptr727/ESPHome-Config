@@ -8,6 +8,7 @@
 # - device_friendly_name
 
 # Optional substitutions:
+# - api_reboot_timeout (15min, 0s on a bench unit with no Home Assistant to reach)
 # - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
 
 # SmartHomeShop CeilSense v1 Complete (WiFi, LD2412 + SCD4x)
@@ -24,7 +25,8 @@ substitutions:
   # The base.yaml package expects these for esphome.name and friendly_name.
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-  # Override per-device where a reboot loop is more dangerous than a stale WiFi connection.
+  # Override per-device where a reboot loop is more dangerous than a stale connection.
+  api_reboot_timeout: 15min
   wifi_reboot_timeout: 15min
 
 # https://esphome.io/components/esphome
@@ -74,6 +76,7 @@ ota:
 
 # Extend base.yaml's bare api: with encryption.
 api:
+  reboot_timeout: ${api_reboot_timeout}
   encryption:
     key: !secret api_encryption_key
 

@@ -7,6 +7,9 @@
 # - device_name
 # - device_friendly_name
 
+# Optional substitutions:
+# - rgb_led_pin (GPIO38, the on-board RGB LED, GPIO48 on a v1.0 board and on most clones)
+
 # Espressif ESP32-S3-DevKitC-1/1U
 # https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 

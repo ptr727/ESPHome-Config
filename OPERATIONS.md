@@ -32,11 +32,11 @@ Four templates deviate from the plain shorthand, and each says so in its own blo
 - [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
-Every substitution a template touches is declared in that same template's header, and nowhere else, so a consumer reads one file to know the contract:
+Every substitution a template touches is declared in that template's own header, so a consumer reads one file to know the contract. [`README.md`][readme] still catalogs the same knobs for an adopter choosing a template, and the header is what that catalog has to agree with.
 
 - **`Required substitutions:` lists what the template interpolates but does not define**, including what a template it includes locally needs. A name that nothing in the template or its includes reads is a stale claim rather than a contract.
 - **`Optional substitutions:` lists what the template defines with a default and a consumer may override**, each with its default and what moving it does. A knob defined here and documented in a consuming template instead is documented where nobody overriding it will look.
-- **A substitution that is neither carries a one-line comment at its definition and no header entry.** Board plumbing such as `rgb_led_pin`, and a value the template must route rather than expose such as `gnss_nmea_start`, are consumed internally, so a header entry would advertise them as knobs.
+- **A substitution that is machinery rather than a knob is named in the header as such.** [`heltec-l76k-gnss.yaml`][heltec-gnss-template] is the pattern. `gnss_nmea_start` sits below the list, marked as absent from it, and the line beside it says overriding the value breaks every sentence the module sends. Leaving it out entirely is what a later reader has to reverse engineer.
 
 Renaming or moving a template breaks every one of these blocks and the [`README.md`][readme] paths, and nothing in CI notices, because the local test config is renamed alongside it and stays green. Re-check the block whenever a template's filename changes.
 
@@ -82,11 +82,11 @@ A compile costs minutes, so reserve it for changes that can plausibly affect gen
 
 ### Compiling the Way CI Does
 
-Any copy of this repository compiles without the running instance. Mount its directory at `/config` in a throwaway container and run the CLI there. The container invocation is the one the compile job in [`test-pull-request.yml`][test-workflow] runs, so a compile that fails here fails there.
+Any copy of this repository compiles without the running instance. Mount that copy at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls are the compile job's in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
 
 ```shell
-config_dir=<absolute path to the repository root>
-cache="$(mktemp -d)"
+config_dir=<absolute path to a checkout, never the deployed tree>
+cache=<absolute path to a cache directory you keep>
 if [ ! -f "$config_dir/secrets.yaml" ]; then
   cp "$config_dir/secrets._yaml" "$config_dir/secrets.yaml"
   sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" "$config_dir/secrets.yaml"
@@ -97,15 +97,18 @@ docker run --rm --user "$(id -u):$(id -g)" \
   bash -c '
     set -Eeuo pipefail
     /entrypoint/cache.sh
+    esphome config /config/test/<template>.yaml > /dev/null
     esphome compile /config/test/<template>.yaml
   '
 ```
 
-- **`config_dir` is the repository root and the path is absolute.** Docker reads a relative `--volume` source as a named volume, so a relative value mounts an empty volume and the compile fails on a path that exists on disk.
+- **Both paths are absolute.** Docker reads a relative `--volume` source as a named volume. A relative value therefore mounts an empty volume, and the compile fails on a path the caller can see on disk.
+- **Point `config_dir` at a checkout rather than at the deployed tree.** The running container has that tree mounted already, and a second compile in it shares one `.esphome/`.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
-- **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects. A compile without it re-fetches the platform toolchain every run.
-- **The container runs as the invoking user**, which keeps `.esphome/` and everything else it writes owned by that user. Both it and a generated `secrets.yaml` are ignored, so neither reaches a commit, and keeping `.esphome/` is what makes the next compile incremental.
+- **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
+- **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. CI uses one regardless, since it discards the runner.
+- **The container runs as the invoking user**, which keeps `.esphome/` and everything else it writes owned by that user. Both it and a generated `secrets.yaml` are ignored, so neither reaches a commit. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files as a different user.
 - **A local compile is not the whole gate.** CI also runs source lint, and it fails when a template carries no example device in [`test/`][test], so a new template needs one added there.
 
 ## Flashing and sdkconfig
@@ -266,7 +269,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit on any template needs both reboot timeouts disabled.** `api.yaml` and [`wifi.yaml`][wifi-template] each default to a 15 minute `reboot_timeout`, so this reaches every template that includes them rather than this board alone. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`.
+- **A bench unit on any template needs both reboot timeouts disabled.** Every template defaults both to a 15 minute `reboot_timeout`, so this reaches the whole tree rather than this board alone. A unit on a desk with no Home Assistant hits both, restarting part way through a cold GNSS acquisition. Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`.
 
 ### RGB LED Status
 

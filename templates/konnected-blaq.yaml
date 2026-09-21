@@ -8,7 +8,7 @@
 # - device_friendly_name
 
 # Optional substitutions:
-# - wifi_reboot_timeout (15min, 0s on a bench unit with no network to reach)
+# - wifi_reboot_timeout (15min, 0s wherever a reboot loop is more dangerous than a stale connection, see the note at its definition)
 
 # Konnected blaQ Garage Door Controller
 # https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
