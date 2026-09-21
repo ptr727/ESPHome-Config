@@ -213,13 +213,14 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 [`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/cache/data/packages/<hash>/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
 
-Three substitutions are exposed for per-plant override:
+Four substitutions are exposed for per-plant override:
 
 - `sleep_duration_hours` is the first-boot value of the Home Assistant "Sleep Duration" number. After first boot Home Assistant owns the value via NVS with `restore_value: true`, so changing the substitution does not move an already-deployed device.
 - `prevent_sleep_default`, either `ON` or `OFF`, is the first-boot state of the Home Assistant "Prevent Sleep" switch, with the same NVS-wins semantics.
-- `aht_variant`, either `AHT10` or `AHT20`, is the AHT chip init mode. It is compile-time and takes effect on the next flash.
+- `api_reboot_timeout` defaults to `0s`, which is Apollo's own value, so raising it puts a sleeping sensor on a reboot loop whenever Home Assistant is unreachable.
+- `wifi_reboot_timeout` defaults to `15min`, ESPHome's own default, since Apollo sets no WiFi reboot timeout.
 
-The NVS-versus-substitution semantics matter: for any of these knobs to change behavior on a previously deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, NVS must be wiped with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
