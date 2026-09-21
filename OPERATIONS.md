@@ -197,7 +197,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 - **Remove by id** with `- id: !remove <id>` when the unwanted thing is one item in a list shared with entities you keep, such as a cloud `select` item, a firmware-update `button`, the glue `script`, or the `http_request` OTA platform. ESPHome's `merge_config` in `esphome/config_helpers.py` matches on the id. A dangling reference left behind fails at `compile` rather than `config`, so compile once after this kind of change.
 - **Project identity and Update Manager:** prefer `esphome: project: !remove`, as Apollo and CeilSense do. Fall back to overriding `project_version: "0.0.0"` only when upstream lambdas reference the `ESPHOME_PROJECT_NAME` or `ESPHOME_PROJECT_VERSION` macros, as Konnected's do. Grep the upstream package before removing the block.
 - **Override local environment:** `wifi: ap: !remove` plus `!secret` ssid, password, and domain, then `api.encryption.key`, and the OTA password via `- id: !extend <ota_id>`.
-- **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference: the SCD41 and AHT humidity still tracks ambient and outdoor humidity and is not tunable away. Add such knobs only when a concrete problem demands one.
+- **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference. The AHT humidity still tracks ambient and outdoor humidity, and it is not tunable away. Add such knobs only when a concrete problem demands one.
 
 ## Template Notes
 
