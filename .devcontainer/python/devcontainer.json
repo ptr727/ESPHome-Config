@@ -37,7 +37,6 @@
     "onCreateCommand": "sudo install -d -m 700 -o vscode -g vscode /home/vscode/.ssh",
 
     // Install pinned uv and pre-warm the project environment.
-    // No git hooks are installed by default, per README "Optional: enable git hooks locally".
     "postCreateCommand": ".devcontainer/python/post-create.sh",
 
     "customizations": {

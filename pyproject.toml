@@ -20,6 +20,8 @@ dev = [
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+# Python sources only, so the Markdown code blocks in the carried fleet docs are never reformatted.
+include = ["*.py", "*.pyi", "**/pyproject.toml"]
 # Each member's src directory, so its package sorts as first-party.
 src = ["easystart/python/src"]
 

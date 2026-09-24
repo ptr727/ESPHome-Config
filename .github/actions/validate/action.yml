@@ -1,5 +1,5 @@
 name: Validate ESPHome sources action
-description: Run repository-specific spelling, Python, and C++ checks.
+description: Run repository-specific spelling and C++ checks.
 
 runs:
   using: composite
