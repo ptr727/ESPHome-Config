@@ -96,8 +96,9 @@ uv run <device>-monitor --name <DeviceName>    # connect, poll, decode in real t
 
 Make the monitor (template: `python/src/easystart_monitor/monitor.py`):
 
-- **A uv workspace member**, a `src`-layout project with `bleak` in its `[project]` dependencies
-  and a console script, added to the root `pyproject.toml` per `CODESTYLE.md` "This
+- **A uv workspace member**, a `src`-layout project whose own `pyproject.toml` declares `bleak`
+  in its `[project]` dependencies and the console script in `[project.scripts]`, and whose
+  directory is listed in the root `pyproject.toml` workspace `members`, per `CODESTYLE.md` "This
   Repository's Python", so `uv run <device>-monitor` needs no venv or install step.
 - **Unit-test the decode** with constructed frames under `tests/<package>/`, so a layout change
   is caught before any hardware run.
