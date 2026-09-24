@@ -5,8 +5,8 @@ agent, optimized so the **human does as little as possible**, with no typing int
 screenshots, and no file shuffling. The agent drives every CLI and analysis step, and the human
 only does the few things that need a physical body or a one-time credential.
 
-This is generalized from the EasyStart project (see `PROTOCOL.md`), whose concrete artifacts
-(`python/easystart_monitor.py`, `components/easystart`) are good copy-paste starting points.
+The EasyStart protocol (see `PROTOCOL.md`) is a worked example of this method, and its artifacts
+(`python/src/easystart_monitor/monitor.py`, `components/easystart`) are copy-paste starting points.
 
 ## Division of labor
 
@@ -20,7 +20,7 @@ scripts, decoding captures, and writing the docs and the final firmware/componen
 1. **Plug the phone into the computer** and enable USB debugging. First connection only: tap
    "Allow USB debugging" (the RSA prompt) on the phone and unlock it, and after that one tap `adb`
    works unattended.
-2. For the **live BLE** phase: run the one-line `uv run` monitor command the agent gives you and
+2. For the **live BLE** phase: run the one-line `uv run` monitor command the agent gives and
    **paste the text output** back (the agent can't reach the computer's BLE radio itself).
 3. Physical actions: be in BLE range, and trigger the device (power on, cycle a load, press a
    button) so there's live traffic, and optionally read a value off the vendor app once to
@@ -72,7 +72,7 @@ described in the gotchas below.
 missing, self-source the official GitHub release or zip locally, but **don't auto-run
 `winget install`** or mutate system packages. Ask the user only if it can't be found or sourced.
 
-**Tooling gotchas (Windows / Git Bash), learned running this e2e:**
+**Tooling gotchas (Windows / Git Bash):**
 
 - `adb` on PATH (winget `Google.PlatformTools`) works directly.
 - `adb shell pm path` and `cmd package path` output has a **`package:` prefix and a Windows `\r`**,
@@ -90,14 +90,17 @@ Use the **computer's own Bluetooth as the central** via [`bleak`][bleak-link]
 script, and the human runs one command and pastes the output.
 
 ```shell
-uv run monitor.py --discover             # discover devices (print names + MACs), then exit
-uv run monitor.py --name <DeviceName>    # connect, poll, decode in real time
+uv run <device>-monitor --discover             # discover devices (print names + MACs), then exit
+uv run <device>-monitor --name <DeviceName>    # connect, poll, decode in real time
 ```
 
-Make the script (template: `python/easystart_monitor.py`):
+Make the monitor (template: `python/src/easystart_monitor/monitor.py`):
 
-- **`uv`-runnable** with PEP 723 inline deps (`# /// script ... dependencies = ["bleak"] ... ///`)
-  so there's no venv setup, just `uv run`.
+- **A uv workspace member**, a `src`-layout project with `bleak` in its `[project]` dependencies
+  and a console script, added to the root `pyproject.toml` per `CODESTYLE.md` "This
+  Repository's Python", so `uv run <device>-monitor` needs no venv or install step.
+- **Unit-test the decode** with constructed frames under `tests/<package>/`, so a layout change
+  is caught before any hardware run.
 - Select by **name or service UUID** (macOS hides the MAC behind a CoreBluetooth UUID).
 - **Print raw bytes with per-index annotations AND the decoded interpretation**, so the human
   can eyeball which byte is which even if the first decode guess is wrong.
@@ -121,23 +124,23 @@ passively sniff the real **app <-> device** link. Still CLI/text, not screenshot
          -T fields -e frame.time_relative -e btatt.handle -e btatt.value
   ```
 
-## Anti-patterns / gotchas (learned the hard way)
+## Anti-patterns / gotchas
 
 - **Don't rely on phone apps for data capture.** nRF Connect *mobile* only shows the *latest*
-  notification value (it hid a binary frame behind an ASCII ack in the EasyStart work), and it
+  notification value (on EasyStart, the ASCII ack that follows the binary frame), and it
   means typing and screenshots. Use it only to eyeball the GATT table once, and capture with `bleak`.
 - **Android HCI snoop log is useless on stock phones.** Modern Pixel/AOSP runs it in `FILTERED`
   mode (`SnoopLogMode=FILTERED`), which strips ATT payloads, so the `bugreport` `btsnooz_hci.log`
   keeps only a few bytes per packet. Full `btsnoop_hci.log` needs root. Skip it and use `bleak`.
 - **Don't trust vendor/module UUID conventions** (e.g. "Laird VSP TX/RX"), and verify which
-  characteristic is write vs notify from the app or a live GATT dump. EasyStart had them
-  swapped from the usual convention.
+  characteristic is write vs notify from the app or a live GATT dump. EasyStart swaps them
+  from the usual convention.
 - **Only one central connects at a time**, so close the vendor app before running the monitor.
 - **Watch framing**: a "response" may be several notifications (e.g. binary frame + an ASCII
   `Success` marker). Print everything, decode the binary, and treat text markers as
   completion or status.
 
-## How to direct the agent next time
+## Kickoff prompt
 
 One opening message is enough to kick off Phase 1 end-to-end:
 
@@ -148,7 +151,7 @@ One opening message is enough to kick off Phase 1 end-to-end:
 The agent then drives `adb` -> `apktool`/`jadx` -> analysis on its own. From there:
 
 1. (Phase 1 runs autonomously, the human only having to plug in and approve the one-time prompt.)
-2. "Write me a `bleak` monitor for it." -> agent produces a `uv run` one-liner.
+2. "Write me a `bleak` monitor for it." -> agent adds a workspace member and a `uv run` one-liner.
 3. Human runs it near the device, pastes the text. -> agent decodes, iterates, and (optionally)
    ground-truths against the vendor app's on-screen values.
 4. "Now write the ESPHome component / integration." -> agent ports it.
