@@ -7,8 +7,8 @@
 # - rgb_led_pin, e.g. GPIO38
 
 # Optional substitutions:
-# - system_status_led_brightness (default "50%")
-# - blink_on_off_time            (default "200ms")
+# - system_status_led_brightness (default "50%", caps every status color and effect, lower it where the LED is in sight at night)
+# - blink_on_off_time            (default "200ms", the on and the off time of each led_feedback_blink flash)
 
 # The package drives boot, network, and API state colors on its own.
 # A consumer can also call script.execute on led_working_status or led_feedback_blink.

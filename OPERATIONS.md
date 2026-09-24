@@ -205,6 +205,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 - **Whole-key `!remove`** each stock provisioning, cloud, and web surface that is its own top-level key: `dashboard_import`, `captive_portal`, `esp32_improv`, `improv_serial`, `web_server`, `update`, `http_request`.
 - **Remove by id** with `- id: !remove <id>` when the unwanted thing is one item in a list shared with entities you keep, such as a cloud `select` item, a firmware-update `button`, the glue `script`, or the `http_request` OTA platform. ESPHome's `merge_config` in `esphome/config_helpers.py` matches on the id. A dangling reference left behind fails at `compile` rather than `config`, so compile once after this kind of change.
 - **Project identity and Update Manager:** prefer `esphome: project: !remove`, as Apollo and CeilSense do. Fall back to overriding `project_version: "0.0.0"` only when upstream lambdas reference the `ESPHOME_PROJECT_NAME` or `ESPHOME_PROJECT_VERSION` macros, as Konnected's do. Grep the upstream package before removing the block.
+- **Read the vendor's value before wiring a substitution into a vendor block.** The including side wins the scalar merge. A template default therefore overrides the vendor's value. This holds even when the template default equals ESPHome's own default. Apollo sets `api: reboot_timeout: 0s` on purpose. A `15min` template default would put every PLT-1B that Prevent Sleep holds awake into a reboot cycle whenever Home Assistant is unreachable. Default the substitution to the vendor's value, as [Apollo PLT-1B][apollo-plt-1b] does, unless the point is to change it.
 - **Override local environment:** `wifi: ap: !remove` plus `!secret` ssid, password, and domain, then `api.encryption.key`, and the OTA password via `- id: !extend <ota_id>`.
 - **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference. The AHT humidity still tracks ambient and outdoor humidity, and it is not tunable away. Add such knobs only when a concrete problem demands one.
 
@@ -229,7 +230,7 @@ Four substitutions are exposed for per-plant override:
 - `api_reboot_timeout` defaults to `0s`, which is Apollo's own value. Raising it puts a unit that Prevent Sleep holds awake into a reboot cycle while Home Assistant is unreachable. A sleeping unit loops only when the timeout is below Apollo's own `run_duration`, 90 seconds in the cached package.
 - `wifi_reboot_timeout` defaults to `15min`, ESPHome's own `DEFAULT_REBOOT_TIMEOUT`, since Apollo sets no WiFi reboot timeout of its own.
 
-The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, wipe NVS with a USB `esptool.py erase_flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
+The NVS-versus-substitution semantics matter for the two first-boot values above. For either to change behavior on a deployed unit, wipe NVS with a USB `esptool erase-flash` plus a reflash. An OTA reflash preserves NVS. The two reboot timeouts are compile-time instead, so they take effect on the next flash.
 
 Do not `!remove` blocks from Apollo's package without checking what depends on the ids inside. Apollo's lambdas reference ids across files, and a missing id surfaces as a compile error rather than a config error.
 
@@ -256,7 +257,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The power down pin is GPIO8, and Waveshare's pin table omits it.** Without `power_down_pin: GPIO8` the sensor never leaves power down, `esp_camera_init` returns `ESP_ERR_NOT_FOUND`, and `esp32_camera` marks itself failed. This is the first thing to check on any camera failure on this board. The board exposes no camera reset pin.
 - **The sensor's register bus is a dedicated `i2c:` list entry**, `id: camera_i2c` on GPIO48 and GPIO47, referenced by `i2c_id`. The `i2c_pins:` shorthand is deprecated and is rejected outright once any `i2c:` block exists anywhere in the merged config, so it is a trap that fires when a device later adds a sensor. It is a list entry rather than the mapping shorthand because `i2c` sets `MULTI_CONF`, and a list merges with a device's own bus where a mapping collides with it.
 - **GPIO3, GPIO45, and GPIO46 are strapping pins on the camera bus**, silenced at the pin, see [Strapping Pin Warnings][strapping-pin-warnings].
-- **The OV2640 tops out at UXGA.** The larger entries in ESPHome's `FRAME_SIZES` are OV5640 sizes, and the widely copied community config for this board sets `QHD`, a size the OV2640 cannot produce. That same config uses `i2c_pins:` and puts a `switch:` on GPIO8 beside `power_down_pin: GPIO8`, which fails the pin reuse check. Do not re-derive from it.
+- **The OV2640 tops out at UXGA.** The larger entries in ESPHome's `FRAME_SIZES` need a larger sensor such as the OV5640, and the widely copied community config for this board sets `QHD`, a size the OV2640 cannot produce. That same config uses `i2c_pins:` and puts a `switch:` on GPIO8 beside `power_down_pin: GPIO8`, which fails the pin reuse check. Do not re-derive from it.
 - **Exposure is left at the ESPHome defaults.** The overlay is a board template and exposure is a property of the room, so a dark image is tuned at the device. Community reports for this board blame `agc_gain_ceiling` defaulting to `2X` rather than the auto exposure, and nothing here has measured that, so treat it as a starting point rather than as a finding.
 - **Take the protective film off the lens before judging an image.** The bench frame that prompted the exposure note above was dark for that reason and for no other, which is worth eliminating first since every other explanation costs a reflash.
 
@@ -609,6 +610,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
 [agents]: ./AGENTS.md
 [api-connection-cap]: #logs-and-the-api-connection-cap
+[apollo-plt-1b]: #apollo-plt-1b
 [apollo-template]: ./templates/apollo-plt-1b.yaml
 [audit-general-settings-and-rulesets]: ./AUDIT.md#general-settings-and-rulesets
 [ble-re-playbook]: ./easystart/BLE-RE-PLAYBOOK.md
