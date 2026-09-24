@@ -15,8 +15,7 @@ byte/ASCII stream tunnelled over GATT.
 | **Notify** (module -> host, responses) | `d973f2e1-b19e-11e2-9e96-0800200c9a66` | NOTIFY (CCCD 0x2902) |
 | **Write** (host -> module, commands) | `d973f2e2-b19e-11e2-9e96-0800200c9a66` | WRITE, WRITE NO RESPONSE |
 
-> Roles confirmed via nRF Connect against one of the installed modules (advertised name
-> `EasyStart_XXXX`, with identifiers redacted because this is a public repo).
+> Roles confirmed via nRF Connect against a live module.
 > Note: `e1` is **notify** and `e2` is **write**, the opposite of the usual Laird VSP convention.
 > Device advertises name `EASYSTART_<id>` (matches the app's `ESbluetoothID` config).
 
@@ -49,8 +48,8 @@ Commands are ASCII strings written to the write characteristic. Note the loose,
 | `{"Cmd": OtaBegin/OtaPrep/OtaWrt/OtaEnd/OtaAbort}` | OTA firmware update |
 | `{"Int": FlashBuff}` / `{"Wrt": FlashBuff}` / `{"End": FlashBuff}` | Flash buffer transfer |
 
-For our use case only **`{"Cmd": ReadLive}`** is needed. Poll it on an interval, where the app
-polls on a fixed-rate timer at ~1 Hz (confirmed in capture). Our ESPHome component defaults to 2 s.
+For read-only monitoring only **`{"Cmd": ReadLive}`** is needed. Poll it on an interval, where the app
+polls on a fixed-rate timer at ~1 Hz (confirmed in capture). The ESPHome component defaults to 2 s.
 
 ## 3. Response framing (module -> host)
 
@@ -62,7 +61,7 @@ From `MainActivityKt$gattCallBack$1.onCharacteristicChanged`:
      active screen's parser.
   2. Its raw bytes are appended (`copyInto`) into an accumulation buffer selected by the
      current command state (`esCmdState`):
-     - `esCmdState == 0` -> `esNotifyLiveData` (ReadLive) <- **our path**
+     - `esCmdState == 0` -> `esNotifyLiveData` (ReadLive) <- **the monitoring path**
      - `esCmdState == 1 || 3` -> `esNotifyEEPData` (EEPROM)
      - `esCmdState == 4` -> `esNotifyBytes` (firmware/OTA)
 - The buffer length (`esNotifyLiveDataLength`) accumulates across fragments, so a response
@@ -80,9 +79,8 @@ is the binary frame, so decode it. See section 4.
 ## 4. Live-data frame layout (`ReadLive` response)
 
 **The live frame is exactly 18 bytes.** Decoded from `Status.smali` and **validated against
-live hardware** (one of the installed modules, 2026-07-21), where the app's on-screen values matched
-the decode exactly (current, peak 24.5 A, freq 59.8 Hz, total starts 4947). Multi-byte values
-are **little-endian, unsigned**.
+live hardware**, where the app's on-screen values matched the decode exactly (see section 7).
+Multi-byte values are **little-endian, unsigned**.
 
 | Offset | Field | Formula | Example (`10 00 00 05 3f 00 a9 20 f5 00 00 00 00 00 53 13 00 00`) |
 |-------:|-------|---------|---------|
@@ -142,25 +140,23 @@ the connection. This makes **BLE presence the primary running signal**:
   expect a short delay after power-on before the module is connectable, and auto-reconnect
   churn as it cycles.
 
-## 6a. Earlier HCI (btsnooz) attempt, superseded
+## 6a. HCI snoop logs
 
-Historical note. A Pixel 7a bugreport `btsnooz_hci.log` (filtered mode, with ATT payloads
-truncated to the first ~3 bytes) gave only partial confirmation before the full-payload
-validation in section 7 replaced it:
+Pixel/AOSP "Enable Bluetooth HCI snoop log" runs in `FILTERED` mode on a stock (non-rooted)
+phone, truncating ATT payloads to the first ~3 bytes in the `bugreport` `btsnooz_hci.log`, so
+it is not usable for app-layer decoding. What a filtered log still shows:
 
-- Confirmed the GATT handles, notify `0x000e` (CCCD `0x000f`) and write `0x0011`, and that the
-  write payload begins `7b 22 43` = ASCII `{"C...` (`{"Cmd": ReadLive}`).
-- The truncated 3 bytes tracked a compressor start->run->stop cycle (load data present).
-- Its framing estimate (~20-byte value) was slightly off due to truncation, and the full capture
-  showed the frame is **18 bytes** (section 4).
+- The GATT handles, notify `0x000e` (CCCD `0x000f`) and write `0x0011`, and that the write
+  payload begins `7b 22 43` = ASCII `{"C...` (`{"Cmd": ReadLive}`).
+- The truncated bytes track a compressor start->run->stop cycle, so load data is present.
+- Truncation hides the true frame length, which is **18 bytes** (section 4).
 
-> Takeaway: Pixel/AOSP "Enable Bluetooth HCI snoop log" runs FILTERED, stripping ATT payloads,
-> so bugreport HCI is not usable for app-layer RE. Use nRF Connect or the Python monitor.
+For full payloads use nRF Connect or the BLE monitor.
 
 ## 7. Validation status
 
-**Fully validated end-to-end** via `python/easystart_monitor.py` against live
-modules, with app-displayed values as ground truth:
+**Fully validated end-to-end** via the BLE monitor (`python/src/easystart_monitor/monitor.py`)
+against live modules, with app-displayed values as ground truth:
 
 | Field | App | Decode |
 |-------|-----|--------|
@@ -172,7 +168,7 @@ modules, with app-displayed values as ground truth:
 
 Characteristic roles, command string, framing, and the full 18-byte layout are all confirmed.
 
-**Independent cross-check:** this from-scratch decode matches the community ESPHome
+**Independent cross-check:** this decode matches the community ESPHome
 implementations byte-for-byte, [Keen-coffee][github-keen-coffee-home-assistant-link]
 (original) and [DerekSeaman][github-derekseaman-esphome-micro-air-easystart-link], including
 the non-obvious `500000/period` frequency, the u32 total-starts, the two-notification framing,
@@ -187,7 +183,7 @@ The protocol is complete for monitoring. A few low-value details are not fully p
   length/opcode). Neither is needed to decode the data.
 - The other commands (`ReadEEP`, `NormMode`, `ProgMode`, OTA/flash) are identified but their
   request/response payloads were not reverse-engineered, not being needed for read-only monitoring.
-- The exact poll interval the app uses (~1 s observed) is irrelevant for our own polling.
+- The exact poll interval the app uses (~1 s observed) does not constrain a host's own polling.
 
 <!-- External -->
 

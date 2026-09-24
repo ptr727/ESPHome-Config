@@ -6,6 +6,9 @@ __pycache__/
 *.pyc
 .ruff_cache/
 .mypy_cache/
+.venv/
+.coverage
+coverage.xml
 
 # ESPHome
 logs/
@@ -16,5 +19,5 @@ logs/
 /test/.gitignore
 
 # Bench and test devices, not part of the deployed fleet.
-# A root config named *-test.yaml needs no commit history, see OPERATIONS.md "Documenting a Device".
-/*-test.yaml
+# A root config named test-*.yaml needs no commit history, see OPERATIONS.md "Documenting a Device".
+/test-*.yaml

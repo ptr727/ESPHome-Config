@@ -1,5 +1,5 @@
 name: Validate ESPHome sources action
-description: Run repository-specific spelling, Python, and C++ checks.
+description: Run repository-specific spelling and C++ checks.
 
 runs:
   using: composite
@@ -11,19 +11,7 @@ runs:
         files: |
           DEVICES.md
           easystart/README.md
-          easystart/python/README.md
         incremental_files_only: false
-
-    - name: Setup uv step
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-
-    - name: Lint Python step
-      shell: bash
-      working-directory: easystart/python
-      run: |
-        set -Eeuo pipefail
-        uvx ruff@0.15.22 check .
-        uvx ruff@0.15.22 format --check .
 
     - name: Lint C++ step
       shell: bash

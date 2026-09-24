@@ -53,11 +53,14 @@ This is packaged as the `python-codestyle` Skill at `.agents/skills/python-codes
 
 ### This Repository's Python
 
-One Python subtree, [`easystart/python`][easystart-python], the standalone EasyStart BLE monitor. It takes the `lint-only` profile: a single script that declares its own runtime dependency through PEP 723 inline metadata and runs with `uv run easystart_monitor.py`, and a `pyproject.toml` carrying **only** tool config, no `[project]`, no `[build-system]`, and no `uv.lock`, because that metadata would misrepresent it as a shippable package.
+All Python in this repository lives in one **uv workspace** rooted at the repository root, and every project in it takes the `build` profile. The root [`pyproject.toml`][root-pyproject] is a virtual workspace root with no `[project]` of its own: it lists the member projects, holds the shared `dev` dependency group, and carries the one `[tool.ruff]`, `[tool.pyright]`, and `[tool.pytest.ini_options]` configuration every member uses. The single root `uv.lock` pins every member's dependencies and the dev tools together. The one member today is [`easystart/python`][easystart-python], the EasyStart BLE monitor, a `src`-layout project with its own `[project]`, `[build-system]`, and an `easystart-monitor` console script.
 
-- **ruff is the only CI gate**, run as `uvx ruff@0.15.22 check .` and `uvx ruff@0.15.22 format --check .` from the subtree, carrying the pin the next bullet explains so a command copied from here is the command CI runs. A `[tool.pyright]` block in **standard** mode keeps Pylance quiet in the editor. There is no mypy gate: the subtree is one script importing an untyped BLE library, so a second type checker adds nothing over Pylance.
-- **The ruff version is pinned**, `uvx ruff@0.15.22`, in the CI step and in the VS Code tasks alike so the two cannot drift. This is a deliberate divergence from the fleet default of running `uvx <tool>@latest` unpinned. The fleet reasons that a manual pin Dependabot does not track goes stale silently, and this repository reasons that an unpinned linter turns an upstream release into a surprise CI failure on an unrelated change. The divergence is raised with the fleet rather than settled locally, so expect this bullet to move once that is decided.
-- **There is no pytest suite**, so the coverage expectation is N/A. `.py` files follow this repository's LF line-ending default, per [GOVERNANCE.md "Line Endings"][line-endings].
+- **uv is the only supported toolchain.** Run everything from the repository root with `uv run`, which syncs the workspace first: `uv run ruff check`, `uv run ruff format --check`, `uv run pyright`, `uv run pytest`, and a member's own script such as `uv run easystart-monitor`. There is no pip or `requirements.txt` path.
+- **The hub validator is the CI gate.** A root `pyproject.toml`, `uv.lock`, and `tests/` are what its tree detection keys on, so it runs `uv sync --all-groups --frozen`, ruff, pyright, and pytest with coverage uploaded to Codecov, with no repository-specific CI step. The Codecov statuses are informational, per `codecov.yml`.
+- **pyright is strict over each member's `src`** and standard over the tests. Its `include` lists only member source and `tests`, so the ESPHome codegen under `easystart/components`, which imports `esphome` rather than a workspace dependency, stays out of the type check while ruff still lints and formats it.
+- **Tests live under the root `tests/`**, one folder per member package, such as `tests/easystart_monitor/`, and `--cov=<package>` in `addopts` selects what each member contributes to coverage.
+- **Adding a project** is a new member directory with its own `pyproject.toml` and `src/<package>/`, a line in the root `members` and `src` lists, its `src` in the pyright `include` and `strict` lists, its package in the pytest `--cov` selectors, a `tests/<package>/` folder, and a `uv lock`.
+- `.py` files follow this repository's LF line-ending default, per [GOVERNANCE.md "Line Endings"][line-endings].
 
 ## Shell
 
@@ -98,3 +101,4 @@ Semantic and static analysis is deliberately out of scope. The downstream ESPHom
 [operations-documenting-a-device]: ./OPERATIONS.md#documenting-a-device
 [readme]: ./README.md
 [root]: ./.editorconfig
+[root-pyproject]: ./pyproject.toml
