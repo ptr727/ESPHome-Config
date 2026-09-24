@@ -17,10 +17,10 @@
 # - easystart_label
 
 # Optional substitutions:
-# - easystart_voltage (240)
-# - easystart_power_factor (1.0)
-# - easystart_update_interval (5s)
-# - easystart_rssi_update_interval (60s)
+# - easystart_voltage (240, scales the estimated power, set it to the measured line voltage)
+# - easystart_power_factor (1.0, scales the estimated power, set it to the measured power factor of the load)
+# - easystart_update_interval (5s, the live frame poll period, lower refreshes the sensors faster at the cost of more BLE traffic)
+# - easystart_rssi_update_interval (60s, drop it to a few seconds to site a proxy)
 
 # https://www.microair.net/products/easystart-flex-home-ac-soft-starter
 # https://esphome.io/components/ble_client
