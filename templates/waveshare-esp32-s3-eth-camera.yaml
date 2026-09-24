@@ -6,7 +6,7 @@
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Optional substitutions:
-# - camera_resolution (SVGA, a larger frame costs frame rate and PSRAM, and past UXGA needs an OV5640)
+# - camera_resolution (SVGA, a larger frame costs frame rate and PSRAM, and past UXGA needs a larger sensor such as the OV5640)
 
 # Waveshare ESP32-S3-ETH DVP camera
 # Camera overlay for waveshare-esp32-s3-eth.yaml, which wires the board and claims none of the camera pins.
