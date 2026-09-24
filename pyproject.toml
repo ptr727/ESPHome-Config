@@ -1,0 +1,37 @@
+# Virtual uv workspace root for every Python project in this repository.
+# Each project is a workspace member with its own [project], and all of them share the one uv.lock, the dev tools, and the tool config below.
+# Add a project by listing its directory in members, and put its tests under tests/<package>/.
+
+[tool.uv.workspace]
+members = ["easystart/python"]
+
+[tool.uv.sources]
+easystart-monitor = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "easystart-monitor",
+  "pyright",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+# Each member's src directory, so its package sorts as first-party.
+src = ["easystart/python/src"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # import sorting (isort)
+
+[tool.pyright]
+# The ESPHome codegen under easystart/components imports esphome, which is not a workspace dependency, so it stays out of the type check.
+include = ["easystart/python/src", "tests"]
+strict = ["easystart/python/src"]
+pythonVersion = "3.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--cov=easystart_monitor"]

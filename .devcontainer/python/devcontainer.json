@@ -1,0 +1,61 @@
+{
+    "name": "ESPHome-Config (Python)",
+    "image": "mcr.microsoft.com/devcontainers/python:1-3.14-bookworm",
+
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+
+    "mounts": [
+        {
+            "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.ssh/id_ed25519.pub",
+            "target": "/home/vscode/.ssh/id_ed25519.pub",
+            "type": "bind",
+            "readonly": true
+        },
+        {
+            "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.config/git/allowed_signers",
+            "target": "/home/vscode/.config/git/allowed_signers",
+            "type": "bind",
+            "readonly": true
+        },
+        {
+            "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh",
+            "target": "/home/vscode/.config/gh",
+            "type": "bind",
+            "readonly": false
+        }
+    ],
+
+    "remoteUser": "vscode",
+
+    // The bind-mount on macOS hosts surfaces /home/vscode/.ssh as root-owned.
+    // Chown it back so writes from inside the container land cleanly.
+    // Those include the known_hosts updates gh and git make.
+    // Idempotent on Linux and WSL2.
+    "onCreateCommand": "sudo install -d -m 700 -o vscode -g vscode /home/vscode/.ssh",
+
+    // Install pinned uv and pre-warm the project environment.
+    // No git hooks are installed by default, per README "Optional: enable git hooks locally".
+    "postCreateCommand": ".devcontainer/python/post-create.sh",
+
+    "customizations": {
+        "vscode": {
+            // Python tooling for the uv workspace, beside the ESPHome container one level up.
+            "extensions": [
+                "arahata.linter-actionlint",
+                "charliermarsh.ruff",
+                "davidanson.vscode-markdownlint",
+                "editorconfig.editorconfig",
+                "github.vscode-github-actions",
+                "gruntfuggly.todo-tree",
+                "ms-azuretools.vscode-docker",
+                "ms-python.python",
+                "streetsidesoftware.code-spell-checker",
+                "timonwong.shellcheck",
+                "yzhang.markdown-all-in-one"
+            ]
+        }
+    }
+}

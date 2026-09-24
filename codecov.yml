@@ -1,0 +1,13 @@
+# Codecov configuration.
+# Codecov's coverage statuses are advisory: they report and trend coverage, never gating a PR.
+# - informational: true makes project and patch statuses advisory (always pass), so a coverage delta never blocks a PR.
+# - Distinct from the upload step's fail_ci_if_error: false, which only guards upload errors.
+# - A repo may override this to enforce a coverage threshold.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true

@@ -64,18 +64,17 @@
             }
         },
         // Python group.
-        // The easystart BLE monitor is a lint-only subtree with no packaged project, no lockfile, and no tests.
-        // It runs through uvx with no install step rather than `uv run`.
-        // The ruff version is pinned to match the CI workflow.
+        // The root pyproject.toml is a uv workspace holding every Python project in the repo, so each task runs once at the workspace root.
+        // Sequencing uses dependsOn rather than shell chaining.
         {
             "label": "Ruff Format",
             "type": "process",
-            "command": "uvx",
+            "command": "uv",
             "args": [
-                "ruff@0.15.22",
+                "run",
+                "ruff",
                 "format"
             ],
-            "options": { "cwd": "${workspaceFolder}/easystart/python" },
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -85,12 +84,12 @@
         {
             "label": "Ruff Check",
             "type": "process",
-            "command": "uvx",
+            "command": "uv",
             "args": [
-                "ruff@0.15.22",
+                "run",
+                "ruff",
                 "check"
             ],
-            "options": { "cwd": "${workspaceFolder}/easystart/python" },
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -98,14 +97,13 @@
             }
         },
         {
-            // Editor parity only - CI gates on ruff, pyright runs here and in Pylance.
             "label": "Python Types",
             "type": "process",
-            "command": "uvx",
+            "command": "uv",
             "args": [
+                "run",
                 "pyright"
             ],
-            "options": { "cwd": "${workspaceFolder}/easystart/python" },
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -113,7 +111,7 @@
             }
         },
         {
-            // The clean-compile aggregator - formats in place, then lints, then type-checks, in order.
+            // The clean-compile aggregator formats in place, then lints, then type-checks, in order.
             "label": "Python Format",
             "dependsOrder": "sequence",
             "dependsOn": [
@@ -122,6 +120,34 @@
                 "Python Types"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Python Test",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "pytest"
+            ],
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "uv Sync",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "sync"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
         },
         // Lint group - run on demand via Docker (--pull=always forces each to re-pull the current :latest).
         // Mirrors the CI lint gate.
