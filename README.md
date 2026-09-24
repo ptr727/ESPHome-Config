@@ -214,7 +214,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - The onboard ceramic antenna is selected by a resistor, and reaching the IPEX Gen 1 connector means moving it. There is no antenna select GPIO, so this is a soldering change rather than a config one.
 - An optional [camera overlay][waveshare-esp32-s3-eth-camera] configures the DVP interface for a fitted OV2640 module, composed as a second `packages:` entry on top of this template. It sets `power_down_pin: GPIO8`, which the board wires to the module's power down input and without which the camera does not initialize.
   - Optional substitutions:
-    - `camera_resolution`: `SVGA` (800x600) by default. The OV2640 tops out at `UXGA` (1600x1200), and the larger sizes in the ESPHome list are OV5640 sizes.
+    - `camera_resolution`: `SVGA` (800x600) by default. The OV2640 tops out at `UXGA` (1600x1200), and the larger sizes in the ESPHome list need a larger sensor such as the OV5640.
 - The TF card slot is documented in the [template][waveshare-esp32-s3-eth] header but deliberately not configured, since ESPHome has no SD card component, tracked as [feature request 513][github-esphome-feature-requests-513-link].
 
 #### Heltec WiFi LoRa 32 V4-R8 Devkit
