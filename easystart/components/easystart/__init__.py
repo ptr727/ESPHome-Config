@@ -11,10 +11,10 @@ See ../../PROTOCOL.md.
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import ble_client, binary_sensor, sensor, text_sensor
+from esphome.components import binary_sensor, ble_client, sensor, text_sensor
 from esphome.const import (
-    CONF_ID,
     CONF_FREQUENCY,
+    CONF_ID,
     DEVICE_CLASS_CURRENT,
     DEVICE_CLASS_DURATION,
     DEVICE_CLASS_FREQUENCY,
@@ -23,10 +23,10 @@ from esphome.const import (
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
     UNIT_AMPERE,
+    UNIT_EMPTY,
     UNIT_HERTZ,
     UNIT_SECOND,
     UNIT_WATT,
-    UNIT_EMPTY,
 )
 
 CODEOWNERS = ["@ptr727"]
@@ -46,9 +46,7 @@ CONF_TOTAL_FAULTS = "total_faults"
 CONF_LEARNED_STARTS = "learned_starts"
 
 easystart_ns = cg.esphome_ns.namespace("easystart")
-EasyStart = easystart_ns.class_(
-    "EasyStart", cg.PollingComponent, ble_client.BLEClientNode
-)
+EasyStart = easystart_ns.class_("EasyStart", cg.PollingComponent, ble_client.BLEClientNode)
 
 _INSTANCE_SCHEMA = (
     cv.Schema(
@@ -141,32 +139,14 @@ async def _instance_to_code(config):
     if CONF_SCPT_DELAY in config:
         cg.add(var.set_scpt_sensor(await sensor.new_sensor(config[CONF_SCPT_DELAY])))
     if CONF_TOTAL_STARTS in config:
-        cg.add(
-            var.set_total_starts_sensor(
-                await sensor.new_sensor(config[CONF_TOTAL_STARTS])
-            )
-        )
+        cg.add(var.set_total_starts_sensor(await sensor.new_sensor(config[CONF_TOTAL_STARTS])))
     if CONF_TOTAL_FAULTS in config:
-        cg.add(
-            var.set_total_faults_sensor(
-                await sensor.new_sensor(config[CONF_TOTAL_FAULTS])
-            )
-        )
+        cg.add(var.set_total_faults_sensor(await sensor.new_sensor(config[CONF_TOTAL_FAULTS])))
     if CONF_LEARNED_STARTS in config:
-        cg.add(
-            var.set_learned_starts_sensor(
-                await sensor.new_sensor(config[CONF_LEARNED_STARTS])
-            )
-        )
+        cg.add(var.set_learned_starts_sensor(await sensor.new_sensor(config[CONF_LEARNED_STARTS])))
     if CONF_RUNNING in config:
-        cg.add(
-            var.set_running_sensor(
-                await binary_sensor.new_binary_sensor(config[CONF_RUNNING])
-            )
-        )
+        cg.add(var.set_running_sensor(await binary_sensor.new_binary_sensor(config[CONF_RUNNING])))
     if CONF_SYSTEM_STATE in config:
         cg.add(
-            var.set_state_text_sensor(
-                await text_sensor.new_text_sensor(config[CONF_SYSTEM_STATE])
-            )
+            var.set_state_text_sensor(await text_sensor.new_text_sensor(config[CONF_SYSTEM_STATE]))
         )

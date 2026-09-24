@@ -1,22 +1,16 @@
-#!/usr/bin/env python3
-# /// script
-# requires-python = ">=3.9"
-# dependencies = ["bleak>=0.22"]
-# ///
 """EasyStart / Micro-Air soft-starter live BLE monitor.
 
 Connects to the module over your computer's Bluetooth, polls {"Cmd": ReadLive}, and prints
-the decoded live frame in real time. Doubles as protocol validation before finalizing the
-ESPHome component -- it always prints the full raw frame with per-byte offsets so you can
-confirm (or correct) the decode against what the official app shows.
+the decoded live frame in real time. It always prints the full raw frame with per-byte offsets
+so the decode can be confirmed (or corrected) against what the official app shows.
 
-Run with uv (auto-installs bleak, no venv needed):
-  uv run easystart_monitor.py --discover              # discovery phase: list EasyStart_* units
-  uv run easystart_monitor.py                         # scan by service UUID, connect to first
-  uv run easystart_monitor.py --name EasyStart_XXXX   # pick a unit by advertised name (macOS)
-  uv run easystart_monitor.py --address <uuid-or-mac>  # pick by MAC (Windows) / UUID (macOS)
-  uv run easystart_monitor.py --interval 1.0          # poll period seconds (default 1.0)
-  uv run easystart_monitor.py --raw                   # only dump raw bytes, skip decode
+Run from anywhere in the repository:
+  uv run easystart-monitor --discover              # discovery phase: list EasyStart_* units
+  uv run easystart-monitor                         # scan by service UUID, connect to first
+  uv run easystart-monitor --name EasyStart_XXXX   # pick a unit by advertised name (macOS)
+  uv run easystart-monitor --address <uuid-or-mac> # pick by MAC (Windows) / UUID (macOS)
+  uv run easystart-monitor --interval 1.0          # poll period seconds (default 1.0)
+  uv run easystart-monitor --raw                   # only dump raw bytes, skip decode
 
 Discovery: run --discover first to find your own units' names and MAC addresses (this script
 hard-codes none). It scans for devices advertising as EasyStart_* (or the Laird VSP service)
@@ -30,18 +24,13 @@ Notes:
 
 import argparse
 import asyncio
-import sys
 from datetime import datetime
 
-try:
-    # The bleak package is installed at runtime by uv from the PEP 723 inline metadata rather than into the editor's environment.
-    # So pyright cannot resolve it standalone.
-    from bleak import BleakClient, BleakScanner  # pyright: ignore[reportMissingImports]
-except ImportError:
-    sys.exit(
-        "bleak is required: run with 'uv run easystart_monitor.py' (installs it via the "
-        "PEP 723 inline metadata), or 'pip install bleak' if not using uv"
-    )
+from bleak import BleakClient, BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
+from bleak.exc import BleakError
 
 SERVICE_UUID = "d973f2e0-b19e-11e2-9e96-0800200c9a66"
 # Confirmed via nRF Connect: e1 = NOTIFY, e2 = WRITE/WRITE-NO-RESPONSE.
@@ -65,11 +54,11 @@ STATE_TEXT = [
 ]
 
 
-def le16(b, i):
+def le16(b: bytes, i: int) -> int:
     return b[i] | (b[i + 1] << 8)
 
 
-def le32(b, i):
+def le32(b: bytes, i: int) -> int:
     return b[i] | (b[i + 1] << 8) | (b[i + 2] << 16) | (b[i + 3] << 24)
 
 
@@ -103,17 +92,22 @@ def dump_indexed(b: bytes) -> str:
     return "  ".join(f"[{i:2d}]={x:3d}/0x{x:02x}" for i, x in enumerate(b))
 
 
-class Monitor:
-    def __init__(self, args):
-        self.args = args
-        self.last = None
+def is_text(b: bytes) -> bool:
+    """True for the ASCII status marker, such as {"Sts": Success}, rather than the binary frame."""
+    return b[:1] == b"{" or all(32 <= x < 127 for x in b)
 
-    def on_notify(self, _char, data: bytearray):
+
+class Monitor:
+    def __init__(self, args: argparse.Namespace) -> None:
+        self.args = args
+        self.last: bytes | None = None
+
+    def on_notify(self, _char: BleakGATTCharacteristic, data: bytearray) -> None:
         b = bytes(data)
-        ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        ts = datetime.now().astimezone().strftime("%H:%M:%S.%f")[:-3]
         # The module replies with two notifications per ReadLive, the binary live frame and an ASCII status marker such as {"Sts": Success}.
         # Both are shown, and only the binary one is decoded.
-        if b[:1] == b"{" or all(32 <= x < 127 for x in b):
+        if is_text(b):
             print(f"\n[{ts}] TEXT ({len(b)}): {b.decode('ascii', 'replace')}")
             return
         marker = "" if b == self.last else "  <-- changed"
@@ -123,8 +117,8 @@ class Monitor:
         if not self.args.raw:
             print(f"          {decode_frame(b)}")
 
-    def _matches(self, dev, ad):
-        has_service = SERVICE_UUID.lower() in [u.lower() for u in (ad.service_uuids or [])]
+    def _matches(self, dev: BLEDevice, ad: AdvertisementData) -> bool:
+        has_service = SERVICE_UUID.lower() in [u.lower() for u in ad.service_uuids]
         name = ad.local_name or dev.name or ""
         if self.args.name:
             return self.args.name.lower() in name.lower()
@@ -132,17 +126,17 @@ class Monitor:
         # (some adapters don't surface service UUIDs in the advertisement).
         return has_service or "easystart" in name.lower()
 
-    async def discover(self):
+    async def discover(self) -> None:
         """Device-discovery phase: scan for EasyStart_* units (or the Laird VSP service) and
         print each one's advertised name, MAC/UUID, and signal strength. Nothing is hard-coded;
         this is how you find your own units before connecting."""
         print("scanning 8s for EasyStart_* units (compressors must be running)...\n")
-        found = {}
+        found: dict[str, tuple[str, int]] = {}
 
-        def cb(dev, ad):
+        def cb(dev: BLEDevice, ad: AdvertisementData) -> None:
             name = ad.local_name or dev.name or ""
             if name.lower().startswith("easystart") or SERVICE_UUID.lower() in [
-                u.lower() for u in (ad.service_uuids or [])
+                u.lower() for u in ad.service_uuids
             ]:
                 found[dev.address] = (name or "(no name)", ad.rssi)
 
@@ -155,11 +149,11 @@ class Monitor:
                 "no EasyStart units found (are the compressors running? is the phone app closed?)"
             )
             return
-        for addr, (name, rssi) in sorted(found.items(), key=lambda x: -(x[1][1] or -999)):
+        for addr, (name, rssi) in sorted(found.items(), key=lambda x: -x[1][1]):
             print(f"  {name:20s} {addr}  {rssi} dBm")
         print("\nconnect with:  --name <name>   (macOS)   or   --address <mac>   (Windows/ESP)")
 
-    async def find_address(self):
+    async def find_address(self) -> str:
         if self.args.address:
             return self.args.address
         target = self.args.name or f"service {SERVICE_UUID}"
@@ -171,7 +165,7 @@ class Monitor:
                 return dev.address
             print("  not found, retrying...")
 
-    async def run_once(self, address):
+    async def run_once(self, address: str) -> None:
         async with BleakClient(address) as client:
             print(f"connected to {address}")
             await client.start_notify(NOTIFY_UUID, self.on_notify)
@@ -182,13 +176,13 @@ class Monitor:
             while client.is_connected:
                 try:
                     await client.write_gatt_char(WRITE_UUID, CMD_READ_LIVE, response=False)
-                except Exception as e:
+                except (BleakError, OSError) as e:
                     print(f"write failed: {e}")
                     break
                 await asyncio.sleep(self.args.interval)
             print("disconnected (compressor off?)")
 
-    async def run(self):
+    async def run(self) -> None:
         if self.args.discover:
             await self.discover()
             return
@@ -196,16 +190,14 @@ class Monitor:
             try:
                 address = await self.find_address()
                 await self.run_once(address)
-            except KeyboardInterrupt:
-                raise
-            except Exception as e:
+            except (BleakError, TimeoutError, OSError) as e:
                 print(f"connection error: {e}; retrying in 5s")
             if self.args.once:
                 return
             await asyncio.sleep(5.0)
 
 
-def main():
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="EasyStart live BLE monitor")
     ap.add_argument("--address", help="BLE MAC (Windows) / CoreBluetooth UUID (macOS); skip scan")
     ap.add_argument("--name", help="select unit by advertised name substring, e.g. EasyStart_A1B2")
@@ -219,7 +211,11 @@ def main():
     ap.add_argument("--interval", type=float, default=1.0, help="poll period seconds")
     ap.add_argument("--raw", action="store_true", help="raw bytes only, no decode")
     ap.add_argument("--once", action="store_true", help="exit after one disconnect")
-    args = ap.parse_args()
+    return ap.parse_args(argv)
+
+
+def main() -> None:
+    args = parse_args()
     try:
         asyncio.run(Monitor(args).run())
     except KeyboardInterrupt:

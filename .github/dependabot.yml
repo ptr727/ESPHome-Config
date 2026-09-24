@@ -25,6 +25,16 @@ updates:
       patterns:
         - "*"
 
+- package-ecosystem: "uv"
+  target-branch: "main"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  groups:
+    pypi-deps:
+      patterns:
+        - "*"
+
 # Develop branch.
 - package-ecosystem: "devcontainers"
   target-branch: "develop"
@@ -43,5 +53,15 @@ updates:
     interval: "daily"
   groups:
     actions-deps:
+      patterns:
+        - "*"
+
+- package-ecosystem: "uv"
+  target-branch: "develop"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  groups:
+    pypi-deps:
       patterns:
         - "*"

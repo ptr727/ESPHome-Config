@@ -1,23 +1,16 @@
-# Linter-only config for the standalone EasyStart BLE monitor utility.
-#
-# This is not a packaged project, so there is no [project] or [build-system] table.
-# The script declares its own runtime dependency on bleak through PEP 723 inline metadata and runs with uv, with no install step.
-#   `uv run easystart_monitor.py --discover`
-#
-# Both ruff and pyright read their [tool.*] tables from here regardless, so linting needs no install either.
-#   `uvx ruff check .`
-#   `uvx ruff format --check .`
+# EasyStart live BLE monitor, a member of the repository's uv workspace.
+# Lint, type-check, and test config is shared and lives in the root pyproject.toml.
 
-[tool.ruff]
-# Match the fleet standard.
-# The script itself stays portable via its PEP 723 requires-python = ">=3.9".
-target-version = "py313"
-line-length = 100
+[project]
+name = "easystart-monitor"
+version = "1.0.0"
+description = "Live BLE monitor for the Micro-Air EasyStart soft-starter."
+requires-python = ">=3.13"
+dependencies = ["bleak>=0.22"]
 
-[tool.ruff.lint]
-extend-select = ["I"]  # import sorting (isort)
+[project.scripts]
+easystart-monitor = "easystart_monitor.monitor:main"
 
-[tool.pyright]
-# Editor-only through Pylance, matching the ptr727 fleet convention where CI gates on ruff and pyright runs in the editor.
-# Standard rather than strict mode suits a small utility that imports an untyped BLE library.
-typeCheckingMode = "standard"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

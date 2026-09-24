@@ -35,6 +35,8 @@ jobs:
     uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@d28ed043207e78d55bf1f0d803ba9dc2ac2b3fee # 2.0.657
     permissions:
       contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # Change gate for the compile test, plus the template matrix definition.
   # An esp-idf build costs minutes, so gate on what the test covers.

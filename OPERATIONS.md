@@ -344,15 +344,16 @@ The CeilSense carries an LD2412 24 GHz radar, and every control it offers is exp
 - **The vendor package exposes no gate thresholds at all**, so tuning one costs a firmware change. The template carries the vendor entity set, and a device that needs thresholds declares them in its own config.
 - **Declare all fourteen gates or none.** `LD2412Component::set_gate_threshold()` writes the whole array and dereferences every entry, and its early-out tests `.empty()` on a `std::array`, which is never true. A partial declaration leaves null entries and crashes the device on the first threshold write.
 
-## Linting the Python Utility
+## Python Workspace
 
-The EasyStart BLE monitor under `easystart/python` is a lint-only subtree: ruff gates CI, and pyright is editor parity via Pylance. There is no packaged project, no lockfile, and no test suite, so the script runs and lints through `uvx` with no install step. Use the ruff version pinned in [`test-pull-request.yml`][test-workflow] so a local run matches CI:
+All Python is one uv workspace rooted at the repository root, laid out in `CODESTYLE.md` "This Repository's Python". The hub validator runs the same commands in CI. Run them from the repository root:
 
 ```shell
-cd easystart/python
-uvx ruff@0.15.22 check .
-uvx ruff@0.15.22 format --check .
-uvx pyright .
+uv sync
+uv run ruff check
+uv run ruff format --check
+uv run pyright
+uv run pytest
 ```
 
 The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell) are the fleet set, invoked as documented in `GOVERNANCE.md` "Running the Linters Locally (Known-Working Invocations)", a hub-only section read in a hub checkout rather than carried here. ESPHome config and compile validation is separate, covered above.
