@@ -81,7 +81,7 @@ api:
   encryption:
     key: !secret api_encryption_key
 
-# Restate Apollo's deprecated rgb_order as channel_colors, which replaces it in ESPHome 2027.3.0.
+# Restate Apollo's deprecated rgb_order as channel_colors, since ESPHome 2027.3.0 removes rgb_order.
 light:
   - id: !extend rgb_light
     rgb_order: !remove

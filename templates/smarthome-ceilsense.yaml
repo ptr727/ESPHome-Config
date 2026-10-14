@@ -82,7 +82,7 @@ api:
   encryption:
     key: !secret api_encryption_key
 
-# Restate base.yaml's deprecated rgb_order as channel_colors, which replaces it in ESPHome 2027.3.0.
+# Restate base.yaml's deprecated rgb_order as channel_colors, since ESPHome 2027.3.0 removes rgb_order.
 # The LED sits on GPIO20, a USB-Serial-JTAG pin, and that warning has no per-pin opt-out.
 light:
   - id: !extend status_led

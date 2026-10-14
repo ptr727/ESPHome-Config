@@ -10,7 +10,7 @@
 #include "esphome/components/text_sensor/text_sensor.h"
 
 #include <cinttypes>  // PRIu32
-#include <cmath>  // NAN
+#include <cmath>      // NAN
 #include <vector>
 #include <cstring>
 
