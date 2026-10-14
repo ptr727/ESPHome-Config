@@ -4,10 +4,6 @@ The devices I run in my own home automation setup.
 
 Each per-device config lives in the repository root, one per physical device. Each sets `substitutions:` (device name, friendly name, and any per-device overrides) and pulls in a [template][templates] via `packages:`.
 
-## Plant Sensors
-
-- [`living-room-plant-sensor.yaml`][living-room-plant-sensor], [`music-room-plant-sensor.yaml`][music-room-plant-sensor], [`patio-plant-sensor.yaml`][patio-plant-sensor], [`stairs-plant-sensor.yaml`][stairs-plant-sensor], and [`upstairs-hallway-plant-sensor.yaml`][upstairs-hallway-plant-sensor] use the [Apollo PLT-1B template][apollo-plt-1b].
-
 ## Garage Presence and Air Sensor
 
 - [`garage-presence-sensor.yaml`][garage-presence-sensor] uses the [SmartHomeShop CeilSense template][smarthome-ceilsense] for presence, CO2, temperature, humidity, lux, and pressure in the garage.
@@ -59,11 +55,10 @@ Nothing here is urgent. The device works, and the cost is access rather than ris
 |---|---|
 | [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] | Mounted in an enclosure |
 
-The remaining ESP32 devices are clear: the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. Neither Bluetooth proxy is a candidate: the Waveshare board flashes over USB-C, so a serial flash costs a cable rather than an enclosure teardown. The [garage door controller][garage-door-controller] is powered off and the plant sensors sleep on a 12-hour cycle, so none of them have been checked. The ESP8266 devices are unaffected.
+The remaining ESP32 devices are clear: the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. Neither Bluetooth proxy is a candidate: the Waveshare board flashes over USB-C, so a serial flash costs a cable rather than an enclosure teardown. The [garage door controller][garage-door-controller] is powered off, so it has not been checked. The ESP8266 devices are unaffected.
 
 <!-- Repo -->
 
-[apollo-plt-1b]: ./templates/apollo-plt-1b.yaml
 [easystart-template]: ./templates/easystart.yaml
 [garage-door-controller]: ./garage-door-controller.yaml
 [garage-door-fan-controller]: ./garage-door-fan-controller.yaml
@@ -71,21 +66,16 @@ The remaining ESP32 devices are clear: the [garage presence sensor][garage-prese
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [hvac-compressor-sensor]: ./hvac-compressor-sensor.yaml
 [konnected-blaq]: ./templates/konnected-blaq.yaml
-[living-room-plant-sensor]: ./living-room-plant-sensor.yaml
-[music-room-plant-sensor]: ./music-room-plant-sensor.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [operations-bootloader-age-and-usb-flashing]: ./OPERATIONS.md#bootloader-age-and-usb-flashing
 [operations-ld2412-siting-and-tuning]: ./OPERATIONS.md#ld2412-siting-and-tuning
 [pantry-bluetooth-proxy]: ./pantry-bluetooth-proxy.yaml
-[patio-plant-sensor]: ./patio-plant-sensor.yaml
 [recirculation-pump-controller]: ./recirculation-pump-controller.yaml
 [smarthome-ceilsense]: ./templates/smarthome-ceilsense.yaml
 [sonoff-th10]: ./templates/sonoff-th10.yaml
-[stairs-plant-sensor]: ./stairs-plant-sensor.yaml
 [templates]: ./templates/
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
-[upstairs-hallway-plant-sensor]: ./upstairs-hallway-plant-sensor.yaml
 [waveshare-esp32-s3-eth]: ./templates/waveshare-esp32-s3-eth.yaml
 [waveshare-esp32-s3-eth-camera]: ./templates/waveshare-esp32-s3-eth-camera.yaml
 

@@ -51,11 +51,16 @@ This is a public repository whose primary audience is people reusing the templat
 
 ## Container and CLI
 
-This directory is the `/config` mount of a running ESPHome instance, so the tree you are editing is live state, not a checkout that gets deployed later.
+A copy of this repository is either the `/config` mount of a running ESPHome dashboard or a checkout on a development box. What matters is whether the dashboard runs on this copy. On the dashboard's copy, `docker inspect esphome` shows this directory mounted at `/config`.
 
 - Top-level `*.yaml` files are the per-device configs. [`templates/`][templates] holds the shared device and utility templates they include via `packages:`.
-- ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. The directory holding this repository is mounted at `/config` inside the container.
-- Every ESPHome CLI invocation runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
+- On the dashboard's copy, the tree is deployed state, and an edit applies at the next install from the dashboard.
+- On a development box, an edit reaches the dashboard only once it reaches the dashboard's copy. Validate and compile per [Compiling the Way CI Does][compiling-the-way-ci-does].
+- Network flashing works from either copy, with the ESPHome CLI's `upload --device <ip>`.
+- Serial flashing needs a USB port on the host running the flasher. The dashboard host may have none, so its USB install goes through the browser's Web Serial instead. That needs a Chromium-based browser and a dashboard served over HTTPS.
+- A development box with USB ports flashes over serial with `esptool` run through `uv`, and serves for debugging.
+
+On the dashboard's copy, ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. Every ESPHome CLI invocation there runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
 
 ```shell
 docker exec esphome esphome config /config/<device>.yaml
@@ -64,6 +69,8 @@ docker exec esphome esphome config /config/<device>.yaml
 ## Config and Compile Validation
 
 Whenever a device YAML, or a template included by one, changes, run config validation for every affected device. When the change is in a template, validate at least one device that uses it, and prefer all of them when it is not obvious which ones consume it.
+
+The commands below run on the dashboard's copy. On a development box, run the same CLI calls in the throwaway container from [Compiling the Way CI Does][compiling-the-way-ci-does].
 
 ```shell
 docker exec esphome esphome config /config/<device>.yaml
@@ -113,6 +120,7 @@ fi
 
 - **Both paths are absolute.** Docker reads a relative `--volume` source as a named volume. A relative value therefore mounts an empty volume, and the compile fails on a path the caller can see on disk.
 - **Point `config_dir` at a checkout rather than at the deployed tree.** The running container has that tree mounted already, and a second compile in it shares one `.esphome/`.
+- **Match the dashboard's ESPHome version before an install.** `latest` can be newer than the dashboard's last pull. Read the dashboard's version with `docker exec esphome esphome version` on its host. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`, so use that tag here.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
@@ -616,6 +624,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
+[compiling-the-way-ci-does]: #compiling-the-way-ci-does
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [dollar-signs]: #dollar-signs-in-config-values
