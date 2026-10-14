@@ -149,20 +149,23 @@ climate:
       max_temperature: 40.0
       temperature_step: 0.5
 
+# https://esphome.io/components/font
+font:
+  - file: "gfonts://Roboto"
+    id: font_line
+    size: 14
+
 # https://esphome.io/components/display/ssd1306
 display:
-  - id: !extend displayy
+  - platform: ssd1306_i2c
+    id: board_display
+    i2c_id: board_i2c
+    model: SSD1306_128X64
+    address: 0x3c
     lambda: |-
-      static const auto color = Color(255, 255, 255);
-      static const auto font = id(fonnt);
-      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
-      const auto time = id(homeassistant_time).now();
-      const auto ip = id(wifi_ip).state.c_str();
-      const auto tempp = isnan(id(temp).state) ? 0.0 : id(temp).state;
-      int line = lineSpacing.nFirstLine;
-      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
-      line += lineSpacing.nIncrement;
-      it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
-      line += lineSpacing.nIncrement;
-      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "Temp: %.2f°C", tempp);
-      line += lineSpacing.nIncrement;
+      // Three lines, each centered vertically on a quarter of the panel height.
+      const int slot = it.get_height() / 4;
+      const float celsius = std::isnan(id(temp).state) ? 0.0f : id(temp).state;
+      it.printf(0, slot, id(font_line), TextAlign::CENTER_LEFT, "IP: %s", id(wifi_ip).state.c_str());
+      it.strftime(0, 2 * slot, id(font_line), TextAlign::CENTER_LEFT, "Time: %H:%M:%S", id(homeassistant_time).now());
+      it.printf(0, 3 * slot, id(font_line), TextAlign::CENTER_LEFT, "Temp: %.2f°C", celsius);

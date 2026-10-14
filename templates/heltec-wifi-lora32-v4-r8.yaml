@@ -11,6 +11,7 @@
 # - battery_voltage_multiplier - 4.9, the divider ratio, check it against a meter.
 # - vext_power_restore_mode - ALWAYS_ON, ALWAYS_OFF drops the rail once the switch sets up.
 # - gnss_power_restore_mode - ALWAYS_ON, ALWAYS_OFF suits a unit carrying no GNSS module.
+# - status_led_brightness - 50%, the PWM level the status LED blinks at.
 
 # Heltec WiFi LoRa 32 V4-R8
 # ESP32-S3R8 on an ESP32-S3-WROOM-1-N16R8 module, 16MB Quad Flash, 8MB Octal PSRAM
@@ -47,8 +48,8 @@
 # GPIO17 : sda
 # GPIO18 : scl
 # GPIO21 : reset
-# - The display is unconfigured, since an ESPHome display needs a font asset this repository does not carry.
-# - A device wanting it adds its own font and an ssd1306_i2c display on reset_pin GPIO21.
+# - Left to the device, which adds its own font and an ssd1306_i2c display on reset_pin GPIO21.
+# - test/heltec-wifi-lora32-v4-r8.yaml carries a working example.
 
 # Semtech SX1262 LoRa on SPI2, documented rather than configured
 # GPIO9  : sclk
@@ -73,6 +74,7 @@ substitutions:
   battery_voltage_multiplier: "4.9"
   vext_power_restore_mode: ALWAYS_ON
   gnss_power_restore_mode: ALWAYS_ON
+  status_led_brightness: 50%
 
 # https://esphome.io/components/esphome
 esphome:
@@ -123,13 +125,24 @@ packages:
 logger:
   hardware_uart: USB_SERIAL_JTAG # UART0, UART1, USB_CDC, USB_SERIAL_JTAG
 
-# The pin is not inverted, so the LED is dark when healthy and blinks on a warning or error.
-# - A lit white LED spends current on a board that runs from a cell.
-# https://esphome.io/components/status_led
-status_led:
-  pin:
-    number: GPIO46 # Strapping pin, fixed board wiring, so the warning is acknowledged.
-    ignore_strapping_warning: true
+# The output is not inverted, so the LED is dark when healthy and blinks on a warning or error.
+# - A lit white LED spends current on a board that runs from a cell, and glares at full drive.
+# https://esphome.io/components/output/ledc
+output:
+  - platform: ledc
+    id: status_led_output
+    pin:
+      number: GPIO46 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
+    max_power: ${status_led_brightness}
+
+# https://esphome.io/components/light/status_led
+light:
+  - platform: status_led
+    name: "Status LED"
+    id: status_led_light
+    output: status_led_output
+    internal: true
 
 # The scan works because on_boot above raises Vext ahead of the bus.
 # - A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.

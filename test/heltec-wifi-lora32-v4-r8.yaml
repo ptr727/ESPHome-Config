@@ -1,7 +1,87 @@
-# CI compile-test for templates/heltec-wifi-lora32-v4-r8.yaml
+# CI compile-test for templates/heltec-wifi-lora32-v4-r8.yaml and its heltec-l76k-gnss.yaml overlay.
+# The OLED is left to the device, so the font and layout here show how one is added.
 substitutions:
   device_name: heltec-wifi-lora32-v4-r8-test
   device_friendly_name: "Heltec WiFi LoRa 32 V4-R8 Test"
 
 packages:
   device: !include ../templates/heltec-wifi-lora32-v4-r8.yaml
+  gnss: !include ../templates/heltec-l76k-gnss.yaml
+
+# https://esphome.io/components/font
+font:
+  - file: "gfonts://Roboto"
+    id: font_clock
+    size: 18
+  - file: "gfonts://Roboto"
+    id: font_line
+    size: 11
+
+# https://esphome.io/components/display/ssd1306
+display:
+  - platform: ssd1306_i2c
+    id: board_display
+    i2c_id: board_i2c
+    model: SSD1306_128X64
+    address: 0x3c
+    reset_pin: GPIO21
+    update_interval: 5s
+    lambda: |-
+      // The gps component publishes on its interval whether or not a sentence arrived, so test isnan, not has_state.
+      // Rows sit on baselines spaced from the fonts' own metrics, since a font's line height is not its size.
+      auto *big = id(font_clock);
+      auto *small = id(font_line);
+      const int lines = 4;
+      const int gap = (it.get_height() - big->get_capheight() - lines * small->get_capheight() - small->get_descender()) / lines;
+      int y = big->get_capheight();
+      auto next = [&]() { return y += gap + small->get_capheight(); };
+
+      auto t = id(gnss_time).now();
+      if (t.is_valid()) {
+        it.strftime(0, y, big, TextAlign::BASELINE_LEFT, "%H:%M:%S", t);
+      } else {
+        it.print(0, y, big, TextAlign::BASELINE_LEFT, "--:--:--");
+      }
+
+      if (std::isnan(id(gnss_hdop).state)) {
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Sats %.0f   HDOP --", id(gnss_satellites).state);
+      } else {
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Sats %.0f   HDOP %.1f", id(gnss_satellites).state,
+                  id(gnss_hdop).state);
+      }
+
+      if (std::isnan(id(gnss_latitude).state)) {
+        it.print(0, next(), small, TextAlign::BASELINE_LEFT, "No fix yet");
+        next();
+      } else {
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Lat %.5f", id(gnss_latitude).state);
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Lon %.5f", id(gnss_longitude).state);
+      }
+
+      if (std::isnan(id(battery_voltage).state)) {
+        it.print(0, next(), small, TextAlign::BASELINE_LEFT, "Batt --");
+      } else if (std::isnan(id(gnss_altitude).state)) {
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Batt %.2f V", id(battery_voltage).state);
+      } else {
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Alt %.0f m   %.2f V", id(gnss_altitude).state,
+                  id(battery_voltage).state);
+      }
+
+# A raw reading beside the calibrated one, the divider calibration OPERATIONS.md describes.
+# https://esphome.io/components/sensor/adc
+sensor:
+  - id: !extend battery_voltage
+    pin:
+      number: GPIO1
+      allow_other_uses: true
+
+  - platform: adc
+    name: "Battery ADC Raw"
+    id: battery_adc_raw
+    pin:
+      number: GPIO1
+      allow_other_uses: true
+    attenuation: 0db
+    raw: true
+    accuracy_decimals: 0
+    entity_category: diagnostic

@@ -25,11 +25,10 @@ The mechanics below were confirmed against ESPHome 2026.7.3 by validating a scra
 - **`!secret` falls back to the consuming config's own directory.** Resolution tries the package's `templates/secrets.yaml` first, whose `<<: !include ../secrets.yaml` fails because the repository root `secrets.yaml` is git-ignored, then tries a `secrets.yaml` beside the including config. An adopter supplies their own under the names in [`secrets._yaml`][secrets-example], and both paths appear in the error when neither exists.
 - **`test/` cannot use the remote form**, and the reason is the clone above. A `github://` package fetches the named ref rather than the working tree, so a compile test written that way would build `@main`'s copy of a template and pass while the change under test is broken. It also cannot work for a template that does not exist on the ref yet. Local `!include` is the only form that gates a diff.
 
-Four templates deviate from the plain shorthand, and each says so in its own block:
+Some templates deviate from the plain shorthand, and each says so in its own block:
 
 - [`easystart.yaml`][easystart-template] is parameterized, so it takes the `url` / `ref` / `files` form with `vars` rather than the one-line shorthand.
-- The `esp32-s3-wroom-*` board definitions are overlays, so they are composed on [`esp32-s3-devkitc.yaml`][devkitc-template] as a second package entry.
-- [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
+- The overlays are composed on their board template as a second package entry. The `esp32-s3-wroom-*` board definitions compose on [`esp32-s3-devkitc.yaml`][devkitc-template], and [`heltec-l76k-gnss.yaml`][heltec-gnss-template] and [`waveshare-esp32-s3-eth-camera.yaml`][waveshare-camera-template] on their own boards.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
 Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs knobs for an adopter choosing a template, and where it names one, the header is what it has to agree with.
@@ -48,7 +47,7 @@ This is a public repository whose primary audience is people reusing the templat
 - **[`DEVICES.md`][devices] documents the deployed fleet**: one section per device or device family, naming the template it composes and carrying the siting, status, and maintenance state of the physical unit. A reader who is not the maintainer has no use for it.
 - **The test is whether a stranger reusing the template needs it.** Knowledge that generalizes to any instance of the hardware belongs in `README.md`. Anything true only of this installation, such as where a unit is mounted, what signal it sees there, why one is powered off, or which ones await a reflash, belongs in `DEVICES.md`. A device-specific fact does not migrate to `README.md` by being interesting.
 - **Agent-facing depth stays here** in [Template Notes][template-notes]. `README.md` and `DEVICES.md` are both written for humans, so a mechanism an agent needs in order to change a config safely is documented in this file and linked from there rather than expanded inline.
-- **A root config named `test-<name>.yaml` is bench hardware, not the deployed fleet.** The prefix groups every bench device together when the tree is sorted by name. `.gitignore` excludes `test-*.yaml` at the repository root, so it needs no commit history and never appears in `DEVICES.md`. This is distinct from [`test/`][test], which holds the tracked, CI-compiled example device per template.
+- **A root config named `test-<name>.yaml` is bench hardware, not the deployed fleet.** The prefix groups every bench device together when the tree is sorted by name. `.gitignore` excludes `test-*.yaml` at the repository root, so it needs no commit history and never appears in `DEVICES.md`. This is distinct from [`test/`][test], which holds the tracked, CI-compiled example devices that between them compose every template.
 
 ## Container and CLI
 
@@ -117,9 +116,9 @@ fi
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
-- **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. CI uses one regardless, since it discards the runner.
+- **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. It also holds ESPHome's ccache store, `home/.cache/esphome/idf/ccache`, so a kept directory turns most repeat compiles into cache hits. CI uses one regardless, since it discards the runner.
 - **The container runs as the invoking user**, so what it writes stays owned by that user. The image points its build tree and its data directory at `/cache`. The only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files differently.
-- **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when a device template has no example device in [`test/`][test]. A new utility include joins that job's exemption list instead.
+- **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when no example device in [`test/`][test] includes a device template. An overlay composes into its board's example device rather than getting one of its own. A new utility include joins that job's exemption list instead.
 
 ## Flashing and sdkconfig
 
@@ -279,7 +278,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **That residual cannot yet be split between the reference and the divider, so neither number is settled.** Back-solving full scale from the raw count and the meter gives 955mV to 958mV only if the divider is exactly the nominal 4.9. Attribute the same residual to the resistors instead and the effective ratio is about 4.82 and full scale about 972mV. One measurement cannot distinguish the two, and the template's `attenuation: 0db` headroom argument rests on whichever it is.
 - **Separate them with a raw sensor beside the calibrated one on the same pin.** Both need `allow_other_uses: true`, or two `adc` platforms on one pin fail with `Pin 1 is used in multiple places`. Until that runs, the template keeps the nominal 4.9 ratio.
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
-- **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
+- **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell. It blinks through a PWM output capped at `status_led_brightness`, 50% by default, since full drive glares.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
 - **A bench unit needs both reboot timeouts disabled.** Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`. Every template that sets a reboot timeout reads the matching substitution, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition.
 
@@ -630,7 +629,6 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [heltec-template]: ./templates/heltec-wifi-lora32-v4-r8.yaml
 [max17048-template]: ./templates/max17048.yaml
 [min-version-template]: ./templates/min-version.yaml
-[norvi-template]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
 [readme]: ./README.md
 [repository-tooling-hazards]: #repository-tooling-hazards

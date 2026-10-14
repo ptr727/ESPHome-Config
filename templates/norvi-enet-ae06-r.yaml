@@ -1,15 +1,11 @@
 # External usage:
 # packages:
 #   device: github://ptr727/ESPHome-Config/templates/norvi-enet-ae06-r.yaml@main
-# - Copy Utils.h next to the including config and point the templates_dir substitution at it.
 # - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
 
 # Required substitutions:
 # - device_name
 # - device_friendly_name
-
-# Optional substitutions:
-# - templates_dir (templates, the path an including config outside the repository root points at Utils.h)
 
 # Notes:
 
@@ -114,6 +110,7 @@
 ## I2C IO16(SDA) - IO17(SCL)
 ## Module Address 0x3C
 ## Resolution 128 x 64
+## Left to the device, which adds its own font and display, see test/norvi-enet-ae06-r.yaml
 
 # Ethernet W5500
 ## SCLK IO18
@@ -182,12 +179,6 @@
 ## https://github.com/esphome/feature-requests/issues/513
 
 
-# ESPHome resolves `includes:` against the device config's directory, not this template's.
-# The default suits a device config in the repository root.
-# An including config elsewhere overrides it, so see test/norvi-enet-ae06-r.yaml.
-substitutions:
-  templates_dir: templates
-
 # https://esphome.io/components/esphome
 esphome:
   name: ${device_name}
@@ -197,9 +188,6 @@ esphome:
       then:
         # Read the time from the RTC
         - ds1307.read_time:
-  includes:
-    # Utility functions
-    ${templates_dir}/Utils.h
 
 # https://esphome.io/components/esp32
 esp32:
@@ -247,37 +235,6 @@ time:
     on_time_sync:
       then:
         ds1307.write_time:
-
-# https://esphome.io/components/display
-font:
-  - file:
-      type: gfonts
-      family: Open+Sans
-    id: fonnt # font as id is reserved
-    size: 14
-
-# https://esphome.io/components/display/ssd1306
-display:
-  - platform: ssd1306_i2c
-    model: "SSD1306 128x64"
-    address: 0x3C
-    id: displayy # display as id is reserved
-    # https://github.com/esphome/esphome/blob/release/esphome/components/display/display.h
-    # Use !extend displayy to replace the display lambda
-    lambda: |-
-      static const auto color = Color(255, 255, 255);
-      static const auto font = id(fonnt);
-      static const auto lineSpacing = DisplayHelper::GetLineSpacing(&it, font, 3);
-      const auto time = id(homeassistant_time).now();
-      const auto ip = id(wifi_ip).state.c_str();
-      const auto adc = id(adc_buttons).state;
-      int line = lineSpacing.nFirstLine;
-      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "IP: %s", ip);
-      line += lineSpacing.nIncrement;
-      it.strftime(0, line, font, color, TextAlign::TOP_LEFT, "Time: %H:%M:%S", time);
-      line += lineSpacing.nIncrement;
-      it.printf(0, line, font, color, TextAlign::TOP_LEFT, "ADC: %.2fV", adc);
-      line += lineSpacing.nIncrement;
 
 # https://esphome.io/components/sensor
 sensor:
