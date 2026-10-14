@@ -58,7 +58,7 @@ A copy of this repository is either the `/config` mount of a running ESPHome das
 - On a development box, an edit reaches the dashboard only once it reaches the dashboard's copy. Validate and compile per [Compiling the Way CI Does][compiling-the-way-ci-does].
 - Network flashing works from either copy, with the ESPHome CLI's `upload --device <ip>`.
 - Serial flashing needs a USB port on the host running the flasher. The dashboard host may have none, so its USB install goes through the browser's Web Serial instead. That needs a Chromium-based browser on a secure page, meaning HTTPS or `localhost`. Otherwise, download the image from the install dialog and flash it with ESPHome Web.
-- A development box with USB ports flashes over serial with `esphome run --device <port>`, per [Debugging][debugging], or with `esptool` run through `uv` for a built image. It also serves for debugging.
+- A development box with USB ports flashes over serial with `esphome run --device <port>`, per [Debugging][debugging], or with `esptool` run through `uv` for a built image. Pin either route's ESPHome to the dashboard's version, as for the image tag below. It also serves for debugging.
 
 On the dashboard's copy, ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. Every ESPHome CLI invocation there runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
 
