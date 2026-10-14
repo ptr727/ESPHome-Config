@@ -70,16 +70,22 @@ wifi:
   reboot_timeout: ${wifi_reboot_timeout}
   min_auth_mode: WPA2
 
-# Extend Apollo's existing esphome OTA entry (id: ota_esphome) to add our password.
+# Extend Apollo's existing esphome OTA entry (id: ota_esphome) with encryption, which inherits the api key.
 ota:
   - id: !extend ota_esphome
-    password: !secret ota_password
+    encryption:
 
 # Extend Apollo's api: with encryption
 api:
   reboot_timeout: ${api_reboot_timeout}
   encryption:
     key: !secret api_encryption_key
+
+# Restate Apollo's deprecated rgb_order as channel_colors, since ESPHome 2027.3.0 removes rgb_order.
+light:
+  - id: !extend rgb_light
+    rgb_order: !remove
+    channel_colors: GRB
 
 # Seed Apollo's HA-exposed "Sleep Duration" number with our default first-boot value.
 number:
