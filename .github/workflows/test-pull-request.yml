@@ -99,10 +99,10 @@ jobs:
           for path in templates/*.yaml; do
             name="$(basename "$path" .yaml)"
             case " $UTILITY " in *" $name "*) continue;; esac
-            grep -qE "(!include|file:) +\.\./templates/$name\.yaml" test/*.yaml || missing+=("$name")
+            grep -qE "^[^#]*(!include|file:) +\.\./templates/$name\.yaml" test/*.yaml || missing+=("$name")
           done
           if (( ${#missing[@]} > 0 )); then
-            echo "Templates no example device in test/ includes: ${missing[*]}"
+            echo "Templates that no example device in test/ includes: ${missing[*]}"
             exit 1
           fi
           CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
