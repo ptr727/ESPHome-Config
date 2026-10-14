@@ -8,7 +8,6 @@
 # - wifi_ssid
 # - wifi_password
 # - wifi_domain
-# - ota_password
 
 # https://esphome.io/components/packages
 packages:

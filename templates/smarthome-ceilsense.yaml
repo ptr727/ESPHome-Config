@@ -69,11 +69,11 @@ web_server:   !remove
 update:       !remove   # http_request firmware-update entity (id: firmware_update)
 http_request: !remove   # only consumed by `update` + the ota_http_request platform, both removed
 
-# Extends base.yaml's ota_esphome entry to add a password.
+# Extends base.yaml's ota_esphome entry with encryption, which inherits the api key.
 # The http_request OTA platform goes, since it depends on the removed http_request.
 ota:
   - id: !extend ota_esphome
-    password: !secret ota_password
+    encryption:
   - id: !remove ota_http_request
 
 # Extend base.yaml's bare api: with encryption.
@@ -81,6 +81,13 @@ api:
   reboot_timeout: ${api_reboot_timeout}
   encryption:
     key: !secret api_encryption_key
+
+# Restate base.yaml's deprecated rgb_order as channel_colors, which replaces it in ESPHome 2027.3.0.
+# The LED sits on GPIO20, a USB-Serial-JTAG pin, and that warning has no per-pin opt-out.
+light:
+  - id: !extend status_led
+    rgb_order: !remove
+    channel_colors: GRB
 
 # Removed by id, not as a whole key, because packages/ld2412.yaml adds its own selects to this list.
 select:

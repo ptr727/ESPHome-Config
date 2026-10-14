@@ -4,6 +4,9 @@ ESPHome configuration templates and projects.
 
 ## Release History
 
+- Version 2.3:
+  - Changed OTA to encryption only, using the API encryption key, and removed the `ota_password` secret (requires ESPHome 2026.9.1 on the device and in the builder).
+  - Fixed compile warnings in the templates and the EasyStart component.
 - Version 2.2:
   - Added Heltec WiFi LoRa 32 V4-R8 support.
   - Added Heltec L76K GNSS module support.

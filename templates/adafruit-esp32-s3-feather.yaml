@@ -65,7 +65,9 @@ packages:
 # https://esphome.io/components/i2c
 i2c:
   - id: board_i2c
-    sda: GPIO3 # WARNING GPIO3 is a strapping PIN and should only be used for I/O with care.
+    sda:
+      number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
     scl: GPIO4
 
 # https://esphome.io/components/switch

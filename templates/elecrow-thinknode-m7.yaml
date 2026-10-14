@@ -95,7 +95,9 @@ ethernet:
   mosi_pin: GPIO48
   miso_pin: GPIO14
   cs_pin: GPIO21
-  interrupt_pin: GPIO45
+  interrupt_pin:
+    number: GPIO45 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+    ignore_strapping_warning: true
   clock_speed: 20MHz
 
 # https://esphome.io/components/status_led

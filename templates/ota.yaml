@@ -1,9 +1,10 @@
 # External usage:
 # packages:
 #   ota: github://ptr727/ESPHome-Config/templates/ota.yaml@main
-# - Needs ota_password in a secrets.yaml beside the including config.
+# - Needs an api encryption key on the same device, see api.yaml.
 
 # https://esphome.io/components/ota
 ota:
   - platform: esphome
-    password: !secret ota_password
+    # A bare block inherits the api encryption key, so uploads need the key and no password exists.
+    encryption:

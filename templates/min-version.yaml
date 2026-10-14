@@ -8,4 +8,4 @@
 # - A build then stops on an old release rather than failing later on a component that release lacks.
 # https://esphome.io/components/esphome#esphome-min_version
 esphome:
-  min_version: 2026.8.2
+  min_version: 2026.9.1

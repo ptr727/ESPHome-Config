@@ -126,7 +126,9 @@ status_led:
 # https://esphome.io/components/output/ledc
 output:
   - platform: ledc
-    pin: GPIO12
+    pin:
+      number: GPIO12 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
     id: rtttl_out
 
 # https://esphome.io/components/rtttl

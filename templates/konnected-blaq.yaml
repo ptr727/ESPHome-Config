@@ -36,6 +36,9 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   name_add_mac_suffix: false
+  # Board flash mode is a PlatformIO option the native esp-idf toolchain ignores, and warns about.
+  platformio_options:
+    board_build.flash_mode: !remove
 
 # https://esphome.io/components/packages#local-packages
 packages:
@@ -44,8 +47,19 @@ packages:
   api: !include api.yaml
   logger: !include logger.yaml
   minversion: !include min-version.yaml
-  ota: !include ota.yaml
   time: !include time.yaml
+
+# Extend Konnected's own esphome OTA entry with encryption, which inherits the api key.
+# Including ota.yaml instead would add a second entry on the same port that ESPHome merges with a warning.
+ota:
+  - id: !extend konnected_ota
+    encryption:
+
+# The warning LEDs are wired to GPIO3, a strapping pin, by the board.
+output:
+  - id: !extend warning_led_output
+    pin:
+      ignore_strapping_warning: true
 
 # Remove unwanted items included by gdov2q package
 esp32_improv: !remove
