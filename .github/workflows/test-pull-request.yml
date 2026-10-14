@@ -2,7 +2,7 @@ name: Test pull request action
 
 # Source lint plus a change-gated compile test, run on the ptr727/esphome-nonroot image the repo deploys.
 # - template-compile-test builds the example devices, which between them compose every published template.
-# - test/gls10-bluetooth-proxy.yaml also covers the easystart external component.
+# - test/easystart.yaml also covers the easystart external component.
 # It costs minutes of esp-idf build, so it runs only when what it covers moves.
 # Operational model.
 # - develop takes direct signed commits, where push runs advisory CI.
@@ -79,7 +79,7 @@ jobs:
             run_all
           fi
           WORKFLOW='\.github/workflows/test-pull-request\.yml$'
-          # The test/ tree hosts the example devices, and test/gls10-bluetooth-proxy.yaml compiles easystart/components.
+          # The test/ tree hosts the example devices, and test/easystart.yaml compiles easystart/components.
           if grep -qE "^(templates/|test/|easystart/components/|$WORKFLOW)" <<<"$DIFF"; then
             echo "template-test=true" >> "$GITHUB_OUTPUT"
           else

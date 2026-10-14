@@ -1,26 +1,7 @@
-# CI compile-test for templates/gls10-bluetooth-proxy.yaml, hosting one templates/easystart.yaml package.
-# Also compiles the easystart external component, with a dummy MAC instead of a secret.
+# CI compile-test for templates/gls10-bluetooth-proxy.yaml
 substitutions:
   device_name: gls10-bluetooth-proxy-test
   device_friendly_name: "GL-S10 Bluetooth Proxy Test"
 
 packages:
   device: !include ../templates/gls10-bluetooth-proxy.yaml
-  easystart_1: !include
-    file: ../templates/easystart.yaml
-    vars:
-      easystart_id: easystart_1
-      easystart_mac: "AA:BB:CC:DD:EE:01"
-      easystart_label: "Compressor 1"
-
-# https://esphome.io/components/external_components
-external_components:
-  - source:
-      type: local
-      path: ../easystart/components
-    components: [easystart]
-
-# https://esphome.io/components/esp32_ble
-# Must be at least 3 (bluetooth_proxy default connections) plus one per ble_client.
-esp32_ble:
-  max_connections: 4
