@@ -1,13 +1,13 @@
 # CI compile-test for templates/easystart.yaml
 # The template is a parameterized package, not a standalone device.
-# Hosted on a Bluetooth proxy, as office-bluetooth-proxy.yaml does.
+# Hosted on a camera-less Waveshare board set up as office-bluetooth-proxy.yaml is, so CI also builds that composition.
 # Uses a dummy MAC instead of a secret.
 substitutions:
   device_name: easystart-test
   device_friendly_name: "EasyStart Test"
 
 packages:
-  gls10: !include ../templates/gls10-bluetooth-proxy.yaml
+  device: !include ../templates/waveshare-esp32-s3-eth.yaml
   easystart_1: !include
     file: ../templates/easystart.yaml
     vars:
@@ -26,3 +26,12 @@ external_components:
 # Must be at least 3 (bluetooth_proxy default connections) plus one per ble_client.
 esp32_ble:
   max_connections: 4
+
+# https://esphome.io/components/esp32_ble_tracker
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+
+# https://esphome.io/components/bluetooth_proxy
+bluetooth_proxy:
+  active: true

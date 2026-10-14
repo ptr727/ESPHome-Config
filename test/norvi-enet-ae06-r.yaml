@@ -1,10 +1,27 @@
 # CI compile-test for templates/norvi-enet-ae06-r.yaml
-# The template's `includes:` resolves against this config's directory, not the template's.
-# The templates_dir substitution points back at templates/ from here.
 substitutions:
   device_name: norvi-enet-ae06-r-test
   device_friendly_name: "Norvi ENET-AE06-R Test"
-  templates_dir: ../templates
 
 packages:
   device: !include ../templates/norvi-enet-ae06-r.yaml
+
+# https://esphome.io/components/font
+font:
+  - file: "gfonts://Roboto"
+    id: font_line
+    size: 14
+
+# https://esphome.io/components/display/ssd1306
+display:
+  - platform: ssd1306_i2c
+    id: board_display
+    i2c_id: board_i2c
+    model: SSD1306_128X64
+    address: 0x3c
+    lambda: |-
+      // Three lines, each centered vertically on a quarter of the panel height.
+      const int slot = it.get_height() / 4;
+      it.printf(0, slot, id(font_line), TextAlign::CENTER_LEFT, "IP: %s", id(wifi_ip).state.c_str());
+      it.strftime(0, 2 * slot, id(font_line), TextAlign::CENTER_LEFT, "Time: %H:%M:%S", id(homeassistant_time).now());
+      it.printf(0, 3 * slot, id(font_line), TextAlign::CENTER_LEFT, "ADC: %.2fV", id(adc_buttons).state);

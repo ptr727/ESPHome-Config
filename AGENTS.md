@@ -1,6 +1,6 @@
 # Instructions for AI Coding Agents
 
-**ESPHome-Config** is the live `/config` directory of a running ESPHome instance, so the tree is deployed state rather than a checkout that ships later. It holds the per-device configurations for one home automation setup, the reusable device and utility templates behind them, and the Micro-Air EasyStart reverse-engineering project.
+**ESPHome-Config** is the `/config` directory of a running ESPHome dashboard, or a checkout of it on a development box, per [`OPERATIONS.md`](./OPERATIONS.md) "Container and CLI". It holds the per-device configurations for one home automation setup, the reusable device and utility templates behind them, and the Micro-Air EasyStart reverse-engineering project.
 
 This file is the entry point every coding agent reads first, and it holds only three things: the bootstrap that says where the canonical rules live and which procedure to follow for the state this repository is actually in, the rules for managing context and delegation, which apply to every task, and a map of where every other rule lives. The rule text itself is in [`GOVERNANCE.md`](./GOVERNANCE.md), one section per topic. Code style lives in [`CODESTYLE.md`](./CODESTYLE.md), the CI/CD workflow contract in [`WORKFLOW.md`](./WORKFLOW.md), and this repository's own audit procedure in [`AUDIT.md`](./AUDIT.md).
 

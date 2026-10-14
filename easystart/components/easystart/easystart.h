@@ -9,7 +9,8 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 
-#include <cmath>  // NAN
+#include <cinttypes>  // PRIu32
+#include <cmath>      // NAN
 #include <vector>
 #include <cstring>
 
@@ -195,8 +196,8 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
 
     const char *state_str = (state <= 9) ? STATE_TEXT[state] : "Not Defined";
 
-    ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%u faults=%u", state_str, current_a, freq_hz,
-             peak_a, total_starts, total_faults);
+    ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%" PRIu32 " faults=%u", state_str, current_a,
+             freq_hz, peak_a, total_starts, total_faults);
 
     // "running" is driven by BLE connection state, not by this frame.
     if (this->current_sensor_ != nullptr)

@@ -85,7 +85,6 @@ Semantic and static analysis is deliberately out of scope. The downstream ESPHom
 ### Conventions
 
 - **Comments follow the repo-wide [comment rules][governance]** in `GOVERNANCE.md`: structured rather than prose, one sentence per line, no file- or class-header summary blocks.
-- **Keep header helpers safe to include more than once.** `templates/Utils.h` is textually included into generated lambdas, so it must not introduce a namespace-scope definition that is neither `inline` nor `constexpr`. That is an ODR violation waiting for a second include. Class-scope static member functions, `static constexpr` data members, and function-local `static` caches are fine and are the pattern already in use (`GetMultiButtonState` builds its table once into a function-local static). Prefer computing into a function-local static over a namespace-scope global.
 - **Match ESPHome's own naming** in an external component, meaning `snake_case` members and methods and a trailing underscore on private members, so the component reads like the framework it plugs into.
 
 <!-- Repo -->

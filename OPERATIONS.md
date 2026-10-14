@@ -25,11 +25,10 @@ The mechanics below were confirmed against ESPHome 2026.7.3 by validating a scra
 - **`!secret` falls back to the consuming config's own directory.** Resolution tries the package's `templates/secrets.yaml` first, whose `<<: !include ../secrets.yaml` fails because the repository root `secrets.yaml` is git-ignored, then tries a `secrets.yaml` beside the including config. An adopter supplies their own under the names in [`secrets._yaml`][secrets-example], and both paths appear in the error when neither exists.
 - **`test/` cannot use the remote form**, and the reason is the clone above. A `github://` package fetches the named ref rather than the working tree, so a compile test written that way would build `@main`'s copy of a template and pass while the change under test is broken. It also cannot work for a template that does not exist on the ref yet. Local `!include` is the only form that gates a diff.
 
-Four templates deviate from the plain shorthand, and each says so in its own block:
+Some templates deviate from the plain shorthand, and each says so in its own block:
 
 - [`easystart.yaml`][easystart-template] is parameterized, so it takes the `url` / `ref` / `files` form with `vars` rather than the one-line shorthand.
-- The `esp32-s3-wroom-*` board definitions are overlays, so they are composed on [`esp32-s3-devkitc.yaml`][devkitc-template] as a second package entry.
-- [`norvi-enet-ae06-r.yaml`][norvi-template] reaches `Utils.h` through `esphome: includes:`, which resolves against the *including* config's directory rather than the package cache, so an adopter copies that file locally and points `templates_dir` at it.
+- The overlays are composed on their board template as a second package entry. The `esp32-s3-wroom-*` board definitions compose on [`esp32-s3-devkitc.yaml`][devkitc-template], and [`heltec-l76k-gnss.yaml`][heltec-gnss-template] and [`waveshare-esp32-s3-eth-camera.yaml`][waveshare-camera-template] on their own boards.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
 Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs knobs for an adopter choosing a template, and where it names one, the header is what it has to agree with.
@@ -48,15 +47,20 @@ This is a public repository whose primary audience is people reusing the templat
 - **[`DEVICES.md`][devices] documents the deployed fleet**: one section per device or device family, naming the template it composes and carrying the siting, status, and maintenance state of the physical unit. A reader who is not the maintainer has no use for it.
 - **The test is whether a stranger reusing the template needs it.** Knowledge that generalizes to any instance of the hardware belongs in `README.md`. Anything true only of this installation, such as where a unit is mounted, what signal it sees there, why one is powered off, or which ones await a reflash, belongs in `DEVICES.md`. A device-specific fact does not migrate to `README.md` by being interesting.
 - **Agent-facing depth stays here** in [Template Notes][template-notes]. `README.md` and `DEVICES.md` are both written for humans, so a mechanism an agent needs in order to change a config safely is documented in this file and linked from there rather than expanded inline.
-- **A root config named `test-<name>.yaml` is bench hardware, not the deployed fleet.** The prefix groups every bench device together when the tree is sorted by name. `.gitignore` excludes `test-*.yaml` at the repository root, so it needs no commit history and never appears in `DEVICES.md`. This is distinct from [`test/`][test], which holds the tracked, CI-compiled example device per template.
+- **A root config named `test-<name>.yaml` is bench hardware, not the deployed fleet.** The prefix groups every bench device together when the tree is sorted by name. `.gitignore` excludes `test-*.yaml` at the repository root, so it needs no commit history and never appears in `DEVICES.md`. This is distinct from [`test/`][test], which holds the tracked, CI-compiled example devices that between them compose every template.
 
 ## Container and CLI
 
-This directory is the `/config` mount of a running ESPHome instance, so the tree you are editing is live state, not a checkout that gets deployed later.
+A copy of this repository is either the `/config` mount of a running ESPHome dashboard or a checkout on a development box. What matters is whether the dashboard runs on this copy. On the dashboard's copy, `docker inspect esphome` shows this directory mounted at `/config`.
 
 - Top-level `*.yaml` files are the per-device configs. [`templates/`][templates] holds the shared device and utility templates they include via `packages:`.
-- ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. The directory holding this repository is mounted at `/config` inside the container.
-- Every ESPHome CLI invocation runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
+- On the dashboard's copy, the tree is deployed state, and an edit applies at the next install from the dashboard.
+- On a development box, an edit reaches the dashboard only once it reaches the dashboard's copy. Validate and compile per [Compiling the Way CI Does][compiling-the-way-ci-does].
+- Network flashing works from either copy, with the ESPHome CLI's `upload --device <ip>`.
+- Serial flashing needs a USB port on the host running the flasher. The dashboard host may have none, so its USB install goes through the browser's Web Serial instead. That needs a Chromium-based browser on a secure page, meaning HTTPS or `localhost`. Otherwise, download the image from the install dialog and flash it with ESPHome Web.
+- A development box with USB ports flashes over serial with `esphome run --device <port>`, per [Debugging][debugging], or with `esptool` run through `uv` for a built image. Pin either route's ESPHome to the dashboard's version, as for the image tag below. It also serves for debugging.
+
+On the dashboard's copy, ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. Every ESPHome CLI invocation there runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
 
 ```shell
 docker exec esphome esphome config /config/<device>.yaml
@@ -65,6 +69,8 @@ docker exec esphome esphome config /config/<device>.yaml
 ## Config and Compile Validation
 
 Whenever a device YAML, or a template included by one, changes, run config validation for every affected device. When the change is in a template, validate at least one device that uses it, and prefer all of them when it is not obvious which ones consume it.
+
+The commands below run on the dashboard's copy. On a development box, run the same CLI calls in the throwaway container from [Compiling the Way CI Does][compiling-the-way-ci-does].
 
 ```shell
 docker exec esphome esphome config /config/<device>.yaml
@@ -82,7 +88,7 @@ A compile costs minutes, so reserve it for changes that can plausibly affect gen
 
 ### Compiling the Way CI Does
 
-Any copy of this repository compiles without the running instance. Mount that copy at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
+A development-box checkout compiles without the dashboard. Mount it at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow]. On the same image tag, a compile that fails here fails there.
 
 ```shell
 config_dir=<absolute path to a checkout, never the deployed tree>
@@ -114,12 +120,13 @@ fi
 
 - **Both paths are absolute.** Docker reads a relative `--volume` source as a named volume. A relative value therefore mounts an empty volume, and the compile fails on a path the caller can see on disk.
 - **Point `config_dir` at a checkout rather than at the deployed tree.** The running container has that tree mounted already, and a second compile in it shares one `.esphome/`.
+- **`latest` gives CI parity, not dashboard parity.** CI pulls `latest` fresh on every run, so run `docker pull ptr727/esphome-nonroot:latest` first for parity. That can be newer than the dashboard's last pull. Before an install, rerun with the image tag set to the dashboard's ESPHome version. Read that version with `docker exec esphome esphome version` on its host. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
-- **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. CI uses one regardless, since it discards the runner.
+- **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. It also holds ESPHome's ccache store, `home/.cache/esphome/idf/ccache`, so a kept directory turns most repeat compiles into cache hits. CI uses one regardless, since it discards the runner.
 - **The container runs as the invoking user**, so what it writes stays owned by that user. The image points its build tree and its data directory at `/cache`. The only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files differently.
-- **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when a device template has no example device in [`test/`][test]. A new utility include joins that job's exemption list instead.
+- **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when no example device in [`test/`][test] includes a device template. An overlay composes into its board's example device rather than getting one of its own. A new utility include joins that job's exemption list instead.
 
 ## Flashing and sdkconfig
 
@@ -127,6 +134,7 @@ fi
 - **sdkconfig changes need a clean build.** Options that map to an esp-idf sdkconfig entry, such as `esp32_ble` `max_connections` mapping to `CONFIG_BTDM_CTRL_BLE_MAX_CONN` and `CONFIG_BT_ACL_CONNECTIONS`, or anything under `esp32: framework: sdkconfig_options:`, are not reliably regenerated by an incremental compile. The generated C++ updates while the controller keeps the cached sdkconfig, so the change has no effect at runtime and nothing reports an error. Run `esphome clean /config/<device>.yaml`, then a full `esphome compile`, and confirm the built value in `/cache/build/<device>/sdkconfig.<device>` before uploading.
 - **A device answers to its FQDN, not to `<name>.local`.** DHCP hands out a default domain that the local DNS serves, and [`templates/wifi.yaml`][wifi-template] passes it to the `wifi` component as the `wifi_domain` secret, so a WiFi device is `<device_name><wifi_domain>`. Read the current value from `secrets.yaml` rather than assuming, and note that an Ethernet device such as the GL-S10 sets no domain of its own and is reachable only by whatever DHCP registered for it.
 - **Flash by IP when the name does not resolve** from the container: `docker exec esphome esphome upload /config/<device>.yaml --device <ip>`. Stream logs the same way with `esphome logs ... --device <ip>`. The API port is 6053 and OTA is 3232. Home Assistant carries each device's current address in its `IP Address` text sensor, which is the quickest way to look one up.
+- **OTA authenticates with the API encryption key, so the running firmware must offer encryption.** [`templates/ota.yaml`][ota-template] carries `encryption:` and no password. Firmware built on ESPHome 2026.9.0 or later derives the OTA key from the API key, even while a password is configured. Older firmware accepts only the password, so the uploader refuses to send it the encryption-only image, and the device keeps running its old firmware. Upgrade such a device in two steps. First OTA a build from release `2.2.16`, the last one using the password, made on ESPHome 2026.9.1 or later. Then OTA the current build. Treat a password build made on 2026.9.0 as old firmware too, since it crashes on an encrypted upload in safe mode. Keep `ota_password` in `secrets.yaml` until every device has taken the first step.
 - **`max_connections` lives on the `esp32_ble` component**, not `esp32_ble_tracker`. The `esp32_ble_tracker` location is deprecated and falls back to the default without warning. The value is one per `ble_client`, plus 3 more when the device also runs a `bluetooth_proxy`, whose active default claims 3.
 
 ## Logs and the API Connection Cap
@@ -206,7 +214,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 - **Remove by id** with `- id: !remove <id>` when the unwanted thing is one item in a list shared with entities you keep, such as a cloud `select` item, a firmware-update `button`, the glue `script`, or the `http_request` OTA platform. ESPHome's `merge_config` in `esphome/config_helpers.py` matches on the id. A dangling reference left behind fails at `compile` rather than `config`, so compile once after this kind of change.
 - **Project identity and Update Manager:** prefer `esphome: project: !remove`, as Apollo and CeilSense do. Fall back to overriding `project_version: "0.0.0"` only when upstream lambdas reference the `ESPHOME_PROJECT_NAME` or `ESPHOME_PROJECT_VERSION` macros, as Konnected's do. Grep the upstream package before removing the block.
 - **Read the vendor's value before wiring a substitution into a vendor block.** The including side wins the scalar merge. A template default therefore overrides the vendor's value. This holds even when the template default equals ESPHome's own default. Apollo sets `api: reboot_timeout: 0s` on purpose. A `15min` template default would put every PLT-1B that Prevent Sleep holds awake into a reboot cycle whenever Home Assistant is unreachable. Default the substitution to the vendor's value, as [Apollo PLT-1B][apollo-plt-1b] does, unless the point is to change it.
-- **Override local environment:** `wifi: ap: !remove` plus `!secret` ssid, password, and domain, then `api.encryption.key`, and the OTA password via `- id: !extend <ota_id>`.
+- **Override local environment:** `wifi: ap: !remove` plus `!secret` ssid, password, and domain, then `api.encryption.key`, and OTA `encryption:` via `- id: !extend <ota_id>`. A bare `encryption:` inherits the API key, and ESPHome rejects a `password` beside it.
 - **Keep templates minimal, covering identity, secrets, and cloud-stripping only.** Nuanced per-device tuning such as I2C frequency or a sensor `variant` was tried on the Apollo PLT-1B and made no observable difference. The AHT humidity still tracks ambient and outdoor humidity, and it is not tunable away. Add such knobs only when a concrete problem demands one.
 
 ## Template Notes
@@ -279,7 +287,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **That residual cannot yet be split between the reference and the divider, so neither number is settled.** Back-solving full scale from the raw count and the meter gives 955mV to 958mV only if the divider is exactly the nominal 4.9. Attribute the same residual to the resistors instead and the effective ratio is about 4.82 and full scale about 972mV. One measurement cannot distinguish the two, and the template's `attenuation: 0db` headroom argument rests on whichever it is.
 - **Separate them with a raw sensor beside the calibrated one on the same pin.** Both need `allow_other_uses: true`, or two `adc` platforms on one pin fail with `Pin 1 is used in multiple places`. Until that runs, the template keeps the nominal 4.9 ratio.
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
-- **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell.
+- **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell. It blinks through a PWM output capped at `status_led_brightness`, 50% by default, since full drive glares.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
 - **A bench unit needs both reboot timeouts disabled.** Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`. Every template that sets a reboot timeout reads the matching substitution, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition.
 
@@ -363,7 +371,7 @@ The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell)
 
 ESPHome Device Builder's version history feature is **disabled**, and it needs to stay that way.
 
-This directory is the `/config` mount of the running `esphome` container. Device Builder's version history polls the tree for changes in `controllers/_device_scanner.py`, stat-based on `(inode, dev, mtime, size)` rather than inotify, and commits every changed YAML as `Edit <file>.yaml`, authored `ESPHome Device Builder <device-builder@esphome.io>` and unsigned. It shells out to `git -c user.email=... -c commit.gpgsign=false commit --no-verify`, and a command-line `-c` outranks the host gitconfig, so neither the host signing policy nor a hook can stop it. It hit this repository twice: on 2026-07-14, amended away, and on 2026-07-18, five commits, reset and re-committed as `08678ad`.
+On the dashboard's copy, this directory is the `/config` mount of the running `esphome` container. Device Builder's version history polls the tree for changes in `controllers/_device_scanner.py`, stat-based on `(inode, dev, mtime, size)` rather than inotify. It commits every changed YAML as `Edit <file>.yaml`, authored `ESPHome Device Builder <device-builder@esphome.io>` and unsigned. It shells out to `git -c user.email=... -c commit.gpgsign=false commit --no-verify`, and a command-line `-c` outranks the host gitconfig, so neither the host signing policy nor a hook can stop it. It hit this repository twice: on 2026-07-14, amended away, and on 2026-07-18, five commits, reset and re-committed as `08678ad`.
 
 - It is turned off via "Save version history" in the Device Builder UI, persisted in `.device-builder-preferences.json` as `version_history_enabled: false`. That store is RAM-canonical with a debounced write plus a shutdown flush, so patch the file only while the container is stopped, otherwise use the `config/set_preferences` API, which applies live.
 - Were it ever re-enabled, a clean `git status` would no longer prove nothing was committed. After editing files here, run `git log --format='%h %G? %an <%ae>' origin/develop..HEAD` and confirm every commit is signed with `G` and authored `ptr727@users.noreply.github.com`.
@@ -617,6 +625,8 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
+[compiling-the-way-ci-does]: #compiling-the-way-ci-does
+[debugging]: #debugging
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [dollar-signs]: #dollar-signs-in-config-values
@@ -630,8 +640,8 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [heltec-template]: ./templates/heltec-wifi-lora32-v4-r8.yaml
 [max17048-template]: ./templates/max17048.yaml
 [min-version-template]: ./templates/min-version.yaml
-[norvi-template]: ./templates/norvi-enet-ae06-r.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml
+[ota-template]: ./templates/ota.yaml
 [readme]: ./README.md
 [repository-tooling-hazards]: #repository-tooling-hazards
 [rgb-led-status]: #rgb-led-status

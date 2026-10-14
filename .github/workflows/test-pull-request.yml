@@ -1,8 +1,8 @@
 name: Test pull request action
 
 # Source lint plus a change-gated compile test, run on the ptr727/esphome-nonroot image the repo deploys.
-# - template-compile-test builds one example device per published template, so nothing ships that cannot build.
-# - test/easystart.yaml is one such example device, so it also covers the easystart external component.
+# - template-compile-test builds the example devices, which between them compose every published template.
+# - test/easystart.yaml also covers the easystart external component.
 # It costs minutes of esp-idf build, so it runs only when what it covers moves.
 # Operational model.
 # - develop takes direct signed commits, where push runs advisory CI.
@@ -87,7 +87,7 @@ jobs:
           fi
 
       # Build the template matrix from test/, so a new example device is picked up without editing the matrix.
-      # Every device template must have an example device, else a new template would go silently untested.
+      # Every device template must be included by an example device, else a new template would go silently untested.
       # Utility includes are pulled in transitively by the device templates and need no example device.
       - name: List template test configs step
         id: configs
@@ -99,19 +99,19 @@ jobs:
           for path in templates/*.yaml; do
             name="$(basename "$path" .yaml)"
             case " $UTILITY " in *" $name "*) continue;; esac
-            [[ -f "test/$name.yaml" ]] || missing+=("$name")
+            grep -qE "^[^#]*(!include|file:) +\.\./templates/$name\.yaml" test/*.yaml || missing+=("$name")
           done
           if (( ${#missing[@]} > 0 )); then
-            echo "Templates with no example device in test/: ${missing[*]}"
+            echo "Templates that no example device in test/ includes: ${missing[*]}"
             exit 1
           fi
           CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
           echo "Template matrix: $CONFIGS"
           echo "template-configs=$CONFIGS" >> "$GITHUB_OUTPUT"
 
-  # Compile one example device per published template.
+  # Compile every example device, each composing one board template and any overlays it carries.
   # The test/ tree holds the configs, and the Device Builder scan is non-recursive, so they are not listed as devices.
-  # The matrix comes from the changes job, which also enforces that every template has an example device.
+  # The matrix comes from the changes job, which also enforces that every template is included by an example device.
   # Turning fail-fast off keeps one broken template from masking the others.
   template-compile-test:
     name: Compile template ${{ matrix.config }} job

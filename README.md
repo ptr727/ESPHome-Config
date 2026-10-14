@@ -19,10 +19,10 @@ ESPHome configuration templates and projects.
 
 ### Release Notes <!-- omit from toc -->
 
-**Version 2.2**:
+**Version 2.3**:
 
-- Added Heltec WiFi LoRa 32 V4-R8 support.
-- Added Heltec L76K GNSS module support.
+- Changed OTA to encryption only, using the API key, so only the upgrade bridge build still needs the `ota_password` secret.
+- Fixed the compile warnings the templates and the EasyStart component can address.
 
 See [HISTORY.md][history] for the release notes.
 
@@ -48,7 +48,7 @@ A [collection][templates] of utility and device-specific configuration templates
 
 Note that for devices with native ESPHome factory firmware, I opt to strip out the generic project and [Improv][improv-wifi-link] configuration in favor of a custom configuration specific to my environment. This also cuts down on resource utilization by removing unused features.
 
-Every device template has an example configuration in [test][test] that CI compiles against the current ESPHome release, so a published template is known to build. That release is also written into [`min-version.yaml`][min-version], which every device template reaches, so composing a template on an older ESPHome stops at validation rather than at a missing component. The examples also serve as minimal usage samples, composing the template with a local `!include`.
+Every device template is composed by an example configuration in [test][test]. CI compiles each one against the current ESPHome release, so a published template is known to build. That release is also written into [`min-version.yaml`][min-version], which every device template reaches. Composing a template on an older ESPHome therefore stops at validation rather than at a missing component. The examples also serve as usage samples, composing each board template and any overlay for it with a local `!include`.
 
 Every template also opens with an `External usage:` comment block showing how to compose it from outside this repository as a remote `github://` package, along with whatever that particular template needs from the including config. Relative includes resolve inside the fetched package, and `!secret` falls back to a `secrets.yaml` beside the including config, so an adopter supplies their own secrets under the names in [`secrets._yaml`][secrets-example].
 
@@ -80,6 +80,7 @@ Every template also opens with an `External usage:` comment block showing how to
 
 - [Template][norvi-enet-ae06-r] for the [NORVI-ENET-AE06-R][shop-products-norvi-enet-ae06-r-link] or [SensOper SC-EN-I6-RO4][sensoper-shop-sc-en-i6-ro4-link] ESP32 DIN form factor controllers.
 - Flash over USB.
+- The SSD1306 OLED is left to the device, which adds its own font and display, as the [example device][test-norvi-enet-ae06-r] shows.
 - Note:
   - Norvi devices are sold under the [SensOper Controls][sensoper-link] brand in the US and available at the [SensOper store][sensoper-shop-link].
   - Norvi branded devices can be shipped to the US from the Sri Lanka based [Norvi store][shop-link], or the Germany based [CarTFT store][cartft-link].
@@ -137,7 +138,7 @@ Every template also opens with an `External usage:` comment block showing how to
 Shared building-block includes, composed via `packages:` by the device templates and per-device configs:
 
 - [`api.yaml`][api] configures the API with encryption and a configurable `api_reboot_timeout`.
-- [`ota.yaml`][ota] configures ESPHome OTA with a password.
+- [`ota.yaml`][ota] configures ESPHome OTA with encryption, inheriting the API encryption key, and no password. A device on a password build from before ESPHome 2026.9.1 first takes a build from release `2.2.16`, made on 2026.9.1 or later. Keep `ota_password` until every device has taken it.
 - [`logger.yaml`][logger] configures the logger.
 - [`time.yaml`][time] configures the Home Assistant time source.
 - [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets, with a configurable `wifi_reboot_timeout`.
@@ -223,9 +224,9 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Includes the on-chip temperature sensor, the white LED as status LED, the user button, a battery voltage sensor, and a switch for each of the two software-controlled power rails.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
 - The octal PSRAM claims GPIO33 through GPIO37, so three pins moved from the plain V4 and the V4.3. Two more were dropped outright, a wiring change a quad part would not restore. A V4 pinout does not describe this board, see the [template][heltec-wifi-lora32-v4-r8] header for the full map, the optional substitutions, and the I2C and power rail ordering a composing config has to respect.
-- The onboard SSD1306 OLED and the SX1262 radio are documented in the [template][heltec-wifi-lora32-v4-r8] header rather than configured. The display needs a font asset this repository does not carry, and ESPHome's [SX126x][esphome-components-sx126x-link] component reaches an RF switch only through the radio's own DIO2, while this board wires its KCT8103L front-end to three ESP32 pins, one of which flips the transmit and receive path per packet.
+- The onboard SSD1306 OLED and the SX1262 radio are documented in the [template][heltec-wifi-lora32-v4-r8] header rather than configured. The display is left to the device, which picks its own font and layout, as the [example device][test-heltec-wifi-lora32-v4-r8] shows. ESPHome's [SX126x][esphome-components-sx126x-link] component reaches an RF switch only through the radio's own DIO2. This board wires its KCT8103L front-end to three ESP32 pins instead, one of which flips the transmit and receive path per packet.
 - Note: USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC are confirmed on hardware. The user button is not, and the radio and front-end pins are documented rather than claimed.
-- Note: the status LED is dark when healthy and blinks on a warning or error, the ESPHome default, which is the reverse of the [GL-S10][gls10-bluetooth-proxy] and [ThinkNode M7][elecrow-thinknode-m7] convention.
+- Note: the status LED is dark when healthy and blinks on a warning or error, the ESPHome default. That is the reverse of the [GL-S10][gls10-bluetooth-proxy] and [ThinkNode M7][elecrow-thinknode-m7] convention. It blinks through a `status_led` light on a PWM output, at `status_led_brightness`, 50% by default. An override extends `status_led_light` rather than declaring a `status_led` block.
 - An optional [L76K GNSS overlay][heltec-l76k-gnss] configures the [Heltec L76K][heltec-project-l76-gnss-module-link] module that plugs into the board's GNSS header, composed as a second `packages:` entry on top of this template. It adds position, speed, course, satellite count and HDOP sensors, a GPS time source beside the Home Assistant one, and buttons for the handful of writes worth making, since ESPHome's [GPS][esphome-components-gps-link] component only reads NMEA and sends the module nothing.
   - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. Its substitutions, and the pin direction trap that swaps the UART pair if MeshCore's macros are read literally, are in the [overlay][heltec-l76k-gnss] header.
   - Note: the overlay is untested against an actual fix, because the bench unit had no sky view. The link, the direction and the protocol are confirmed.
@@ -342,6 +343,8 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [temperature]: ./templates/temperature.yaml
 [templates]: ./templates/
 [test]: ./test/
+[test-heltec-wifi-lora32-v4-r8]: ./test/heltec-wifi-lora32-v4-r8.yaml
+[test-norvi-enet-ae06-r]: ./test/norvi-enet-ae06-r.yaml
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
 [waveshare-esp32-s3-eth]: ./templates/waveshare-esp32-s3-eth.yaml
