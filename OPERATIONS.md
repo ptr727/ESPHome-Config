@@ -57,8 +57,8 @@ A copy of this repository is either the `/config` mount of a running ESPHome das
 - On the dashboard's copy, the tree is deployed state, and an edit applies at the next install from the dashboard.
 - On a development box, an edit reaches the dashboard only once it reaches the dashboard's copy. Validate and compile per [Compiling the Way CI Does][compiling-the-way-ci-does].
 - Network flashing works from either copy, with the ESPHome CLI's `upload --device <ip>`.
-- Serial flashing needs a USB port on the host running the flasher. The dashboard host may have none, so its USB install goes through the browser's Web Serial instead. That needs a Chromium-based browser and a dashboard served over HTTPS.
-- A development box with USB ports flashes over serial with `esptool` run through `uv`, and serves for debugging.
+- Serial flashing needs a USB port on the host running the flasher. The dashboard host may have none, so its USB install goes through the browser's Web Serial instead. That needs a Chromium-based browser on a secure page, meaning HTTPS or `localhost`. Otherwise, download the image from the install dialog and flash it with ESPHome Web.
+- A development box with USB ports flashes over serial with `esphome run --device <port>`, per [Debugging][debugging], or with `esptool` run through `uv` for a built image. It also serves for debugging.
 
 On the dashboard's copy, ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. Every ESPHome CLI invocation there runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
 
@@ -88,7 +88,7 @@ A compile costs minutes, so reserve it for changes that can plausibly affect gen
 
 ### Compiling the Way CI Does
 
-Any copy of this repository compiles without the running instance. Mount that copy at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
+A development-box checkout compiles without the dashboard. Mount it at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
 
 ```shell
 config_dir=<absolute path to a checkout, never the deployed tree>
@@ -370,7 +370,7 @@ The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell)
 
 ESPHome Device Builder's version history feature is **disabled**, and it needs to stay that way.
 
-This directory is the `/config` mount of the running `esphome` container. Device Builder's version history polls the tree for changes in `controllers/_device_scanner.py`, stat-based on `(inode, dev, mtime, size)` rather than inotify, and commits every changed YAML as `Edit <file>.yaml`, authored `ESPHome Device Builder <device-builder@esphome.io>` and unsigned. It shells out to `git -c user.email=... -c commit.gpgsign=false commit --no-verify`, and a command-line `-c` outranks the host gitconfig, so neither the host signing policy nor a hook can stop it. It hit this repository twice: on 2026-07-14, amended away, and on 2026-07-18, five commits, reset and re-committed as `08678ad`.
+On the dashboard's copy, this directory is the `/config` mount of the running `esphome` container. Device Builder's version history polls the tree for changes in `controllers/_device_scanner.py`, stat-based on `(inode, dev, mtime, size)` rather than inotify. It commits every changed YAML as `Edit <file>.yaml`, authored `ESPHome Device Builder <device-builder@esphome.io>` and unsigned. It shells out to `git -c user.email=... -c commit.gpgsign=false commit --no-verify`, and a command-line `-c` outranks the host gitconfig, so neither the host signing policy nor a hook can stop it. It hit this repository twice: on 2026-07-14, amended away, and on 2026-07-18, five commits, reset and re-committed as `08678ad`.
 
 - It is turned off via "Save version history" in the Device Builder UI, persisted in `.device-builder-preferences.json` as `version_history_enabled: false`. That store is RAM-canonical with a debounced write plus a shutdown flush, so patch the file only while the container is stopped, otherwise use the `config/set_preferences` API, which applies live.
 - Were it ever re-enabled, a clean `git status` would no longer prove nothing was committed. After editing files here, run `git log --format='%h %G? %an <%ae>' origin/develop..HEAD` and confirm every commit is signed with `G` and authored `ptr727@users.noreply.github.com`.
@@ -625,6 +625,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
 [compiling-the-way-ci-does]: #compiling-the-way-ci-does
+[debugging]: #debugging
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [dollar-signs]: #dollar-signs-in-config-values
