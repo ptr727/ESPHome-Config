@@ -55,7 +55,7 @@ Nothing here is urgent. The device works, and the cost is access rather than ris
 |---|---|
 | [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] | Mounted in an enclosure |
 
-Of the remaining ESP32 devices, the [garage presence sensor][garage-presence-sensor] and the [HVAC compressor sensor][hvac-compressor-sensor] both report a current bootloader. Neither Bluetooth proxy is a candidate: the Waveshare board flashes over USB-C, so a serial flash costs a cable rather than an enclosure teardown. The [garage door controller][garage-door-controller] is powered off and has not been checked. The ESP8266 devices are unaffected.
+Of the remaining ESP32 devices, the [garage presence sensor][garage-presence-sensor], the [HVAC compressor sensor][hvac-compressor-sensor], and both Bluetooth proxies report a current bootloader. The proxies were flashed over USB. The [garage door controller][garage-door-controller] is powered off and has not been checked. The ESP8266 devices are unaffected.
 
 <!-- Repo -->
 
