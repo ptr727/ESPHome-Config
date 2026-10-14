@@ -88,7 +88,7 @@ A compile costs minutes, so reserve it for changes that can plausibly affect gen
 
 ### Compiling the Way CI Does
 
-A development-box checkout compiles without the dashboard. Mount it at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow], so a compile that fails here fails there.
+A development-box checkout compiles without the dashboard. Mount it at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow]. On the same image tag, a compile that fails here fails there.
 
 ```shell
 config_dir=<absolute path to a checkout, never the deployed tree>
@@ -120,7 +120,7 @@ fi
 
 - **Both paths are absolute.** Docker reads a relative `--volume` source as a named volume. A relative value therefore mounts an empty volume, and the compile fails on a path the caller can see on disk.
 - **Point `config_dir` at a checkout rather than at the deployed tree.** The running container has that tree mounted already, and a second compile in it shares one `.esphome/`.
-- **Match the dashboard's ESPHome version before an install.** `latest` can be newer than the dashboard's last pull. Read the dashboard's version with `docker exec esphome esphome version` on its host. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`, so use that tag here.
+- **`latest` gives CI parity, not dashboard parity.** CI compiles on `latest`, which can be newer than the dashboard's last pull. Before an install, rerun with the image tag set to the dashboard's ESPHome version. Read that version with `docker exec esphome esphome version` on its host. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
