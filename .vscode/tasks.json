@@ -7,7 +7,7 @@
         // Where a task needs file discovery, it names `bash` explicitly rather than relying on the default shell.
         //
         // ESPHome group - the CLI runs inside the `esphome` container, which mounts this tree at /config.
-        // Both act on the YAML file open in the editor.
+        // Each acts on the YAML file open in the editor.
         {
             "label": "ESPHome: Validate",
             "type": "process",
