@@ -72,11 +72,11 @@ A venv holding a pinned `esphome`, per [VSCode Setup][vscode-setup], behaves lik
 
 **Pin the version before anything ships.** The dashboard's ESPHome builds the deployed firmware, so check a change against that version. Read it with `docker exec esphome esphome version` on the dashboard's host. A throwaway container pins it as the image tag, and `uvx` pins it as `esphome==<version>`. The CI-parity compile in [Compiling the Way CI Does][compiling-the-way-ci-does] runs `latest` on purpose, and is the one exception. An `esphome` already on a host's `PATH` is whatever version was installed last, so never trust it unpinned.
 
-**Every route needs a `secrets.yaml` at the root of the copy.** [Compiling the Way CI Does][compiling-the-way-ci-does] explains why. Its guard block generates one from [`secrets._yaml`][secrets-example]. Set `config_dir` to the copy's absolute path, and the block runs on its own for any route.
+**Every route needs a `secrets.yaml` at the root of the copy.** [Compiling the Way CI Does][compiling-the-way-ci-does] explains why. Its guard block generates one from [`secrets._yaml`][secrets-example]. Set `config_dir` to a checkout's absolute path, and the block runs on its own for any route. The dashboard's copy already holds the real `secrets.yaml`, so it needs no guard.
 
 **ESPHome keeps the state of each config in its data directory.** That is `.esphome/` beside the config by default, which `.gitignore` excludes, or `$ESPHOME_DATA_DIR` when set. It holds the cloned `github://` packages under `packages/` and the fetched external components under `external_components/`. The build tree goes under `build/` there, unless `$ESPHOME_BUILD_PATH` moves it. The image sets the two variables to `/cache/data` and `/cache/build`. In a container route, the paths this file gives under `.esphome/` therefore live under `/cache` instead.
 
-**The toolchain lives outside the copy.** ESPHome installs ESP-IDF in the user's cache directory, `~/.cache/esphome/idf` on Linux, unless `$ESPHOME_ESP_IDF_PREFIX` moves it. Its ccache store sits there too, whenever a `ccache` binary is on `PATH`. On the `uvx` route that is the host user's own cache, several hundred megabytes after a first ESP32 compile. The image installs `ccache` and points `HOME` at `/cache/home`, so a container route keeps both in its kept cache directory. `esphome clean-all` deletes this cache along with every `.esphome/`.
+**The toolchain lives outside the copy.** ESPHome installs ESP-IDF in the user's cache directory, `~/.cache/esphome/idf` on Linux, unless `$ESPHOME_ESP_IDF_PREFIX` moves it. Its ccache store sits there too, whenever a `ccache` binary is on `PATH`. On the `uvx` route that is the host user's own cache, several hundred megabytes after a first ESP32 compile. The image installs `ccache` and points `HOME` at `/cache/home`, so a container route keeps both in its kept cache directory. `esphome clean-all` deletes the whole `~/.cache/esphome` root and the PlatformIO cache. It also empties each data directory it reaches, keeping `storage/` and top-level `.json` files. It reaches the `.esphome/` beside each YAML file or directory passed to it, plus `$ESPHOME_DATA_DIR` and `$ESPHOME_BUILD_PATH`.
 
 ## Config and Compile Validation
 
@@ -162,7 +162,7 @@ timeout 45 esphome logs <device>.yaml --device <ip> > logs/<device>.log 2>&1
 
 - **On the `uvx` route, the outer `timeout` is enough.** `timeout 25 uvx --from esphome==2026.9.1 esphome logs ...` exits 124 and leaves no `esphome logs` process behind.
 - **In the dashboard's container, the timeout goes inside it.** `timeout 45 docker exec esphome esphome logs ...` kills the `docker exec` client but **not** the `esphome logs` process inside the container. That process is orphaned and holds its slot. `docker exec esphome timeout 45 esphome logs /config/<device>.yaml --device <ip> > logs/<device>.log 2>&1` reaps the session on its own and exits 124.
-- **A throwaway container has not been checked**, since `docker run` forwards signals differently, so put the timeout inside it the same way.
+- **In a throwaway container, the timeout goes inside it too.** `docker run ... ptr727/esphome-nonroot:2026.9.1 timeout 20 esphome logs ...` exits 124 and leaves no container. With `timeout` outside `docker run`, the container keeps running after the timeout expires.
 - **Anything that closes the client's stdout early detaches it, as the outer `timeout` on `docker exec` does.** A trailing `| head -N` leaves an in-container process running until its own timeout expires. Capture to a file and read the file.
 
 To see a device's boot banner and `dump_config`, attach first and then restart it from Home Assistant's `Restart` button. Early boot output predates the API connection and is only ever on the serial console.
@@ -402,7 +402,7 @@ When a CLI tool is needed, look for it first on `PATH`, then in package-manager 
 The notes below were confirmed against the ESPHome 2026.9.1 source and a 2026.9.1 ESP-IDF build. The source files are `esphome/components/esp32/__init__.py`, `esphome/core/config.py`, `esphome/core/__init__.py`, and `esphome/__main__.py`, plus each platform's own `__init__.py`.
 
 - **An ESP32 builds with the native `esp-idf` toolchain by default, not with PlatformIO.** ESPHome downloads ESP-IDF itself and builds with CMake and Ninja. The build tree holds a `CMakeLists.txt` and no `platformio.ini`.
-- **`esp32:` `toolchain: platformio` selects the PlatformIO route.** `esphome --toolchain platformio` on the command line does the same and overrides the YAML. ESPHome warns that this route is deprecated and removed in 2027.2.0.
+- **`esp32:` `toolchain: platformio` selects the PlatformIO route.** `esphome --toolchain platformio` on the command line does the same and overrides the YAML. ESPHome warns that this route is deprecated and scheduled for removal in 2027.2.0.
 - **`framework:` `type:` is either `arduino` or `esp-idf`.** Use [`esp-idf`][esp-idf-framework-link] for ESP32 devices.
 - **`version` selects the framework release**, ESP-IDF for `esp-idf` and arduino-esp32 for `arduino`. It defaults to `recommended`. The names `recommended`, `latest`, and `dev` come from a table fixed per ESPHome release. So `latest` means the newest version that release knows, not the newest framework. In 2026.9.1 all three resolve to ESP-IDF 5.5.5 and arduino-esp32 3.3.11. An exact version number also works, and ESPHome warns when it differs from the recommended one.
 - **`platform_version` does nothing on the native toolchain.** ESPHome drops it without a warning, since it names a PlatformIO platform package. Under `toolchain: platformio` it selects the `pioarduino/platform-espressif32` release. There it needs an exact `version` beside it, since a named one fails validation.
@@ -410,7 +410,7 @@ The notes below were confirmed against the ESPHome 2026.9.1 source and a 2026.9.
 - **Most `esphome:` `platformio_options` are ignored on the native toolchain.** Each ignored key, such as `board_build.flash_mode`, gets a warning naming it. `build_flags` applies with a deprecation warning, pointing to `esphome:` `build_flags` instead. `lib_deps` and `lib_ignore` apply without a warning. `build_unflags` is ignored, with a warning for each flag. `upload_speed` is read at upload time. `board_upload.flash_size` fails validation on either toolchain.
 - **A build setting for an ESP32 belongs in an `esp32:` option**, such as `flash_mode`, or in `framework:` `sdkconfig_options:`.
 - **ESP8266, RP2040 and RP2350, LibreTiny, and the host platform build only with PlatformIO.** `platformio_options` and the PlatformIO version apply to them. The ESPHome release sets that PlatformIO version, and it cannot be updated independently.
-- **nRF52 builds with its own `sdk-nrf` toolchain by default**, and offers PlatformIO as the alternative.
+- **nRF52 builds with its own `sdk-nrf` toolchain by default.** Its PlatformIO toolchain is deprecated and scheduled for removal in 2027.2.0, as for ESP32.
 
 ## Building Against Patched ESPHome Core Components
 
@@ -429,7 +429,7 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
       refresh: 0s
   ```
 
-- **A local source is better for iterating**, since it needs no push per attempt. Copy the components out of the installed package into a git-ignored directory inside the copy, and patch them there. Then point `type: local` at the parent directory. A path inside the copy is what a container route can see through its `/config` mount. `.esphome/` works, but `esphome clean-all` empties it, per [Running the ESPHome CLI][running-the-esphome-cli]. Copy whole component directories: a stray `.cpp` landing beside the wrong headers fails the build with a confusing missing-header error rather than a path error.
+- **A local source is better for iterating**, since it needs no push per attempt. Copy the components out of the installed package into a git-ignored directory inside the copy, and patch them there. Then point `type: local` at the parent directory. A path inside the copy is what a container route can see through its `/config` mount. `.esphome/` works, but `esphome clean-all` empties it when given the copy or a YAML file in it, per [Running the ESPHome CLI][running-the-esphome-cli]. Copy whole component directories: a stray `.cpp` landing beside the wrong headers fails the build with a confusing missing-header error rather than a path error.
 - **Add temporary diagnostics to the core component this way too.** An `ESP_LOGW` inside the code under investigation settles a question that reading the source cannot, and the copy is deleted afterwards.
 - **Remember that `esphome upload` does not compile.** After a failed compile it happily flashes the previous binary, so a failed build followed by a successful upload means the device is running the *old* firmware. Check the compile result before reading anything into the device's behavior.
 
