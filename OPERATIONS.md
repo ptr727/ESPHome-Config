@@ -541,7 +541,7 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 - Install the dashboard's ESPHome version in the venv terminal: `pip install --upgrade setuptools wheel esphome==<version>`. ESPHome pins its own PlatformIO. The `uvx` route in [Running the ESPHome CLI][running-the-esphome-cli] runs the same commands without a venv.
 - Confirm the [ESPHome CLI][esphome-cli-link] is installed: `esphome version`.
 - Compile a project: `esphome compile test/esp32-s3-devkitc.yaml`.
-- For a dashboard, install [ESPHome Device Builder][device-builder-link] with `pip install esphome-device-builder` and run `esphome-device-builder`. The `esphome` package carries no dashboard, and `esphome dashboard` only prints a pointer to Device Builder.
+- For a dashboard, install [ESPHome Device Builder][device-builder-link] with `pip install esphome-device-builder` and run `esphome-device-builder .` from the root of the checkout. Without the path argument it serves `./configs`. The `esphome` package carries no dashboard, and `esphome dashboard` only prints a pointer to Device Builder.
 
 ### Debugging in the DevContainer
 
