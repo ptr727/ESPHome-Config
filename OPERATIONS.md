@@ -541,12 +541,15 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 - Install the dashboard's ESPHome version in the venv terminal: `pip install --upgrade setuptools wheel esphome==<version>`. ESPHome pins its own PlatformIO. The `uvx` route in [Running the ESPHome CLI][running-the-esphome-cli] runs the same commands without a venv.
 - Confirm the [ESPHome CLI][esphome-cli-link] is installed: `esphome version`.
 - Compile a project: `esphome compile test/esp32-s3-devkitc.yaml`.
-- For a dashboard, install [ESPHome Device Builder][device-builder-link] with `pip install esphome-device-builder` and run `esphome-device-builder`. The `esphome` package carries no dashboard, and `esphome dashboard` only prints a pointer to Device Builder.
+- For a dashboard, install [ESPHome Device Builder][device-builder-link] with `pip install esphome-device-builder` and run `esphome-device-builder .` from the root of the checkout. Without the path argument it serves `./configs`. The `esphome` package carries no dashboard, and `esphome dashboard` only prints a pointer to Device Builder.
 
 ### Debugging in the DevContainer
 
 - Complete the [VSCode setup][vscode-setup].
 - Open the workspace and clone into the devcontainer volume.
+- The image entrypoint serves Device Builder on port 6052. The `ESPHome Device Builder` launch config debugs a second instance beside it, on port 6054.
+- That instance keeps its lock and cloned packages in `/cache/debug-data`, because Device Builder allows one instance per data directory.
+- The two share the build tree and `/config/.device-builder-preferences.json`, so change settings and compile in one UI at a time.
 - TODO: serial port forwarding configuration.
 
 ### Debugging on Windows

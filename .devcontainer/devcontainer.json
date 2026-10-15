@@ -9,7 +9,8 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/config,type=bind",
 	"workspaceFolder": "/config",
 	"forwardPorts": [
-		6052
+		6052,
+		6054
 	],
 	"containerEnv": {
 		"ESPHOME_VERBOSE": "true",

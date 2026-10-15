@@ -4,14 +4,19 @@
     "configurations": [
         {
             // https://code.visualstudio.com/docs/python/debugging
-            "name": "ESPHome Dashboard",
+            "name": "ESPHome Device Builder",
             "type": "debugpy",
             "justMyCode": false,
             "request": "launch",
-            "module": "esphome",
+            "module": "esphome_device_builder",
+            "env": {
+                "ESPHOME_DATA_DIR": "/cache/debug-data"
+            },
             "args": [
-                "--verbose",
-                "dashboard",
+                "--log-level",
+                "debug",
+                "--port",
+                "6054",
                 "/config"
             ]
         }
