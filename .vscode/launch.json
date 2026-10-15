@@ -9,9 +9,14 @@
             "justMyCode": false,
             "request": "launch",
             "module": "esphome_device_builder",
+            "env": {
+                "ESPHOME_DATA_DIR": "/cache/debug-data"
+            },
             "args": [
                 "--log-level",
                 "debug",
+                "--port",
+                "6054",
                 "/config"
             ]
         }

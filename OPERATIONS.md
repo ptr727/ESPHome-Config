@@ -547,6 +547,8 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 
 - Complete the [VSCode setup][vscode-setup].
 - Open the workspace and clone into the devcontainer volume.
+- The image entrypoint serves Device Builder on port 6052. The `ESPHome Device Builder` launch config debugs a second instance beside it, on port 6054.
+- That instance keeps its state in `/cache/debug-data`, because Device Builder allows one instance per data directory.
 - TODO: serial port forwarding configuration.
 
 ### Debugging on Windows
