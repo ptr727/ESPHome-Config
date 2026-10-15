@@ -41,7 +41,7 @@ esphome:
   project: !remove
   # Stands in for the unimported wifi.yaml boot phase 1, without its BLE actions.
   # The remaining self-test phases come from the sub-packages' own on_boot entries.
-  # The LED is gated on the same switch as base.yaml's final phase, the only step that turns it off.
+  # The LED turns on only while the Startup LED Self-Test switch is on, as in the vendor's own phase 1.
   on_boot:
     - priority: 600
       then:
