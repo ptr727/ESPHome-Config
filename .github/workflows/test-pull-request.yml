@@ -137,7 +137,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           cp secrets._yaml secrets.yaml
-          sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$(openssl rand -base64 32)|" secrets.yaml
+          key="$(python3 -c 'import base64, os; print(base64.b64encode(os.urandom(32)).decode())')"
+          sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" secrets.yaml
 
       - name: Compile template test config step
         run: |
