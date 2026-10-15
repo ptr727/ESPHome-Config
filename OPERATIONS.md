@@ -21,7 +21,7 @@ Templates are consumed two ways. Inside this repository a device config composes
 
 The mechanics below were confirmed against ESPHome 2026.7.3 by validating a scratch config that pulled [`templates/common.yaml`][common-template] from `@main`.
 
-- **The package is cloned, not read from the working tree.** `esphome config` logs `INFO Cloning https://github.com/ptr727/ESPHome-Config.git@main` and resolves the files under `/cache/data/packages/<hash>/`. A relative `!include` inside a template therefore resolves against that cache, so sibling includes such as `common.yaml` pulling `wifi.yaml` work unchanged.
+- **The package is cloned, not read from the working tree.** `esphome config` logs `INFO Cloning https://github.com/ptr727/ESPHome-Config.git@main` and resolves the files under `packages/<hash>/` in ESPHome's data directory, per [Running the ESPHome CLI][running-the-esphome-cli]. A relative `!include` inside a template therefore resolves against that cache, so sibling includes such as `common.yaml` pulling `wifi.yaml` work unchanged.
 - **`!secret` falls back to the consuming config's own directory.** Resolution tries the package's `templates/secrets.yaml` first, whose `<<: !include ../secrets.yaml` fails because the repository root `secrets.yaml` is git-ignored, then tries a `secrets.yaml` beside the including config. An adopter supplies their own under the names in [`secrets._yaml`][secrets-example], and both paths appear in the error when neither exists.
 - **`test/` cannot use the remote form**, and the reason is the clone above. A `github://` package fetches the named ref rather than the working tree, so a compile test written that way would build `@main`'s copy of a template and pass while the change under test is broken. It also cannot work for a template that does not exist on the ref yet. Local `!include` is the only form that gates a diff.
 
@@ -55,25 +55,37 @@ A copy of this repository is either the `/config` mount of a running ESPHome das
 
 - Top-level `*.yaml` files are the per-device configs. [`templates/`][templates] holds the shared device and utility templates they include via `packages:`.
 - On the dashboard's copy, the tree is deployed state, and an edit applies at the next install from the dashboard.
-- On a development box, an edit reaches the dashboard only once it reaches the dashboard's copy. Validate and compile per [Compiling the Way CI Does][compiling-the-way-ci-does].
+- On a development box, an edit reaches the dashboard only once it reaches the dashboard's copy. Validate and compile per [Config and Compile Validation][config-and-compile-validation], on a route from [Running the ESPHome CLI][running-the-esphome-cli].
 - Network flashing works from either copy, with the ESPHome CLI's `upload --device <ip>`.
 - Serial flashing needs a USB port on the host running the flasher. The dashboard host may have none, so its USB install goes through the browser's Web Serial instead. That needs a Chromium-based browser on a secure page, meaning HTTPS or `localhost`. Otherwise, download the image from the install dialog and flash it with ESPHome Web.
-- A development box with USB ports flashes over serial with `esphome run --device <port>`, per [Debugging][debugging], or with `esptool` run through `uv` for a built image. Pin either route's ESPHome to the dashboard's version, as for the image tag below. It also serves for debugging.
+- A development box with USB ports flashes over serial with `esphome run --device <port>`, per [Debugging][debugging], or with `esptool` for a built image. It also serves for debugging.
 
-On the dashboard's copy, ESPHome runs in Docker under the container name `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image. Every ESPHome CLI invocation there runs **inside the container** and takes `/config/<file>.yaml` as its path argument. A host-side `esphome` binary, if one exists at all, is a different version from the one that actually validates and compiles.
+### Running the ESPHome CLI
 
-```shell
-docker exec esphome esphome config /config/<device>.yaml
-```
+The rest of this file writes a command as `esphome <command> <device>.yaml`, run from the root of the copy. Each route below runs that same command. Only how it is invoked and the path differ.
+
+- **The dashboard's container**, on the dashboard's copy only. ESPHome runs in Docker as the container `esphome`, from the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image, with the copy at `/config`. Prefix the command with `docker exec esphome`, and give the path as `/config/<device>.yaml`.
+- **A throwaway container**, on any checkout. It runs the same image, with the checkout at `/config` and a kept cache directory at `/cache`. [Compiling the Way CI Does][compiling-the-way-ci-does] has the full invocation, which is also how CI compiles.
+- **`uvx`**, on any checkout, with no container at all. `uvx --from esphome==<version> esphome <command> <device>.yaml` fetches that release into uv's cache and runs it. `uvx --from esphome==<version> esptool <command>` runs the `esptool` that release pins. This is the usual route for a board on a development box's USB port, since a container needs the serial device passed through.
+
+A venv holding a pinned `esphome`, per [VSCode Setup][vscode-setup], behaves like the `uvx` route.
+
+**Pin the version before anything ships.** The dashboard's ESPHome builds the deployed firmware, so check a change against that version. Read it with `docker exec esphome esphome version` on the dashboard's host. A throwaway container pins it as the image tag, and `uvx` pins it as `esphome==<version>`. The CI-parity compile in [Compiling the Way CI Does][compiling-the-way-ci-does] runs `latest` on purpose, and is the one exception. An `esphome` already on a host's `PATH` is whatever version was installed last, so never trust it unpinned.
+
+**Every route needs a `secrets.yaml` at the root of the copy.** [Compiling the Way CI Does][compiling-the-way-ci-does] explains why. Its guard block generates one from [`secrets._yaml`][secrets-example]. Set `config_dir` to a checkout's absolute path, and the block runs on its own for either checkout route. The dashboard's copy already holds the real `secrets.yaml`, so it needs no guard.
+
+**ESPHome keeps the state of each config in its data directory.** That is `.esphome/` beside the config by default, which `.gitignore` excludes, or `$ESPHOME_DATA_DIR` when set. It holds the cloned `github://` packages under `packages/` and the fetched external components under `external_components/`. The build tree goes under `build/` there, unless `$ESPHOME_BUILD_PATH` moves it. The image sets the two variables to `/cache/data` and `/cache/build`. In a container route, the paths this file gives under `.esphome/` therefore live under `/cache` instead.
+
+**The toolchain lives outside the copy.** ESPHome installs ESP-IDF in the user's cache directory, `~/.cache/esphome/idf` on Linux, unless `$ESPHOME_ESP_IDF_PREFIX` moves it. Its ccache store sits there too, whenever a `ccache` binary is on `PATH`. On the `uvx` route that is the host user's own cache, several hundred megabytes after a first ESP32 compile. The image installs `ccache` and points `HOME` at `/cache/home`, so a container route keeps both in its kept cache directory. `esphome clean-all` deletes this toolchain cache wherever it lives, the PlatformIO core directory, and the data directory of each config it reaches. Run it only when a rebuild from scratch is the goal.
 
 ## Config and Compile Validation
 
 Whenever a device YAML, or a template included by one, changes, run config validation for every affected device. When the change is in a template, validate at least one device that uses it, and prefer all of them when it is not obvious which ones consume it.
 
-The commands below run on the dashboard's copy. On a development box, run the same CLI calls in the throwaway container from [Compiling the Way CI Does][compiling-the-way-ci-does].
+Run the commands below on any of the routes in [Running the ESPHome CLI][running-the-esphome-cli].
 
 ```shell
-docker exec esphome esphome config /config/<device>.yaml
+esphome config <device>.yaml
 ```
 
 Look for `INFO Configuration is valid!` at the bottom. An earlier `Failed config` block means the change is broken even when the line count looks right.
@@ -81,14 +93,14 @@ Look for `INFO Configuration is valid!` at the bottom. An earlier `Failed config
 `esphome config` checks YAML schema and substitution resolution only. It does **not** catch compile errors. When a change touches lambdas, conditional compilation, external components, or framework and platform versions, also compile:
 
 ```shell
-docker exec esphome esphome compile /config/<device>.yaml
+esphome compile <device>.yaml
 ```
 
 A compile costs minutes, so reserve it for changes that can plausibly affect generated code. For pure YAML-shape changes, meaning renaming entities, adjusting intervals, or swapping substitution values that map to enum members, `config` is usually enough, but compile when in doubt.
 
 ### Compiling the Way CI Does
 
-A development-box checkout compiles without the dashboard. Mount it at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow]. On the same image tag, a compile that fails here fails there.
+A checkout compiles without the dashboard. Mount it at `/config` in a throwaway container and run the CLI there. The container, the mounts, and the two CLI calls match the compile job in [`test-pull-request.yml`][test-workflow]. On the same image tag, a compile that fails here fails there. The `uvx` route compiles the same config without Docker. It runs on the host's Python and libraries rather than the image's, so it is the convenient route rather than the parity one.
 
 ```shell
 config_dir=<absolute path to a checkout, never the deployed tree>
@@ -98,7 +110,7 @@ if [ ! -f "$config_dir/secrets.yaml" ]; then
   key="$(openssl rand -base64 32)"
   tmp=""
   if [ -n "$key" ] && grep -q REPLACE_WITH_BASE64_32_BYTE_KEY "$config_dir/secrets._yaml" \
-    && tmp="$(mktemp /tmp/esphome-secrets.XXXXXX)" \
+    && tmp="$(mktemp -t esphome-secrets.XXXXXX)" \
     && sed "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" "$config_dir/secrets._yaml" > "$tmp" \
     && mv "$tmp" "$config_dir/secrets.yaml"; then
     echo "secrets.yaml generated"
@@ -119,8 +131,8 @@ fi
 ```
 
 - **Both paths are absolute.** Docker reads a relative `--volume` source as a named volume. A relative value therefore mounts an empty volume, and the compile fails on a path the caller can see on disk.
-- **Point `config_dir` at a checkout rather than at the deployed tree.** The running container has that tree mounted already, and a second compile in it shares one `.esphome/`.
-- **`latest` gives CI parity, not dashboard parity.** CI pulls `latest` fresh on every run, so run `docker pull ptr727/esphome-nonroot:latest` first for parity. That can be newer than the dashboard's last pull. Before an install, rerun with the image tag set to the dashboard's ESPHome version. Read that version with `docker exec esphome esphome version` on its host. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`.
+- **Point `config_dir` at a checkout rather than at the deployed tree.** The dashboard's container already serves that tree, so compile it there with `docker exec` rather than in a second container.
+- **`latest` gives CI parity, not dashboard parity.** CI pulls `latest` fresh on every run, so run `docker pull ptr727/esphome-nonroot:latest` first for parity. That can be newer than the dashboard's last pull. Before an install, rerun with the image tag set to the dashboard's ESPHome version, per [Running the ESPHome CLI][running-the-esphome-cli]. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
@@ -131,9 +143,9 @@ fi
 ## Flashing and sdkconfig
 
 - **`esphome upload` does not compile.** It flashes the last built binary, so after editing YAML run `esphome compile` first, or `esphome run`, which is compile plus upload plus logs. Skipping the compile flashes a stale binary and shows no change. On a cleaned build tree `upload` fails with `FileNotFoundError: .../<device>.bin`.
-- **sdkconfig changes need a clean build.** Options that map to an esp-idf sdkconfig entry, such as `esp32_ble` `max_connections` mapping to `CONFIG_BTDM_CTRL_BLE_MAX_CONN` and `CONFIG_BT_ACL_CONNECTIONS`, or anything under `esp32: framework: sdkconfig_options:`, are not reliably regenerated by an incremental compile. The generated C++ updates while the controller keeps the cached sdkconfig, so the change has no effect at runtime and nothing reports an error. Run `esphome clean /config/<device>.yaml`, then a full `esphome compile`, and confirm the built value in `/cache/build/<device>/sdkconfig.<device>` before uploading.
+- **sdkconfig changes need a clean build.** Options that map to an esp-idf sdkconfig entry, such as `esp32_ble` `max_connections` mapping to `CONFIG_BTDM_CTRL_BLE_MAX_CONN` and `CONFIG_BT_ACL_CONNECTIONS`, or anything under `esp32: framework: sdkconfig_options:`, are not reliably regenerated by an incremental compile. The generated C++ updates while the controller keeps the cached sdkconfig, so the change has no effect at runtime and nothing reports an error. Run `esphome clean <device>.yaml`, then a full `esphome compile`. Before uploading, confirm the built value in the build tree's `sdkconfig.<name>`. By default the tree is `.esphome/build/<name>/` beside the YAML, where `<name>` is the node's `esphome:` `name`.
 - **A device answers to its FQDN, not to `<name>.local`.** DHCP hands out a default domain that the local DNS serves, and [`templates/wifi.yaml`][wifi-template] passes it to the `wifi` component as the `wifi_domain` secret, so a WiFi device is `<device_name><wifi_domain>`. Read the current value from `secrets.yaml` rather than assuming, and note that an Ethernet device such as the GL-S10 sets no domain of its own and is reachable only by whatever DHCP registered for it.
-- **Flash by IP when the name does not resolve** from the container: `docker exec esphome esphome upload /config/<device>.yaml --device <ip>`. Stream logs the same way with `esphome logs ... --device <ip>`. The API port is 6053 and OTA is 3232. Home Assistant carries each device's current address in its `IP Address` text sensor, which is the quickest way to look one up.
+- **Flash by IP when the name does not resolve** from wherever the CLI runs, a container included: `esphome upload <device>.yaml --device <ip>`. Stream logs the same way with `esphome logs <device>.yaml --device <ip>`. The API port is 6053 and OTA is 3232. Home Assistant carries each device's current address in its `IP Address` text sensor, which is the quickest way to look one up.
 - **OTA authenticates with the API encryption key, so the running firmware must offer encryption.** [`templates/ota.yaml`][ota-template] carries `encryption:` and no password. Firmware built on ESPHome 2026.9.0 or later derives the OTA key from the API key, even while a password is configured. Older firmware accepts only the password, so the uploader refuses to send it the encryption-only image, and the device keeps running its old firmware. Upgrade such a device in two steps. First OTA a build from release `2.2.16`, the last one using the password, made on ESPHome 2026.9.1 or later. Then OTA the current build. Treat a password build made on 2026.9.0 as old firmware too, since it crashes on an encrypted upload in safe mode. Keep `ota_password` in `secrets.yaml` until every device has taken the first step.
 - **`max_connections` lives on the `esp32_ble` component**, not `esp32_ble_tracker`. The `esp32_ble_tracker` location is deprecated and falls back to the default without warning. The value is one per `ble_client`, plus 3 more when the device also runs a `bluetooth_proxy`, whose active default claims 3.
 
@@ -141,19 +153,21 @@ fi
 
 A device's `api:` accepts only `max_connections` clients, defaulting to **5** on ESP32. Home Assistant and the ESPHome dashboard each hold one, which leaves a few spare.
 
-`timeout N docker exec esphome esphome logs ...` kills the `docker exec` client but **not** the `esphome logs` process inside the container. That process is orphaned and keeps retrying, holding a slot. A handful of these saturate the cap, which shows as `[W][api:247]: Max connections (5), rejecting <ip>` and makes every client, including Home Assistant, flap with `EOF received (SocketClosedAPIError)`.
-
-Put the timeout **inside** the container and give the output a file rather than a pipe, which reaps the session on its own and exits 124:
+A logs session that outlives its caller keeps retrying and holds a slot. A handful of these saturate the cap, which shows as `[W][api:247]: Max connections (5), rejecting <ip>` and makes every client, including Home Assistant, flap with `EOF received (SocketClosedAPIError)`. So bound every session with `timeout`, and send the output to a file in the git-ignored `logs/` directory rather than to a pipe:
 
 ```shell
-docker exec esphome timeout 45 esphome logs /config/<device>.yaml --device <ip> > /tmp/<device>.log 2>&1
+mkdir -p logs
+timeout 45 esphome logs <device>.yaml --device <ip> > logs/<device>.log 2>&1
 ```
 
-Anything that closes the client's stdout early detaches it the same way the outer-timeout form does, so a trailing `| head -N` leaves the in-container process running until its own timeout expires. Capture to a file and read the file.
+- **On the `uvx` route, the outer `timeout` is enough.** `timeout 25 uvx --from esphome==2026.9.1 esphome logs ...` exits 124 and leaves no `esphome logs` process behind.
+- **In the dashboard's container, the timeout goes inside it.** `timeout 45 docker exec esphome esphome logs ...` kills the `docker exec` client but **not** the `esphome logs` process inside the container. That process is orphaned and holds its slot. `docker exec esphome timeout 45 esphome logs /config/<device>.yaml --device <ip> > logs/<device>.log 2>&1` reaps the session on its own and exits 124.
+- **In a throwaway container, the timeout goes inside it too.** `docker run --rm ... ptr727/esphome-nonroot:<version> timeout 45 esphome logs ...` exits 124 and leaves no container. With `timeout` outside `docker run`, the container keeps running after the timeout expires. Find a leftover with `docker ps`, and stop it with `docker stop <container>`.
+- **A pipe that closes early on `docker exec` orphans the process the same way.** A trailing `| head -N` on `docker exec` leaves the in-container process running until its own timeout expires. Capture to a file and read the file.
 
 To see a device's boot banner and `dump_config`, attach first and then restart it from Home Assistant's `Restart` button. Early boot output predates the API connection and is only ever on the serial console.
 
-Run at most one short logs session at a time and clean up leftovers. The container has no `kill` or `pkill` binary, so use the `sh` builtin over `/proc`:
+Run at most one short logs session at a time and clean up leftovers. In the dashboard's container, which has no `kill` or `pkill` binary, use the `sh` builtin over `/proc`:
 
 ```shell
 docker exec esphome sh -c 'self=$$; for d in /proc/[0-9]*; do
@@ -194,14 +208,14 @@ ESPHome runs its substitution pass over every parsed config value. A `$` before 
 
 ## Verifying Component Knobs
 
-When wiring up a substitution that maps to an ESPHome component field with a constrained value set, meaning an enum or an allowed-values list, verify the valid values from the component source first. Grep the **running container's** copy, which is the version that actually validates and compiles:
+Some substitutions map to an ESPHome component field with a constrained value set, meaning an enum or an allowed-values list. Before wiring one up, verify the valid values from the component source. Grep the installed package of the **pinned version**, the one that validates and compiles, per [Running the ESPHome CLI][running-the-esphome-cli]. Through `uvx`:
 
 ```shell
-docker exec esphome sh -c 'D=$(python -c "import esphome,os;print(os.path.dirname(esphome.__file__))"); \
-  grep -nE "<option>" "$D/components/<component>/__init__.py"'
+D=$(uvx --from esphome==<version> python -c "import esphome,os;print(os.path.dirname(esphome.__file__))")
+grep -nE "<option>" "$D/components/<component>/__init__.py"
 ```
 
-Always grep the container, never a local ESPHome source checkout on the host. A local copy can be **stale** relative to the running version, and one lagged a `max_connections` relocation. The schema with the canonical enum lives in `sensor.py`, `__init__.py`, or another `*.py` under the component directory. Enum membership in the installed ESPHome version is the only authority, so do not rely on memory or external docs alone.
+In the dashboard's container, run the same two lines inside `docker exec esphome sh -c '...'` with plain `python`. Never grep the working tree of an ESPHome source checkout, which can be **stale** relative to the pinned version. One lagged a `max_connections` relocation. Reading a checkout at the pinned release tag with `git show <version>:<path>` is equivalent to the installed package. The schema with the canonical enum lives in `sensor.py`, `__init__.py`, or another `*.py` under the component directory. Enum membership in the installed ESPHome version is the only authority, so do not rely on memory or external docs alone.
 
 For a concrete failure this prevents: `variant: AHT21` looks like a valid value for the `aht10` platform, but the component's `AHT10_VARIANTS` dict contains only `AHT10` and `AHT20`. `esphome config` catches it, and grepping the component first catches it sooner.
 
@@ -229,7 +243,7 @@ Apollo PLT-1B, Konnected blaQ, and CeilSense all follow one pattern for converti
 
 ### Apollo PLT-1B
 
-[`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. The upstream package is cached at `/cache/data/packages/<hash>/Integrations/ESPHome/`, so read those files to answer "where does Apollo set X" questions.
+[`templates/apollo-plt-1b.yaml`][apollo-template] imports the full upstream `github://ApolloAutomation/PLT-1/Integrations/ESPHome/PLT-1B.yaml@main` package and surgically strips stock provisioning. After any `esphome config` of a device using it, the upstream package is cached in ESPHome's data directory, under `packages/<hash>/Integrations/ESPHome/`. Read those files to answer "where does Apollo set X" questions.
 
 Four substitutions are exposed for per-plant override:
 
@@ -385,17 +399,25 @@ When a CLI tool is needed, look for it first on `PATH`, then in package-manager 
 
 ## Framework and Platform Versions
 
-- The PlatformIO version is determined by the ESPHome release and cannot be updated independently.
-- `framework:` `type:` is either `arduino` or `esp-idf`. Use [`esp-idf`][esp-idf-framework-link] for ESP32 devices.
-- `platform_version` specifies the `platformio/espressif32` [version][espressif32-versions-link]. `latest` is not supported, so use an exact version number.
-- `version` specifies the `platformio/framework-espidf` [version][framework-espidf-link]. `latest` resolves to the version supported by `platformio/espressif32` at release time, not the current latest version.
+The notes below were confirmed against the ESPHome 2026.9.1 source and a 2026.9.1 ESP-IDF build. The source files are `esphome/components/esp32/__init__.py`, `esphome/core/config.py`, `esphome/core/__init__.py`, and `esphome/__main__.py`, plus each platform's own `__init__.py`.
+
+- **An ESP32 builds with the native `esp-idf` toolchain by default, not with PlatformIO.** ESPHome downloads ESP-IDF itself and builds with CMake and Ninja. The build tree holds a `CMakeLists.txt` and no `platformio.ini`.
+- **`esp32:` `toolchain: platformio` selects the PlatformIO route.** `esphome --toolchain platformio` on the command line does the same and overrides the YAML. ESPHome warns that this route is deprecated and scheduled for removal in 2027.2.0.
+- **`framework:` `type:` is either `arduino` or `esp-idf`.** Use [`esp-idf`][esp-idf-framework-link] for ESP32 devices.
+- **`version` selects the framework release**, ESP-IDF for `esp-idf` and arduino-esp32 for `arduino`. It defaults to `recommended`. The names `recommended`, `latest`, and `dev` come from a table fixed per ESPHome release. So `latest` means the newest version that release knows, not the newest framework. In 2026.9.1 all three resolve to ESP-IDF 5.5.5 and arduino-esp32 3.3.11. An exact version number also works, and ESPHome warns when it differs from the recommended one.
+- **`platform_version` does nothing on the native toolchain.** ESPHome drops it without a warning, since it names a PlatformIO platform package. Under `toolchain: platformio` it selects the `pioarduino/platform-espressif32` release. There it needs an exact `version` beside it, since a named one fails validation.
+- **`source` overrides where the framework is downloaded from.** On the native toolchain ESPHome keeps it and warns whenever it is set. Under `toolchain: platformio` it needs an exact `version`, as `platform_version` does.
+- **Most `esphome:` `platformio_options` are ignored on the native toolchain.** Each ignored key, such as `board_build.flash_mode`, gets a warning naming it. `build_flags` applies with a deprecation warning, pointing to `esphome:` `build_flags` instead. `lib_deps` and `lib_ignore` apply without a warning. `build_unflags` is ignored, with a warning for each flag. `upload_speed` is read at upload time. `board_upload.flash_size` fails validation on either toolchain.
+- **A build setting for an ESP32 belongs in an `esp32:` option**, such as `flash_mode`, or in `framework:` `sdkconfig_options:`.
+- **ESP8266, RP2040 and RP2350, LibreTiny, and the host platform build only with PlatformIO.** `platformio_options` and the PlatformIO version apply to them. The ESPHome release sets that PlatformIO version, and it cannot be updated independently.
+- **nRF52 builds with its own `sdk-nrf` toolchain by default.** Its PlatformIO toolchain is deprecated and scheduled for removal in 2027.2.0, like the ESP32 one.
 
 ## Building Against Patched ESPHome Core Components
 
-Testing a candidate fix to an ESPHome core component does not need a custom image, a venv, or a container change. `external_components` shadows a built-in component of the same name, because `loader.install_meta_finder()` inserts its finder at the front of `sys.meta_path`.
+Testing a candidate fix to an ESPHome core component does not need a custom image, a venv, or a container change. It works the same on every route in [Running the ESPHome CLI][running-the-esphome-cli]. `external_components` shadows a built-in component of the same name, because `loader.install_meta_finder()` inserts its finder at the front of `sys.meta_path`.
 
-- **Confirm the installed sources match the branch you are patching before trusting the result.** Compare the container's `/opt/venv/lib/python*/site-packages/esphome/components/<name>/` against the upstream ref. When they are identical, a build in the live instance is a valid test of that ref.
-- **A git source pulls a fork branch**, and needs `components:` listed explicitly because a full fork exceeds the loader's 100-component limit. Use `refresh: 0s` so an amended branch is re-fetched rather than served from `/cache/data/external_components/`.
+- **Confirm the installed sources match the branch you are patching before trusting the result.** Compare `components/<name>/` in the pinned version's installed package, found as in [Verifying Component Knobs][verifying-component-knobs], against the upstream ref. When they are identical, a build on that version is a valid test of that ref.
+- **A git source pulls a fork branch**, and needs `components:` listed explicitly because a full fork exceeds the loader's 100-component limit. Use `refresh: 0s` so an amended branch is re-fetched rather than served from `external_components/` in ESPHome's data directory.
 
   ```yaml
   external_components:
@@ -407,7 +429,7 @@ Testing a candidate fix to an ESPHome core component does not need a custom imag
       refresh: 0s
   ```
 
-- **A local source is better for iterating**, since it needs no push per attempt. Copy the components out of the image into a path under `/config` and patch them there, then point `type: local` at the parent directory. Copy whole component directories: a stray `.cpp` landing beside the wrong headers fails the build with a confusing missing-header error rather than a path error.
+- **A local source is better for iterating**, since it needs no push per attempt. Copy the components out of the installed package into a git-ignored directory inside the copy, and patch them there. Then point `type: local` at the parent directory. A path inside the copy is what a container route can see through its `/config` mount. `.esphome/` works, but `esphome clean-all` can empty it, per [Running the ESPHome CLI][running-the-esphome-cli]. Copy whole component directories: a stray `.cpp` landing beside the wrong headers fails the build with a confusing missing-header error rather than a path error.
 - **Add temporary diagnostics to the core component this way too.** An `ESP_LOGW` inside the code under investigation settles a question that reading the source cannot, and the copy is deleted afterwards.
 - **Remember that `esphome upload` does not compile.** After a failed compile it happily flashes the previous binary, so a failed build followed by a successful upload means the device is running the *old* firmware. Check the compile result before reading anything into the device's behavior.
 
@@ -516,7 +538,7 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 - Install the recommended extensions from the workspace.
 - Associate YAML files with ESPHome, from the ESPHome extension.
 - Select the default Python interpreter and create a virtual environment, via Ctrl-Shift-P then Python.
-- Install ESPHome in the venv terminal: `pip install --upgrade [--pre] setuptools wheel platformio esphome`.
+- Install the dashboard's ESPHome version in the venv terminal: `pip install --upgrade setuptools wheel esphome==<version>`. ESPHome pins its own PlatformIO. The `uvx` route in [Running the ESPHome CLI][running-the-esphome-cli] runs the same commands without a venv.
 - Confirm the [ESPHome CLI][esphome-cli-link] is installed: `esphome version`.
 - Compile a project: `esphome compile test/esp32-s3-devkitc.yaml`.
 - Launch the dashboard with `esphome dashboard .` and open [localhost:6052][dashboard-link].
@@ -571,9 +593,11 @@ The steps below run ESPHome outside the live instance, on a workstation, which i
 
 ### Debugging in PlatformIO
 
+This applies only to a device that builds with PlatformIO. An ESP32 on the default native toolchain has no PlatformIO project to open, per [Framework and Platform Versions][framework-and-platform-versions].
+
 - Complete the [VSCode setup][vscode-setup] and install the PlatformIO extension.
 - Compile the project with `esphome compile [project]`.
-- Launch the PlatformIO extension and open the project folder, for example `./.esphome/build/esp32-s3-test`.
+- Launch the PlatformIO extension and open the project folder, `.esphome/build/<name>/` beside the YAML, where `<name>` is the node's `esphome:` `name`.
 - PlatformIO opens a new instance of VSCode for that project.
 - Select the default Python interpreter and create a virtual environment, via Ctrl-Shift-P then Python.
 - PlatformIO Core installs into the virtual environment and uses that environment's Python.
@@ -592,7 +616,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
   ```shell
   set -Eeuo pipefail
   repo_root="$(git rev-parse --show-toplevel)"
-  lint_root="$(mktemp -d /tmp/esphome-lint.XXXXXX)"
+  lint_root="$(mktemp -d -t esphome-lint.XXXXXX)"
   trap 'rm -rf "$lint_root"' EXIT
   git -C "$repo_root" ls-files --cached --others --exclude-standard -z | tar -C "$repo_root" --null -T - -cf - | tar -xf - -C "$lint_root"
   docker run --rm --network=none --user "$(id -u):$(id -g)" -v "$lint_root":/workdir:ro --workdir /workdir <lint-image> <arguments>
@@ -609,10 +633,10 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 ## Things to Avoid
 
 - Do not claim a config change works until `esphome config`, and where appropriate `esphome compile`, returns success.
-- Do not invent enum values, component fields, or framework option names. Grep the component source in the running container when uncertain.
+- Do not invent enum values, component fields, or framework option names. Grep the component source of the pinned version when uncertain.
 - Do not `!remove` blocks from a vendor package without checking what depends on the ids inside. A missing id surfaces as a compile error, not a config error.
 - Do not raise `api: max_connections` to work around leaked logs sessions.
-- Do not run an ESPHome CLI command against a host-side install. The container's version is the one that validates and compiles.
+- Do not run an ESPHome CLI command on an unpinned install, apart from the CI-parity `latest` compile. Pin it to the dashboard's version, which builds what ships, per [Running the ESPHome CLI][running-the-esphome-cli].
 
 <!-- Repo -->
 
@@ -626,12 +650,14 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
 [compiling-the-way-ci-does]: #compiling-the-way-ci-does
+[config-and-compile-validation]: #config-and-compile-validation
 [debugging]: #debugging
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
 [dollar-signs]: #dollar-signs-in-config-values
 [easystart-protocol]: ./easystart/PROTOCOL.md
 [easystart-template]: ./templates/easystart.yaml
+[framework-and-platform-versions]: #framework-and-platform-versions
 [garage-presence-sensor]: ./garage-presence-sensor.yaml
 [gh-cli-too-old]: #the-gh-cli-is-too-old-for-gh-pr-edit
 [governance]: ./GOVERNANCE.md
@@ -646,6 +672,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [repository-tooling-hazards]: #repository-tooling-hazards
 [rgb-led-status]: #rgb-led-status
 [rgb-led-status-template]: ./templates/rgb-led-status.yaml
+[running-the-esphome-cli]: #running-the-esphome-cli
 [secrets-example]: ./secrets._yaml
 [secrets-template]: ./templates/secrets.yaml
 [strapping-pin-warnings]: #strapping-pin-warnings
@@ -653,6 +680,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [templates]: ./templates/
 [test]: ./test/
 [test-workflow]: ./.github/workflows/test-pull-request.yml
+[verifying-component-knobs]: #verifying-component-knobs
 [vscode-setup]: #vscode-setup
 [waveshare-camera]: #waveshare-esp32-s3-eth-camera
 [waveshare-camera-template]: ./templates/waveshare-esp32-s3-eth-camera.yaml
@@ -670,9 +698,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [esphome-fork-link]: https://github.com/ptr727/esphome-esphome
 [esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [esphome-upstream-link]: https://github.com/esphome/esphome
-[espressif32-versions-link]: https://registry.platformio.org/platforms/platformio/espressif32/versions
 [flo-r1der-link]: https://github.com/Flo-R1der/ESPHome_RGB-Status-LED_Package
-[framework-espidf-link]: https://registry.platformio.org/tools/platformio/framework-espidf
 [option-zero-link]: https://github.com/Option-Zero/esphome-components
 [packages-link]: https://esphome.io/components/packages
 [substitutions-link]: https://esphome.io/components/substitutions
