@@ -41,14 +41,19 @@ esphome:
   project: !remove
   # Stands in for the unimported wifi.yaml boot phase 1, without its BLE actions.
   # The remaining self-test phases come from the sub-packages' own on_boot entries.
+  # The LED turns on only while the Startup LED Self-Test switch is on, as in the vendor's own phase 1.
   on_boot:
     - priority: 600
       then:
         - lambda: 'id(startup_phase) = 1;'
-        - light.turn_on:
-            id: status_led
-            brightness: 80%
-            effect: "Circular Loading Effect"
+        - if:
+            condition:
+              switch.is_on: startup_led_test_enabled
+            then:
+              - light.turn_on:
+                  id: status_led
+                  brightness: 80%
+                  effect: "Circular Loading Effect"
         - wait_until:
             condition:
               wifi.connected:
