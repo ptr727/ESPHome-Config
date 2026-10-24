@@ -1,0 +1,456 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/m5stack-cores3.yaml@main
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Required substitutions:
+# - device_name - the ESPHome node name.
+# - device_friendly_name - the Home Assistant display name.
+
+# Optional substitutions:
+# - backlight_brightness - 80%, the level the backlight turns on at during boot.
+# - bus_power_restore_mode - ALWAYS_OFF, ALWAYS_ON feeds 5V out to the M5-Bus and the Grove ports.
+# - mic_gain - 36dB, the ES7210 microphone gain, M5Stack's own value.
+
+# M5Stack CoreS3 ESP32-S3 IoT Development Kit
+# ESP32-S3, 16MB Quad Flash, 8MB Quad PSRAM
+# https://shop.m5stack.com/products/m5stack-cores3-esp32s3-iotdevelopment-kit
+# https://docs.m5stack.com/en/core/CoreS3
+
+# Board tested: 2026-10-24, USB and OTA flash, display, touch, backlight, speaker, microphone, RTC, light, proximity, IMU, PMU temperature.
+# - Battery sensing is untested, since the bench unit had no cell fitted.
+# - The bench unit draws correctly on the ILI9342C init, and a unit carrying an ILI9342E is untested.
+
+# The CoreS3-Lite carries the same hardware, the CoreS3-SE lacks the camera, the proximity sensor, the IMU and the battery.
+# - On an SE those components report failed at boot and the rest runs, so remove them in the device.
+
+# The display, the touchscreen and the backlight are configured here, because each one depends on board plumbing.
+# - The LCD and touch resets are AW9523B expander pins, and the backlight is an AXP2101 rail.
+# - The display carries no lambda, so a device draws with LVGL, see test/m5stack-cores3.yaml.
+# - A lambda device extends board_display with lambda, update_interval and auto_clear_enabled true instead.
+
+# ESPHome core carries no AXP2101, AW9523B or AW88298 driver, so those come from M5Stack's own components.
+# - They are pinned to a commit, so an upstream change cannot alter a build that did not change.
+
+# GPIO19, GPIO20 : native USB, so flashing needs no adapter and no UART bridge
+# GPIO43, GPIO44 : UART0, broken out to the M5-Bus, unused here
+
+# Internal I2C bus
+# GPIO12 : sda
+# GPIO11 : scl
+# - 0x34 AXP2101 PMU, 0x58 AW9523B expander, 0x51 BM8563 RTC, 0x69 BMI270 IMU.
+# - 0x23 LTR-553ALS light and proximity, 0x38 FT6336U touch, 0x21 GC0308 camera.
+# - 0x40 ES7210 microphone ADC, 0x36 AW88298 speaker amplifier.
+# - The BMI270 strap differs from the ESPHome default of 0x68, and the LTR-553 from 0x29.
+# - The BMM150 magnetometer sits behind the BMI270 auxiliary bus, not on this one, and is not configured.
+
+# AW9523B expander pins
+# 0  : touch reset
+# 1  : BUS_OUT_EN, 5V out to the M5-Bus and Grove ports
+# 2  : AW88298 reset
+# 3  : ES7210 interrupt, unclaimed here
+# 4  : microSD card detect, unclaimed here
+# 5  : USB_OTG_EN
+# 8  : camera reset
+# 9  : LCD reset
+# 10 : touch interrupt, unclaimed here
+# 11 : AW88298 interrupt, unclaimed here
+# 15 : BOOST_EN, the 5V boost
+# - The expander's own interrupt output reaches GPIO21, so touch interrupts would need the expander to service them.
+# - Touch is polled instead, which is what M5Stack's own configuration does.
+
+# AXP2101 rails
+# DLDO1 : LCD backlight, its voltage is the brightness
+# ALDO1 : 1.8V, AW88298
+# ALDO2 : 3.3V, ES7210
+# ALDO3 : 3.3V, camera
+# ALDO4 : 3.3V, microSD slot
+# BLDO1 : 2.8V, BLDO2 : 1.5V, M5Stack's values, which it does not document
+# - The power button is wired to the PMU only, so it never reaches the ESP32.
+
+# SPI bus, shared by the LCD and the microSD slot
+# GPIO36 : sclk
+# GPIO37 : mosi
+# GPIO35 : miso, which is also the LCD dc pin
+# GPIO3  : LCD cs
+# GPIO4  : microSD cs, documented rather than configured
+# - ESPHome core has no SD card component, and the one SPI external component opens its own bus.
+# - That bus would collide with the LCD on the same pins, so the slot is left unclaimed.
+
+# ILI9342 320x240 IPS, driven through the original Core's mipi_spi preset with the CoreS3 pins.
+# - Units made from 2026-08-07 carry an ILI9342E, which M5Stack documents as needing a different init sequence.
+# - The touch panel maps x 0 to 319 and y 0 to 239 with no offset, the same as M5Stack's own M5GFX driver.
+
+# I2S bus
+# GPIO0  : mclk
+# GPIO34 : bclk
+# GPIO33 : lrclk
+# GPIO13 : dout, to the AW88298 speaker amplifier
+# GPIO14 : din, from the ES7210 microphone ADC
+# - The microphone and the speaker share the bus, so only one of them runs at a time.
+
+# GC0308 camera, configured by the optional m5stack-cores3-camera.yaml overlay rather than here
+# - Its pixel clock is GPIO45, the strap that picks the flash voltage at every reset.
+# - The camera stays in reset here, so a board without the overlay boots whatever reset it takes.
+
+# Grove ports, left to the device
+# Port A : GPIO2 sda, GPIO1 scl
+# Port B : GPIO9, GPIO8
+# Port C : GPIO17 tx, GPIO18 rx
+# - The Port 5V pins follow the Bus Power Out switch when the board runs from its battery.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  backlight_brightness: 80%
+  bus_power_restore_mode: ALWAYS_OFF
+  mic_gain: 36dB
+
+# https://esphome.io/components/esphome
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+  # https://esphome.io/components/esphome#esphome-on_boot
+  on_boot:
+
+    # The rail outputs set nothing until turned on, so a rail would otherwise keep whatever the last firmware left.
+    # - This runs after the PMU and before the ADC and the amplifier set up.
+    - priority: 800
+      then:
+        - output.turn_on: amplifier_rail
+        - output.turn_on: microphone_rail
+        - output.turn_on: camera_rail
+        - output.turn_on: sd_card_rail
+        - output.turn_on: bldo1_rail
+        - output.turn_on: bldo2_rail
+
+    - priority: 600
+      then:
+        - light.turn_on:
+            id: lcd_backlight
+            brightness: ${backlight_brightness}
+
+# https://esphome.io/components/esp32
+esp32:
+  # PlatformIO carries no CoreS3 board definition, and the DevKitC-1 profile matches the module.
+  # https://docs.platformio.org/en/latest/boards/espressif32/esp32-s3-devkitc-1.html
+  board: esp32-s3-devkitc-1
+
+  # The board definition does not set this, ESPHome defaults to 4MB.
+  flash_size: 16MB
+
+  # https://esphome.io/components/esp32#esp-idf-framework
+  framework:
+    type: esp-idf
+
+# https://esphome.io/components/psram
+# The PSRAM is a separate quad part, and ESPHome has no default mode on the S3.
+psram:
+  mode: quad
+  speed: 80MHz
+
+# https://esphome.io/components/packages#local-packages
+packages:
+  common: !include common.yaml
+  temperature: !include temperature.yaml
+
+# USB is the chip's own port, with no UART bridge on this board.
+# https://esphome.io/components/logger
+logger:
+  hardware_uart: USB_SERIAL_JTAG # UART0, UART1, USB_CDC, USB_SERIAL_JTAG
+
+# https://esphome.io/components/external_components
+external_components:
+
+  # https://github.com/m5stack/esphome-yaml/tree/main/components
+  - source:
+      type: git
+      url: https://github.com/m5stack/esphome-yaml
+      ref: 19eb639ca6dc9b31ea16ca1cd136a2ac262c6a03
+    components: [axp2101, aw9523b, aw88298]
+
+# A list entry rather than the mapping shorthand, so a device's own bus merges instead of replacing this.
+# https://esphome.io/components/i2c
+i2c:
+  - id: board_i2c
+    sda: GPIO12
+    scl: GPIO11
+    scan: true
+    frequency: 400kHz
+
+# https://esphome.io/components/spi
+spi:
+  - id: board_spi
+    clk_pin: GPIO36
+    mosi_pin: GPIO37
+
+# https://github.com/m5stack/esphome-yaml/tree/main/components/axp2101
+axp2101:
+  id: board_pmu
+  i2c_id: board_i2c
+
+# Port 0 drives the touch and amplifier resets, which need push-pull rather than the open drain default.
+# https://github.com/m5stack/esphome-yaml/tree/main/components/aw9523b
+aw9523b:
+  id: board_expander
+  i2c_id: board_i2c
+  p0_drive_mode: PUSH_PULL
+
+# https://esphome.io/components/output
+output:
+
+  # The range keeps the backlight visible at the light's lowest brightness.
+  - platform: axp2101
+    id: lcd_backlight_output
+    type: range
+    channel: DLDO1
+    min_voltage: 2600
+    max_voltage: 3300
+
+  - platform: axp2101
+    id: amplifier_rail
+    channel: ALDO1
+    voltage: 1800
+
+  - platform: axp2101
+    id: microphone_rail
+    channel: ALDO2
+    voltage: 3300
+
+  - platform: axp2101
+    id: camera_rail
+    channel: ALDO3
+    voltage: 3300
+
+  - platform: axp2101
+    id: sd_card_rail
+    channel: ALDO4
+    voltage: 3300
+
+  - platform: axp2101
+    id: bldo1_rail
+    channel: BLDO1
+    voltage: 2800
+
+  - platform: axp2101
+    id: bldo2_rail
+    channel: BLDO2
+    voltage: 1500
+
+# https://esphome.io/components/light/monochromatic
+light:
+  - platform: monochromatic
+    name: "Backlight"
+    id: lcd_backlight
+    output: lcd_backlight_output
+    default_transition_length: 250ms
+    restore_mode: ALWAYS_OFF
+
+# https://esphome.io/components/switch
+switch:
+
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    name: "Boost Power"
+    id: boost_power
+    pin:
+      aw9523b_id: board_expander
+      number: 15
+    restore_mode: ALWAYS_ON
+    entity_category: config
+
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    name: "Bus Power Out"
+    id: bus_power_out
+    pin:
+      aw9523b_id: board_expander
+      number: 1
+    restore_mode: ${bus_power_restore_mode}
+    entity_category: config
+
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    name: "USB OTG Power"
+    id: usb_otg_power
+    pin:
+      aw9523b_id: board_expander
+      number: 5
+    restore_mode: ALWAYS_OFF
+    entity_category: config
+
+  # Low holds the amplifier in reset.
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    id: amplifier_reset
+    pin:
+      aw9523b_id: board_expander
+      number: 2
+    restore_mode: ALWAYS_ON
+    internal: true
+
+  # Low holds the camera in reset, and the camera overlay is what releases it.
+  # https://esphome.io/components/switch/gpio
+  - platform: gpio
+    id: camera_reset
+    pin:
+      aw9523b_id: board_expander
+      number: 8
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+# https://esphome.io/components/display/mipi_spi
+display:
+  - platform: mipi_spi
+    id: board_display
+    spi_id: board_spi
+    model: M5CORE
+    dc_pin: GPIO35
+    cs_pin:
+      number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
+    reset_pin:
+      aw9523b_id: board_expander
+      number: 9
+    invert_colors: true
+    data_rate: 40MHz
+    auto_clear_enabled: false
+    update_interval: never
+
+# https://esphome.io/components/touchscreen/ft63x6
+touchscreen:
+  - platform: ft63x6
+    id: board_touch
+    i2c_id: board_i2c
+    display: board_display
+    reset_pin:
+      aw9523b_id: board_expander
+      number: 0
+    calibration:
+      x_min: 0
+      x_max: 319
+      y_min: 0
+      y_max: 239
+
+# https://esphome.io/components/time
+time:
+
+  # Home Assistant time writes through to the RTC, so the clock survives a boot with no Home Assistant.
+  - id: !extend homeassistant_time
+    on_time_sync:
+      - bm8563.write_time: rtc_time
+
+  # https://esphome.io/components/time/bm8563
+  - platform: bm8563
+    id: rtc_time
+    i2c_id: board_i2c
+
+# https://esphome.io/components/motion
+motion:
+  - platform: bmi270
+    id: board_motion
+    i2c_id: board_i2c
+    address: 0x69
+
+# https://esphome.io/components/audio_adc
+audio_adc:
+  - platform: es7210
+    id: board_audio_adc
+    i2c_id: board_i2c
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    mic_gain: ${mic_gain}
+
+# https://github.com/m5stack/esphome-yaml/tree/main/components/aw88298
+audio_dac:
+  - platform: aw88298
+    id: board_audio_dac
+    i2c_id: board_i2c
+    sample_rate: 16000
+
+# https://esphome.io/components/i2s_audio
+i2s_audio:
+  - id: board_i2s
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO34
+    i2s_mclk_pin:
+      number: GPIO0 # BOOT strapping pin, fixed board wiring, so the warning is acknowledged.
+      ignore_strapping_warning: true
+
+# https://esphome.io/components/microphone/i2s_audio
+microphone:
+  - platform: i2s_audio
+    id: board_mic
+    i2s_audio_id: board_i2s
+    i2s_din_pin: GPIO14
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+
+# https://esphome.io/components/speaker/i2s_audio
+speaker:
+  - platform: i2s_audio
+    id: board_speaker
+    i2s_audio_id: board_i2s
+    i2s_dout_pin: GPIO13
+    dac_type: external
+    audio_dac: board_audio_dac
+    sample_rate: 16000
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # The platform sensor itself publishes nothing, only the named children do, the charging binary sensor included.
+  # https://github.com/m5stack/esphome-yaml/tree/main/components/axp2101
+  - platform: axp2101
+    id: pmu_sensors
+    internal: true
+    update_interval: 60s
+    battery_level:
+      name: "Battery Level"
+      id: battery_level
+    battery_voltage:
+      name: "Battery Voltage"
+      id: battery_voltage
+      unit_of_measurement: V
+      accuracy_decimals: 2
+      filters:
+        - multiply: 0.001
+    axp_temperature:
+      name: "PMU Temperature"
+      id: pmu_temperature
+      entity_category: diagnostic
+    battery_charging:
+      name: "Battery Charging"
+      id: battery_charging
+
+  # https://esphome.io/components/sensor/ltr_als_ps
+  - platform: ltr_als_ps
+    i2c_id: board_i2c
+    address: 0x23
+    type: ALS_PS
+    update_interval: 30s
+    ambient_light:
+      name: "Ambient Light"
+      id: ambient_light
+    ps_counts:
+      name: "Proximity"
+      id: proximity
+
+  # The delta filters keep a sensor read four times a second from flooding Home Assistant.
+  # https://esphome.io/components/motion
+  - platform: motion
+    type: pitch
+    name: "Pitch"
+    id: pitch
+    motion_id: board_motion
+    filters:
+      - delta: 2.0
+
+  - platform: motion
+    type: roll
+    name: "Roll"
+    id: roll
+    motion_id: board_motion
+    filters:
+      - delta: 2.0
