@@ -234,7 +234,10 @@ Shared building-block includes, composed via `packages:` by the device templates
 #### M5Stack CoreS3 Devkit
 
 - [Template][m5stack-cores3] for the [M5Stack CoreS3][m5stack-shop-cores3-link], an ESP32-S3 with 16MB Quad Flash, 8MB Quad PSRAM, a 320x240 capacitive touch display, and an AXP2101 power management IC. The [CoreS3 docs][m5stack-docs-cores3-link] carry the pin map the template header repeats.
-- Includes the display, the touchscreen, the backlight as a dimmable light, the RTC written through from Home Assistant time, the ambient light and proximity sensor, pitch and roll from the IMU, the microphone and speaker on a shared I2S bus, the battery sensors, and switches for the 5V boost, the bus 5V output, and USB OTG power.
+- Includes the display, the touchscreen, and the backlight as a dimmable light.
+- Includes the RTC written through from Home Assistant time, the ambient light and proximity sensor, and pitch and roll from the IMU.
+- Includes the microphone and speaker on a shared I2S bus, and the battery sensors.
+- Includes switches for the 5V boost, the bus 5V output, and USB OTG power.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
 - The display and touch drivers live in the template, because their resets sit on the AW9523B expander and the backlight on an AXP2101 rail. The display carries no lambda, so a device draws on it with [LVGL][esphome-components-lvgl-link], as the [example device][test-m5stack-cores3] does with a tabbed touch interface.
 - ESPHome core has no AXP2101, AW9523B, or AW88298 driver, so the template pulls those from [M5Stack's own components][github-m5stack-esphome-yaml-link], pinned to a commit.
