@@ -238,12 +238,18 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Includes the RTC written through from Home Assistant time, the ambient light and proximity sensor, and pitch and roll from the IMU.
 - Includes the microphone and speaker on a shared I2S bus, and the battery sensors.
 - Includes switches for the 5V boost, the bus 5V output, and USB OTG power.
+- Optional substitutions:
+  - `backlight_brightness`: `80%` by default, the level the backlight turns on at during boot.
+  - `bus_power_restore_mode`: `ALWAYS_OFF` by default, and `ALWAYS_ON` feeds 5V out to the M5-Bus and the Grove ports.
+  - `mic_gain`: `36dB` by default, the ES7210 microphone gain M5Stack's own configuration uses.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
 - The display and touch drivers live in the template, because their resets sit on the AW9523B expander and the backlight on an AXP2101 rail. The display carries no lambda, so a device draws on it with [LVGL][esphome-components-lvgl-link], as the [example device][test-m5stack-cores3] does with a tabbed touch interface.
 - ESPHome core has no AXP2101, AW9523B, or AW88298 driver, so the template pulls those from [M5Stack's own components][github-m5stack-esphome-yaml-link], pinned to a commit.
 - Note: units built from August 2026 carry an ILI9342E panel controller rather than the ILI9342C. The bench unit draws correctly on the ILI9342C init, and an ILI9342E unit is untested.
 - Note: the microSD slot is documented rather than configured. ESPHome core has no SD card component, and the one external SPI component opens its own bus, which collides with the display.
 - An optional [camera overlay][m5stack-cores3-camera] configures the GC0308 camera, composed as a second `packages:` entry. The board template holds the camera in reset without it.
+  - Optional substitutions:
+    - `camera_clock_pin`: `GPIO10` by default, a spare M5-Bus pin for the clock ESPHome requires although the camera clocks itself. Move it where a module uses `GPIO10`.
   - Note: the camera's pixel clock is GPIO45, the pin the ESP32-S3 reads at reset to pick its flash voltage. A reset taken while the camera streams can leave the board looping in its bootloader until it is power cycled. The overlay holds the camera in reset on every orderly shutdown, which covers OTA, restart, and API reboots. Turn the `Camera Enable` switch off before flashing over USB, since the reset after a USB flash is not an orderly one. Turning it back on resets the sensor's registers, so restart afterwards.
 
 ## Devices
