@@ -53,13 +53,15 @@ DIAGNOSTIC = re.compile(
     r"(?P<message>.*)$"
 )
 LINE_DIRECTIVE = re.compile(r'^\s*#line\s+(?P<line>\d+)\s+"(?P<path>[^"]+)"')
+# An ESPHome substitution, ${name} or $name, which the generated code carries resolved.
+SUBSTITUTION = re.compile(r"\$\{[^}]*\}|\$[A-Za-z_]\w*")
 # The rewrites ESPHome applies to lambda text before it emits it, tried in this order.
-# - A substitution, ${name} or $name, which the generated code carries resolved.
+# - A substitution.
 # - An id(name) before a member access, which becomes name-> on a component.
 # - On a global, that id(name) becomes name->value() and keeps its dot.
 # - A bare id(name), which becomes name, or name->value() for a global.
 REWRITE = re.compile(
-    r"(?P<substitution>\$\{[^}]*\}|\$[A-Za-z_]\w*)"
+    rf"(?P<substitution>{SUBSTITUTION.pattern})"
     r"|\bid\(\s*(?P<member>[\w${}]+)\s*\)\."
     r"|\bid\(\s*(?P<bare>[\w${}]+)\s*\)"
 )
@@ -403,6 +405,11 @@ def cpp_string(text: str) -> str:
     return f'"{escaped}"'
 
 
+def format_pattern(literal: str) -> re.Pattern[str]:
+    """Return a pattern for a format's C string literal, with each substitution left open."""
+    return re.compile(".+?".join(re.escape(part) for part in SUBSTITUTION.split(literal)))
+
+
 def normalize(text: str) -> str:
     """Collapse whitespace, so text matches however the generator spaced it."""
     return " ".join(text.split())
@@ -656,7 +663,7 @@ class BuildLint:
         column = len(normalize(source[: diagnostic.column - 1] + "x")) - 1
         for relative in self.node_files():
             for line, pattern, literal in inline_expressions(self.index.scalars(relative)):
-                if literal and literal not in source:
+                if literal and not format_pattern(literal).search(source):
                     continue
                 spans = [m.span() for m in pattern.finditer(generated)]
                 if literal:

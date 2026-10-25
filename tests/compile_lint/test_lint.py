@@ -508,3 +508,12 @@ def test_an_args_entry_matches_only_beside_its_own_format(tmp_path: Path) -> Non
 
 def test_cpp_string_matches_esphome_escaping() -> None:
     assert cpp_string('a "b"\n\\') == '"a \\042b\\042\\012\\134"'
+
+
+def test_an_args_entry_beside_a_substituted_format_still_matches(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write('    named_log:\n      format: "${name} %.1f"\n      args: [x2.5]\n')
+    set_main(build, directive(root, 9), '  ESP_LOGD("main", "kitchen %.1f", x2.5);')
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]
