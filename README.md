@@ -25,6 +25,8 @@ ESPHome configuration templates and projects.
 - Added M5Stack GC0308 camera overlay support.
 - Added M5Stack Dial support, with an LVGL and rotary encoder example device.
 - Changed the example devices to disable the API and WiFi reboot timeouts, so a flashed one runs on a bench without Home Assistant.
+- Added a compile lint that fails a pull request on a compiler warning in a lambda or the EasyStart component.
+- Fixed the float math warnings the compile lint finds in the templates and the EasyStart component.
 
 See [Release History][history] for complete release notes and older versions.
 

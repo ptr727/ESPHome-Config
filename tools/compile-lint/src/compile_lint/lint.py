@@ -1,25 +1,24 @@
 """Report compiler warnings that land in this repository's own code from an ESPHome build.
 
-A lambda is a fragment that only compiles inside the generated main.cpp, so the lint reads the
-build ESPHome already produced rather than generating C++ itself. For each build it reruns the
-compile of main.cpp, and of any other translation unit this repository authored, syntax-only with
-the build's own flags plus a few stricter warnings. It keeps the diagnostics located in this
-repository's code and drops the rest, which belong to ESPHome, the framework, or a library.
+A lambda only compiles inside the generated main.cpp, so the lint reads the build ESPHome produced.
+It reruns the compile of main.cpp, and of any translation unit this repository authored.
+The rerun is syntax-only, with the build's own flags plus a stricter warning.
+It keeps the diagnostics in this repository's code and sets aside the rest.
 
 A diagnostic is this repository's when it lands in one of these places:
   - a line of a YAML lambda, which ESPHome copies into main.cpp after a #line directive
   - a lambda ESPHome inlined as a bare expression, found by searching the YAML for it
   - a C/C++ file under the config root, or a copy of one in the build tree, matched by content
 
-Run it on any route that runs the ESPHome CLI, here the container with the config tree at /config,
-either compiling a config first or against a build already compiled:
+Run it on any route that runs the ESPHome CLI, shown here in the container with the tree at /config.
+It either compiles a config first or reads a build already compiled:
   PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config \\
     --compile /config/test/<template>.yaml
   PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config \\
     /cache/build/<node>
 
-Exit status is 0 when nothing was found, 1 when a warning or error landed in owned code, and 2
-when the lint could not run, such as a failed compile or a build with no compile database.
+Exit status is 0 when nothing was found, and 1 when a warning or error landed in owned code.
+It is 2 when the lint could not run, such as after a failed compile or without a compile database.
 """
 
 import argparse
@@ -38,7 +37,7 @@ from typing import Any, cast
 
 import yaml
 
-# Stricter than the build's own -Wall -Wextra set, and limited to warnings a YAML author can fix.
+# Stricter than the build's own warning set, and limited to warnings a YAML author can fix.
 # Leave out -Wshadow, which fires on ESPHome's nested script parameters that no YAML can reach.
 DEFAULT_FLAGS = ["-Wdouble-promotion"]
 
@@ -56,15 +55,18 @@ DIAGNOSTIC = re.compile(
 LINE_DIRECTIVE = re.compile(r'^\s*#line\s+(?P<line>\d+)\s+"(?P<path>[^"]+)"')
 # The rewrites ESPHome applies to lambda text before it emits it, tried in this order.
 # - A substitution, ${name} or $name, which the generated code carries resolved.
-# - An id(name) before a member access, which becomes name->.
+# - An id(name) before a member access, which becomes name-> on a component, and keeps its dot after name->value() on a global.
 # - A bare id(name), which becomes name, or name->value() for a global.
 REWRITE = re.compile(
     r"(?P<substitution>\$\{[^}]*\}|\$[A-Za-z_]\w*)"
     r"|\bid\(\s*(?P<member>[\w${}]+)\s*\)\."
     r"|\bid\(\s*(?P<bare>[\w${}]+)\s*\)"
 )
-# ESPHome blanks comments in the copy, so a trailing one on a lambda line is not compared.
-TRAILING_COMMENT = re.compile(r"\s*//[^\"']*$")
+# ESPHome's own comment remover, which turns a comment into a space and keeps string literals.
+COMMENT = re.compile(
+    r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"', re.DOTALL | re.MULTILINE
+)
+ID_REFERENCE = re.compile(r"\bid\(\s*([\w${}]+)\s*\)")
 RETURN_EXPRESSION = re.compile(r"^return\s+(?P<expression>[^;]+);?$")
 BARE_TOKEN = re.compile(r"^[\w.]+$")
 BUILD_PATH = re.compile(r"Build path: (?P<path>\S+)")
@@ -103,11 +105,14 @@ class Scalar:
 
 @dataclass(frozen=True)
 class Directive:
-    """A #line directive in main.cpp: its own 0-based index, and the YAML line it names."""
+    """A #line directive in main.cpp: its own 0-based index, and the YAML line it names.
+
+    The path is None for a file outside the config root, such as a remote package's YAML.
+    """
 
     index: int
     line: int
-    path: str
+    path: str | None
 
 
 @dataclass
@@ -200,10 +205,14 @@ def entry_path(entry: dict[str, Any]) -> Path:
     return Path(os.path.normpath(Path(str(entry["directory"])) / str(entry["file"])))
 
 
+def is_main_path(path: Path) -> bool:
+    """Say whether a path is the generated main.cpp."""
+    return path.name == "main.cpp" and path.parent.name == "src"
+
+
 def is_main(entry: dict[str, Any]) -> bool:
     """Say whether an entry compiles the generated main.cpp."""
-    path = entry_path(entry)
-    return path.name == "main.cpp" and path.parent.name == "src"
+    return is_main_path(entry_path(entry))
 
 
 def find_compile_database(build: Path) -> Path:
@@ -262,8 +271,7 @@ def yaml_scalars(path: Path) -> list[Scalar]:
                 walk(key)
                 walk(value)
 
-    # Composing builds the node tree without constructing values, so ESPHome's own tags such as
-    # !include, !secret, and !lambda need no constructor.
+    # Composing builds the node tree without constructing values, so ESPHome's own tags need no constructor.
     with path.open(encoding="utf-8") as stream:
         loader = yaml.SafeLoader(stream)
         try:
@@ -277,7 +285,7 @@ def yaml_scalars(path: Path) -> list[Scalar]:
 
 
 class YamlIndex:
-    """Caches each repository YAML file's scalars, read on first use."""
+    """Caches each repository YAML file's scalars, read on first use or all at once."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -288,14 +296,13 @@ class YamlIndex:
             try:
                 self._scalars[relative] = yaml_scalars(self.root / relative)
             except (OSError, yaml.YAMLError) as error:
-                print(f"compile-lint: cannot read {relative}: {error}", file=sys.stderr)
-                self._scalars[relative] = []
+                raise LintError(f"cannot read {relative}: {error}") from error
         return self._scalars[relative]
 
-    def all_files(self) -> list[str]:
-        return [
-            p.relative_to(self.root).as_posix() for p in walk_files(self.root, {".yaml", ".yml"})
-        ]
+    def preload(self) -> None:
+        """Read every YAML file now, so a later edit cannot shift lines against a build."""
+        for path in walk_files(self.root, {".yaml", ".yml"}):
+            self.scalars(path.relative_to(self.root).as_posix())
 
 
 def normalize(text: str) -> str:
@@ -303,17 +310,22 @@ def normalize(text: str) -> str:
     return " ".join(text.split())
 
 
+def strip_comments(text: str) -> str:
+    """Remove comments the way ESPHome does before it emits a lambda."""
+    return COMMENT.sub(lambda m: " " if m[0].startswith("/") else m[0], text)
+
+
 def lambda_pattern(text: str) -> re.Pattern[str]:
     """Return a pattern for YAML lambda text that matches the C++ ESPHome generates from it."""
     pieces: list[str] = []
     position = 0
-    text = normalize(text)
+    text = normalize(strip_comments(text))
     for match in REWRITE.finditer(text):
         pieces.append(re.escape(text[position : match.start()]))
         if match["substitution"]:
             pieces.append(".+?")
         elif match["member"]:
-            pieces.append(lambda_pattern(match["member"]).pattern + "->")
+            pieces.append(lambda_pattern(match["member"]).pattern + r"(?:->|->value\(\)\.)")
         else:
             pieces.append(lambda_pattern(match["bare"]).pattern + r"(?:->value\(\))?")
         position = match.end()
@@ -324,9 +336,9 @@ def lambda_pattern(text: str) -> re.Pattern[str]:
 def lambda_line(scalar: Scalar, directive: Directive, offset: int) -> tuple[int, str] | None:
     """Return the YAML line and text a generated line copies, offset lines after a directive.
 
-    ESPHome numbers a lambda's #line one past the scalar's first line. A block scalar's body
-    starts on that line, so its body maps line for line, while a lambda written inline after its
-    key is the scalar's only line.
+    ESPHome numbers a lambda's #line one past the scalar's first line.
+    A block scalar's body starts on that line, so its body maps line for line.
+    A lambda written inline after its key is the scalar's only line.
     """
     if scalar.start + 1 != directive.line:
         return None
@@ -338,26 +350,35 @@ def lambda_line(scalar: Scalar, directive: Directive, offset: int) -> tuple[int,
     return directive.line + offset, lines[offset]
 
 
-def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[Scalar, re.Pattern[str]]]:
-    """Yield the single-expression lambdas ESPHome may inline as a bare expression."""
+def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[str]]]:
+    """Yield the YAML line and pattern of each lambda ESPHome may inline as a bare expression."""
     for scalar in scalars:
-        match = RETURN_EXPRESSION.match(normalize(scalar.text))
-        if match:
-            expression = match["expression"].strip()
-            # A bare name or number would match any generated line that mentions it.
-            if not BARE_TOKEN.match(expression):
-                yield scalar, lambda_pattern(expression)
+        match = RETURN_EXPRESSION.match(normalize(strip_comments(scalar.text)))
+        if not match:
+            continue
+        expression = match["expression"].strip()
+        # A bare name or number would match any generated line that mentions it.
+        if BARE_TOKEN.match(ID_REFERENCE.sub(r"\1", expression)):
+            continue
+        line = scalar.start
+        if scalar.start != scalar.end:
+            body = scalar.text.splitlines()
+            line += 1 + next(i for i, text in enumerate(body) if "return" in text)
+        pattern = lambda_pattern(expression).pattern
+        yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)")
 
 
 class BuildLint:
     """Lints one ESPHome build directory against the repository at the config root."""
 
-    def __init__(self, build: Path, root: Path, flags: list[str], owned: dict[str, str]) -> None:
+    def __init__(
+        self, build: Path, root: Path, flags: list[str], owned: dict[str, str], index: YamlIndex
+    ) -> None:
         self.build = build
         self.root = root
         self.flags = flags
         self.owned = owned
-        self.index = YamlIndex(root)
+        self.index = index
         self.main_lines: list[str] = []
         self.directives: list[Directive] = []
 
@@ -386,8 +407,8 @@ class BuildLint:
     def compile_main(self, entry: dict[str, Any]) -> list[Diagnostic]:
         """Compile main.cpp with its #line directives blanked, so diagnostics keep its lines.
 
-        ESPHome never resets #line after a lambda or an LVGL widget, so with the directives in
-        place, generated code after one is reported against YAML lines it did not come from.
+        ESPHome never resets #line after a lambda or an LVGL widget.
+        With the directives in place, generated code after one is reported against the wrong YAML.
         """
         source = entry_path(entry)
         self.main_lines = source.read_text(encoding="utf-8").splitlines()
@@ -400,7 +421,7 @@ class BuildLint:
                 if match
                 else None
             )
-            if match and relative is not None:
+            if match:
                 self.directives.append(Directive(index, int(match["line"]), relative))
             blanked.append("" if match else text)
         with tempfile.TemporaryDirectory(prefix="compile-lint-") as scratch:
@@ -446,7 +467,7 @@ class BuildLint:
     def classify(self, diagnostic: Diagnostic, directory: Path) -> Iterator[Finding]:
         """Yield the findings a diagnostic stands for, none when it is not this repository's."""
         path = Path(os.path.normpath(directory / diagnostic.path))
-        if path.name == "main.cpp" and path.parent.name == "src" and self.main_lines:
+        if is_main_path(path) and self.main_lines:
             yield from self.classify_main(diagnostic)
             return
         relative = self.owned_path(path)
@@ -466,32 +487,33 @@ class BuildLint:
             return
         generated = normalize(self.main_lines[index])
         preceding = [d for d in self.directives if d.index < index]
+        if preceding and preceding[-1].path is None:
+            # Code after a remote package's #line is that package's, or generated after it.
+            return
         if preceding:
             directive = preceding[-1]
+            assert directive.path is not None
             for scalar in self.index.scalars(directive.path):
                 located = lambda_line(scalar, directive, index - directive.index - 1)
                 if located is None:
                     continue
                 line, text = located
-                if lambda_pattern(TRAILING_COMMENT.sub("", text)).fullmatch(generated):
+                if lambda_pattern(text).fullmatch(generated):
                     # The generated column counts ESPHome's indentation and rewrites, not the YAML's.
                     yield Finding(directive.path, line, 1, diagnostic.severity, diagnostic.message)
                     return
         yield from self.match_inline(diagnostic, generated)
 
     def match_inline(self, diagnostic: Diagnostic, generated: str) -> Iterator[Finding]:
-        """Attribute a diagnostic to the YAML lambdas whose expression ESPHome inlined there."""
-        node_files = list(dict.fromkeys(d.path for d in self.directives))
-        for candidates in (node_files, self.index.all_files()):
-            matches = [
-                Finding(relative, scalar.start, 1, diagnostic.severity, diagnostic.message)
-                for relative in candidates
-                for scalar, pattern in inline_expressions(self.index.scalars(relative))
-                if pattern.search(generated)
-            ]
-            if matches:
-                yield from matches
-                return
+        """Attribute a diagnostic to the build's YAML lambdas whose expression ESPHome inlined there.
+
+        The build's YAML is each repository file a #line directive names.
+        """
+        node_files = dict.fromkeys(d.path for d in self.directives if d.path is not None)
+        for relative in node_files:
+            for line, pattern in inline_expressions(self.index.scalars(relative)):
+                if pattern.search(generated):
+                    yield Finding(relative, line, 1, diagnostic.severity, diagnostic.message)
 
 
 def escape_data(text: str) -> str:
@@ -610,12 +632,16 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(os.path.normpath(args.config_root.resolve()))
     flags: list[str] = args.flags or DEFAULT_FLAGS
     owned = owned_sources(root)
+    index = YamlIndex(root)
     results: list[BuildResult] = []
     try:
+        if args.compile:
+            # The compile takes minutes, and an editor save during it would shift YAML lines.
+            index.preload()
         builds: list[Path] = [*args.builds, *(compile_config(c) for c in args.compile)]
         for build in builds:
-            lint = BuildLint(Path(os.path.normpath(build.resolve())), root, flags, owned)
-            results.append(lint.run())
+            build = Path(os.path.normpath(build.resolve()))
+            results.append(BuildLint(build, root, flags, owned, index).run())
     except LintError as error:
         print(f"compile-lint: {error}", file=sys.stderr)
         return 2

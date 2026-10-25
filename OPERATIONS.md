@@ -143,15 +143,15 @@ fi
 
 ### Compile Lint
 
-A lambda is C++ that only compiles inside the `main.cpp` ESPHome generates, so its warnings show up in a compile log among hundreds from ESPHome and the framework, where they are easy to miss. The compile lint in [`tools/compile-lint`][compile-lint] reruns the compile of `main.cpp` from the build ESPHome left behind. The rerun is syntax-only, uses the build's own flags plus `-Wdouble-promotion`, and keeps only the diagnostics located in this repository's code. It never builds firmware and never changes what gets flashed.
+A lambda is C++ that only compiles inside the `main.cpp` ESPHome generates. Its warnings land in a compile log among hundreds from ESPHome and the framework, where they are easy to miss. The compile lint in [`tools/compile-lint`][compile-lint] reruns the compile of `main.cpp` from the build ESPHome left behind. The rerun is syntax-only, uses the build's own flags plus `-Wdouble-promotion`, and keeps only the diagnostics located in this repository's code. It never builds firmware and never changes what gets flashed.
 
 - **Run it with every compile.** The VS Code task "ESPHome: Compile and Lint" compiles the open file in the dashboard's container, then lints that build. Each finding lands in the Problems pane on its YAML line. On a throwaway container, replace the compile call in [Compiling the Way CI Does][compiling-the-way-ci-does] with `PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config --compile /config/test/<template>.yaml`.
 - **CI runs it on every compile leg** of [`test-pull-request.yml`][test-workflow]. A finding annotates its YAML line, appears in the step summary, and fails the leg.
-- **What counts as this repository's code.** A line of a YAML lambda, a lambda ESPHome inlined as a bare expression, and a C++ file in this tree, including the copy of an external component the build holds. Everything else is set aside, and `--verbose` lists it.
-- **ESPHome rewrites a lambda before it emits it.** It resolves substitutions, turns `id(x)` into `x` or `x->value()`, and blanks comments. The lint applies the same rewrites before matching each generated line against its YAML line. That match is how it tells a lambda's code from generated code that ESPHome attributes to the same YAML lines.
+- **What counts as this repository's code.** A line of a YAML lambda counts, and so does a lambda ESPHome inlined as a bare expression. A C++ file in this tree counts too, including the build's copy of an external component. Everything else is set aside, including code from a remote package, and `--verbose` lists it.
+- **ESPHome rewrites a lambda before it emits it.** It resolves substitutions, turns `id(x)` into `x`, or `x->value()` for a global, and blanks comments. The lint applies the same rewrites before matching each generated line against its YAML line. That match is how it tells a lambda's code from generated code that ESPHome attributes to the same YAML lines.
 - **A `text: format:` argument is set aside.** ESPHome passes it to `str_sprintf`, where a float argument is always promoted to double, and no lambda edit changes that.
 - **Fixing `-Wdouble-promotion`.** Write a float literal with an `f` suffix, as in `x / 60.0f`, so the arithmetic stays in the single-precision FPU. A float passed to a printf-style call in this repository's own C++ takes an explicit `static_cast<double>()`.
-- **Exit status** is `0` when nothing was found, `1` when a finding landed in this repository's code, and `2` when the lint could not run, such as after a failed compile or on a build with no compile database.
+- **Exit status** is `0` when nothing was found, and `1` when a finding landed in this repository's code. It is `2` when the lint could not run, such as after a failed compile.
 
 ## Flashing and sdkconfig
 

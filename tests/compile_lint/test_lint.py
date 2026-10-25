@@ -1,6 +1,7 @@
 """Tests for the compile-time lint, run against constructed builds and a fake compiler."""
 
 import json
+import shlex
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ import pytest
 from compile_lint.lint import (
     BuildLint,
     Finding,
+    YamlIndex,
     annotation,
     lambda_pattern,
     main,
@@ -19,8 +21,7 @@ from compile_lint.lint import (
     yaml_scalars,
 )
 
-# Stands in for the cross compiler: warns on every line of each source it reads that holds
-# "2.5", as -Wdouble-promotion would on a double literal, naming the file the way gcc does.
+# Stands in for the cross compiler, warning on each source line that holds a "2.5" double literal.
 FAKE_COMPILER = """
 import sys
 from pathlib import Path
@@ -58,6 +59,12 @@ sensor:
           id(relay).turn_on();
   - platform: template
     brightness: !lambda return x / 2.5f;
+  - platform: template
+    level: !lambda |-
+      return y * 2.5;
+    flag: !lambda return id(total);
+    member: !lambda |-
+      id(total).reset(2.5); // don't
 """
 
 
@@ -88,7 +95,11 @@ def write_build(tmp_path: Path, main_cpp: str, header: str | None = None) -> tup
 
 
 def lint(root: Path, build: Path) -> BuildLint:
-    return BuildLint(build, root, [], {})
+    return BuildLint(build, root, [], {}, YamlIndex(root))
+
+
+def set_main(build: Path, *lines: str) -> None:
+    (build / "src" / "main.cpp").write_text("\n".join(lines))
 
 
 def directive(root: Path, line: int) -> str:
@@ -209,7 +220,7 @@ def test_an_inlined_expression_is_found_by_searching_the_yaml(tmp_path: Path) ->
 def test_a_component_header_copied_into_the_build_maps_to_the_repository(tmp_path: Path) -> None:
     header = "inline double scale(float v) { return v * 2.5; }\n"
     root, build = write_build(tmp_path, "int main() {}\n", header=header)
-    result = BuildLint(build, root, [], owned_sources(root)).run()
+    result = BuildLint(build, root, [], owned_sources(root), YamlIndex(root)).run()
     assert [(f.path, f.line) for f in result.findings] == [("components/widget/widget.h", 1)]
 
 
@@ -258,3 +269,94 @@ def test_annotation_escapes_workflow_command_characters() -> None:
     assert annotation("node:x", finding) == (
         "::warning file=test/a%2Cb.yaml,line=3,col=1,title=compile-lint node%3Ax::50%25 off%0Anext"
     )
+
+
+def test_an_inlined_block_lambda_is_reported_on_its_code_line(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    set_main(
+        build, directive(root, 9), "static void f(float y) {", "  call.set_level(y * 2.5);", "}"
+    )
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 21)]
+
+
+def test_inline_search_matches_whole_tokens_only(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    set_main(build, directive(root, 9), "  call.set_level(may * 2.5);")
+    result = lint(root, build).run()
+    assert result.findings == []
+
+
+def test_an_id_only_lambda_is_not_searched_for(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    # The global's own declaration names it, and must not land on the flag lambda.
+    set_main(build, directive(root, 9), "  total->set_initial(2.5);")
+    result = lint(root, build).run()
+    assert result.findings == []
+
+
+def test_a_global_member_access_and_a_quoted_comment_match_the_generated_line(
+    tmp_path: Path,
+) -> None:
+    root, build = write_build(tmp_path, "")
+    set_main(build, directive(root, 24), "      total->value().reset(2.5);  ")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 24)]
+
+
+def test_code_after_a_remote_package_directive_is_set_aside(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    remote = f'      #line 5 "{tmp_path}/data/packages/remote.yaml"'
+    set_main(build, directive(root, 12), "      return x * 2.5;", remote, "      return x * 2.5;")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 11)]
+    assert len(result.ignored) == 1
+
+
+def test_a_command_string_database_with_a_compiler_cache_is_rechecked(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    set_main(build, "auto f = [](float x) {", directive(root, 12), "      return x * 2.5;", "});")
+    compiler = tmp_path / "fake_compiler.py"
+    command = (
+        f"/usr/bin/ccache {shlex.quote(sys.executable)} {shlex.quote(str(compiler))} "
+        "-include pch.h -o main.o -c src/main.cpp"
+    )
+    database = [{"directory": str(build), "file": "src/main.cpp", "command": command}]
+    (build / "build" / "compile_commands.json").write_text(json.dumps(database))
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 11)]
+
+
+def fake_esphome(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, output: str, status: int) -> None:
+    """Put an esphome on PATH that prints the given compile output and exits with the status."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    script = bin_dir / "esphome"
+    script.write_text(f"#!{sys.executable}\nprint({output!r})\nraise SystemExit({status})\n")
+    script.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}:{Path(sys.executable).parent}")
+
+
+def test_compile_mode_lints_the_build_path_the_compile_prints(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    fake_esphome(tmp_path, monkeypatch, f"INFO Compiling app... Build path: {build}", 0)
+    status = main(["--config-root", str(root), "--compile", str(root / "test" / "device.yaml")])
+    assert status == 0
+
+
+def test_compile_mode_exits_two_when_the_compile_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = write_build(tmp_path, "")
+    fake_esphome(tmp_path, monkeypatch, "ERROR Error while reading config", 1)
+    status = main(["--config-root", str(root), "--compile", str(root / "test" / "device.yaml")])
+    assert status == 2
+
+
+def test_an_unreadable_yaml_file_is_a_failure_to_run(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    (root / "test" / "device.yaml").write_text("sensor: [unclosed\n")
+    set_main(build, directive(root, 12), "      return x * 2.5;")
+    assert main(["--config-root", str(root), str(build)]) == 2
