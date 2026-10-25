@@ -2,6 +2,8 @@
 substitutions:
   device_name: smarthome-ceilsense-test
   device_friendly_name: "SmartHomeShop CeilSense Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/smarthome-ceilsense.yaml

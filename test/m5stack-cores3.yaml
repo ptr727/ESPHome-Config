@@ -3,6 +3,8 @@
 substitutions:
   device_name: m5stack-cores3-test
   device_friendly_name: "M5Stack CoreS3 Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/m5stack-cores3.yaml

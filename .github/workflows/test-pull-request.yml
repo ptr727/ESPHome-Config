@@ -105,6 +105,15 @@ jobs:
             echo "Templates that no example device in test/ includes: ${missing[*]}"
             exit 1
           fi
+          # A flashed example device runs on a bench with no Home Assistant, so it must not reboot for lack of one.
+          rebooting=()
+          for path in test/*.yaml; do
+            grep -qE "^  api_reboot_timeout: 0s$" "$path" && grep -qE "^  wifi_reboot_timeout: 0s$" "$path" || rebooting+=("$path")
+          done
+          if (( ${#rebooting[@]} > 0 )); then
+            echo "Example devices not setting api_reboot_timeout and wifi_reboot_timeout to 0s: ${rebooting[*]}"
+            exit 1
+          fi
           CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
           echo "Template matrix: $CONFIGS"
           echo "template-configs=$CONFIGS" >> "$GITHUB_OUTPUT"

@@ -2,6 +2,8 @@
 substitutions:
   device_name: unexpectedmaker-pros3d-test
   device_friendly_name: "Unexpected Maker ProS3D Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/unexpectedmaker-pros3d.yaml

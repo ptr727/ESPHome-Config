@@ -2,6 +2,8 @@
 substitutions:
   device_name: sonoff-th10-test
   device_friendly_name: "Sonoff TH10 Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/sonoff-th10.yaml

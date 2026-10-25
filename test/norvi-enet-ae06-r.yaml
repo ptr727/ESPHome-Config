@@ -2,6 +2,8 @@
 substitutions:
   device_name: norvi-enet-ae06-r-test
   device_friendly_name: "Norvi ENET-AE06-R Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/norvi-enet-ae06-r.yaml

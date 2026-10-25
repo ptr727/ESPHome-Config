@@ -2,6 +2,8 @@
 substitutions:
   device_name: adafruit-esp32-s3-feather-test
   device_friendly_name: "Adafruit ESP32-S3 Feather Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/adafruit-esp32-s3-feather.yaml

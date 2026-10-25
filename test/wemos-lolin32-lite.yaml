@@ -2,6 +2,8 @@
 substitutions:
   device_name: wemos-lolin32-lite-test
   device_friendly_name: "WEMOS LOLIN32 Lite Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/wemos-lolin32-lite.yaml
