@@ -134,6 +134,14 @@ esphome:
         # The RTC sets the clock once at boot, so it never overwrites a network time source later.
         - bm8563.read_time: rtc_time
 
+    # The FT6336 drops to a slow monitor scan a few seconds after the last touch, and a quick tap then goes unseen.
+    # - Register 0x86 at 0 keeps it scanning at the active rate, and this runs after the touchscreen setup resets it.
+    - priority: -100
+      then:
+        - lambda: |-
+            const uint8_t keep_active[] = {0x86, 0x00};
+            id(board_i2c)->write(0x38, keep_active, sizeof(keep_active));
+
 # https://esphome.io/components/esp32
 esp32:
   # PlatformIO carries no CoreS3 board definition, and the DevKitC-1 profile matches the module.

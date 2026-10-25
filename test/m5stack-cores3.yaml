@@ -152,11 +152,12 @@ touchscreen:
     on_release:
       - if:
           condition:
-            light.is_off: lcd_backlight
+            lambda: return !id(lcd_backlight).remote_values.is_on();
           then:
             - light.turn_on: lcd_backlight
 
-# LVGL sleeps exactly while the backlight is off, whatever turned it off, and the slider follows the backlight.
+# LVGL sleeps once the backlight finishes turning off, whatever turned it off, and the slider follows the backlight.
+# - The touch wake and the edge swipe read the target state, so a tap during the fade turns the backlight back on.
 # - Resuming LVGL redraws the screen and restarts the idle timeout.
 # - The target brightness is in remote_values, since current_values lags until the transition ends.
 # https://esphome.io/components/light
