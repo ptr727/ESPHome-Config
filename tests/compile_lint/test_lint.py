@@ -525,3 +525,15 @@ def test_an_inlined_expression_owns_only_the_occurrence_at_the_column(tmp_path: 
     set_main(build, directive(root, 9), "  other(q * 2.5); call.set_level(y * 2.5);")
     result = lint(root, build).run()
     assert result.findings == []
+
+
+def test_a_build_tree_under_a_dot_directory_is_not_repository_code(tmp_path: Path) -> None:
+    root, _ = write_build(tmp_path, "")
+    generated = root / ".esphome" / "build" / "device-test" / "src" / "esphome" / "core.h"
+    generated.parent.mkdir(parents=True)
+    generated.write_text("float f(float v) { return v * 2.5; }\n")
+    lint_build = BuildLint(
+        root / ".esphome" / "build" / "device-test", root, [], {}, YamlIndex(root)
+    )
+    assert lint_build.owned_path(generated) is None
+    assert lint_build.owned_path(root / "test" / "device.yaml") == "test/device.yaml"
