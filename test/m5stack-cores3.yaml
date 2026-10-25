@@ -375,7 +375,7 @@ lvgl:
                   on_release:
                     - light.turn_on:
                         id: lcd_backlight
-                        brightness: !lambda return x / 100.0;
+                        brightness: !lambda return x / 100.0f;
               - button:
                   id: controls_beep
                   widgets:

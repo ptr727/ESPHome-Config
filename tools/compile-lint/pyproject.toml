@@ -1,0 +1,17 @@
+# Compile-time C++ lint over an ESPHome build, a member of the repository's uv workspace.
+# Lint, type-check, and test config is shared and lives in the root pyproject.toml.
+
+[project]
+name = "compile-lint"
+version = "1.0.0"
+description = "Report compiler warnings in this repository's lambdas and components from an ESPHome build."
+requires-python = ">=3.13"
+# PyYAML is also what ESPHome itself depends on, so the image the compile runs on already has it.
+dependencies = ["pyyaml>=6"]
+
+[project.scripts]
+compile-lint = "compile_lint.lint:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -46,6 +46,42 @@
             }
         },
         {
+            // The compile above, then the compile lint over the build it produced, per OPERATIONS.md "Compile Lint".
+            // A warning in a lambda or component lands in the Problems pane on its YAML or source line.
+            "label": "ESPHome: Compile and Lint",
+            "type": "process",
+            "command": "docker",
+            "args": [
+                "exec",
+                "--env",
+                "PYTHONPATH=/config/tools/compile-lint/src",
+                "esphome",
+                "python3",
+                "-m",
+                "compile_lint",
+                "--config-root",
+                "/config",
+                "--compile",
+                "/config/${relativeFile}"
+            ],
+            "problemMatcher": {
+                "owner": "compile-lint",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^[^:\\s]+: (.+):(\\d+):(\\d+): (warning|error): (.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            },
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
             "label": "ESPHome: Clean",
             "type": "process",
             "command": "docker",

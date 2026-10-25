@@ -53,7 +53,7 @@ This is packaged as the `python-codestyle` Skill at `.agents/skills/python-codes
 
 ### This Repository's Python
 
-All Python in this repository lives in one **uv workspace** rooted at the repository root, and every project in it takes the `build` profile. The root [`pyproject.toml`][root-pyproject] is a virtual workspace root with no `[project]` of its own: it lists the member projects, holds the shared `dev` dependency group, and carries the one `[tool.ruff]`, `[tool.pyright]`, and `[tool.pytest.ini_options]` configuration every member uses. The single root `uv.lock` pins every member's dependencies and the dev tools together. The one member today is [`easystart/python`][easystart-python], the EasyStart BLE monitor, a `src`-layout project with its own `[project]`, `[build-system]`, and an `easystart-monitor` console script.
+All Python in this repository lives in one **uv workspace** rooted at the repository root, and every project in it takes the `build` profile. The root [`pyproject.toml`][root-pyproject] is a virtual workspace root with no `[project]` of its own: it lists the member projects, holds the shared `dev` dependency group, and carries the one `[tool.ruff]`, `[tool.pyright]`, and `[tool.pytest.ini_options]` configuration every member uses. The single root `uv.lock` pins every member's dependencies and the dev tools together. The members are [`easystart/python`][easystart-python], the EasyStart BLE monitor, and [`tools/compile-lint`][compile-lint], the compile lint. Each is a `src`-layout project with its own `[project]`, `[build-system]`, and console script. The compile lint also runs inside the ESPHome image, so it depends on nothing beyond the standard library and the PyYAML that ESPHome itself ships.
 
 - **uv is the only supported toolchain.** Run everything from the repository root with `uv run`, which syncs the workspace first: `uv run ruff check`, `uv run ruff format --check`, `uv run pyright`, `uv run pytest`, and a member's own script such as `uv run easystart-monitor`. There is no pip or `requirements.txt` path.
 - **The hub validator is the CI gate.** A root `pyproject.toml`, `uv.lock`, and `tests/` are what its tree detection keys on, so it runs `uv sync --all-groups --frozen`, ruff, pyright, and pytest with coverage uploaded to Codecov, with no repository-specific CI step. The Codecov statuses are informational, per `codecov.yml`.
@@ -80,7 +80,7 @@ The C++ here is a small amount of hand-written code that an ESPHome build compil
 
 The style derives from ESPHome upstream (LLVM-based, 2-space indent, 120-column limit) so the committed sources format clean and do not churn against upstream conventions. A repository's `.h` is read as C++ by context, which is what ESPHome and Arduino headers are.
 
-Semantic and static analysis is deliberately out of scope. The downstream ESPHome build compiles this code and does the compile-time checking, and it holds the compile database that a `clang-tidy` pass would need. Adding a second, weaker analysis here would duplicate that without the context to be correct.
+Semantic checking runs on the generated code rather than on the YAML. A lambda only compiles inside the `main.cpp` an ESPHome build produces, so the compile lint rechecks that build with stricter warnings and keeps the findings in this repository's code, per `OPERATIONS.md` "Compile Lint". Checking the YAML text directly would mean reimplementing ESPHome's code generation.
 
 ### Conventions
 
@@ -90,6 +90,7 @@ Semantic and static analysis is deliberately out of scope. The downstream ESPHom
 <!-- Repo -->
 
 [clang-format]: ./.clang-format
+[compile-lint]: ./tools/compile-lint/
 [cspell]: ./cspell.json
 [devices]: ./DEVICES.md
 [easystart-python]: ./easystart/python/

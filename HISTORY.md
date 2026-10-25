@@ -9,6 +9,7 @@ ESPHome configuration templates and projects.
   - Added M5Stack GC0308 camera overlay support.
   - Added M5Stack Dial support, with an LVGL and rotary encoder example device.
   - Changed the example devices to disable the API and WiFi reboot timeouts, so a flashed one runs on a bench without Home Assistant.
+  - Added a compile lint that fails a pull request on a compiler warning in a template lambda or the EasyStart component, and fixed the float math it found.
 - Version 2.3:
   - Changed OTA to encryption only, using the API key, so only the upgrade bridge build still needs the `ota_password` secret.
   - Fixed the compile warnings the templates and the EasyStart component can address.
