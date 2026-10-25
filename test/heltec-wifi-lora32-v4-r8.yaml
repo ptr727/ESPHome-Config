@@ -48,27 +48,31 @@ display:
       if (std::isnan(id(gnss_satellites).state)) {
         it.print(0, next(), small, TextAlign::BASELINE_LEFT, "Sats --   HDOP --");
       } else if (std::isnan(id(gnss_hdop).state)) {
-        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Sats %.0f   HDOP --", static_cast<double>(id(gnss_satellites).state));
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Sats %.0f   HDOP --",
+                  static_cast<double>(id(gnss_satellites).state));
       } else {
-        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Sats %.0f   HDOP %.1f", static_cast<double>(id(gnss_satellites).state),
-                  static_cast<double>(id(gnss_hdop).state));
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Sats %.0f   HDOP %.1f",
+                  static_cast<double>(id(gnss_satellites).state), static_cast<double>(id(gnss_hdop).state));
       }
 
       if (std::isnan(id(gnss_latitude).state)) {
         it.print(0, next(), small, TextAlign::BASELINE_LEFT, "No fix yet");
         next();
       } else {
-        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Lat %.5f", static_cast<double>(id(gnss_latitude).state));
-        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Lon %.5f", static_cast<double>(id(gnss_longitude).state));
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Lat %.5f",
+                  static_cast<double>(id(gnss_latitude).state));
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Lon %.5f",
+                  static_cast<double>(id(gnss_longitude).state));
       }
 
       if (std::isnan(id(battery_voltage).state)) {
         it.print(0, next(), small, TextAlign::BASELINE_LEFT, "Batt --");
       } else if (std::isnan(id(gnss_altitude).state)) {
-        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Batt %.2f V", static_cast<double>(id(battery_voltage).state));
-      } else {
-        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Alt %.0f m   %.2f V", static_cast<double>(id(gnss_altitude).state),
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Batt %.2f V",
                   static_cast<double>(id(battery_voltage).state));
+      } else {
+        it.printf(0, next(), small, TextAlign::BASELINE_LEFT, "Alt %.0f m   %.2f V",
+                  static_cast<double>(id(gnss_altitude).state), static_cast<double>(id(battery_voltage).state));
       }
 
 # A raw reading beside the calibrated one, the divider calibration OPERATIONS.md describes.

@@ -149,8 +149,8 @@ A lambda is C++ that only compiles inside the `main.cpp` ESPHome generates. Its 
 - **CI runs it on every compile leg** of [`test-pull-request.yml`][test-workflow]. A finding annotates its YAML or source line, appears in the step summary, and fails the leg.
 - **What counts as this repository's code.** A line of a YAML lambda counts, and so does a lambda ESPHome inlined as a bare expression. A C++ file in this tree counts too, including the build's copy of an external component. Everything else is set aside, including code from a remote package, and `--verbose` lists it.
 - **ESPHome rewrites a lambda before it emits it.** It resolves substitutions, turns `id(x)` into `x`, or `x->value()` for a global, and blanks comments. The lint applies the same rewrites before matching each generated line against its YAML line. That match is how it tells a lambda's code from generated code that ESPHome attributes to the same YAML lines.
-- **A `text: format:` argument is set aside.** ESPHome passes it to `str_sprintf`, where a float argument is always promoted to double, and no lambda edit changes that.
-- **Fixing `-Wdouble-promotion`.** Write a float literal with an `f` suffix, as in `x / 60.0f`, so the arithmetic stays in the single-precision FPU. A float passed to a printf-style call in this repository's own C++ takes an explicit `static_cast<double>()`.
+- **A `text: format:` argument is checked too.** ESPHome emits each `args:` entry as an argument to `str_sprintf`, so a finding there lands on the entry it points inside.
+- **Fixing `-Wdouble-promotion`.** Write a float literal with an `f` suffix, as in `x / 60.0f`, so the arithmetic stays in the single-precision FPU. A float passed to a printf-style call, or listed under `args:`, takes an explicit `static_cast<double>()`, since a variadic call always promotes it.
 - **Exit status** is `0` when nothing was found, and `1` when a finding landed in this repository's code. It is `2` when the lint could not run, such as after a failed compile.
 
 ## Flashing and sdkconfig

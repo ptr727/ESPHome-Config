@@ -54,7 +54,7 @@ script:
           id: inputs_encoder
           text:
             format: "%.0f"
-            args: ["id(board_encoder).state"]
+            args: ["static_cast<double>(id(board_encoder).state)"]
       - lvgl.arc.update:
           id: inputs_encoder_arc
           value: !lambda |-

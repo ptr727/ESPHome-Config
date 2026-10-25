@@ -72,6 +72,7 @@ RETURN_EXPRESSION = re.compile(r"^return\s+(?P<expression>[^;]+);?$")
 BARE_TOKEN = re.compile(r"^[\w.]+$")
 YAML_PATH = re.compile(r"^[\w./-]+\.ya?ml$")
 BUILD_PATH = re.compile(r"Build path: (?P<path>\S+)")
+CONFIG_PATH = re.compile(r"Reading configuration (?P<path>\S+?)\.\.\.")
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,7 @@ class Scalar:
     end: int
     text: str
     lines: tuple[tuple[int, str], ...]
+    argument: bool = False
 
 
 @dataclass(frozen=True)
@@ -298,10 +300,13 @@ def emitted_lines(text: str, first: int) -> tuple[tuple[int, str], ...]:
 
 
 def yaml_scalars(path: Path) -> list[Scalar]:
-    """Return every scalar in a YAML file with its line span, tags and all left unresolved."""
+    """Return every scalar in a YAML file with its line span, tags and all left unresolved.
+
+    A scalar listed under an args: key is marked, since ESPHome emits each one as a call argument.
+    """
     scalars: list[Scalar] = []
 
-    def walk(node: yaml.Node) -> None:
+    def walk(node: yaml.Node, argument: bool = False) -> None:
         if isinstance(node, yaml.ScalarNode):
             start = node.start_mark.line + 1
             end = max(start, node.end_mark.line + (1 if node.end_mark.column > 0 else 0))
@@ -313,14 +318,15 @@ def yaml_scalars(path: Path) -> list[Scalar]:
                 # Any other style folds to one logical line, on the indicator's next line for >.
                 first = start + 1 if node.style == ">" else start
                 lines = ((first, " ".join(text for _, text in emitted_lines(text, first))),)
-            scalars.append(Scalar(start, end, text, lines))
+            scalars.append(Scalar(start, end, text, lines, argument))
         elif isinstance(node, yaml.SequenceNode):
             for child in cast(list[yaml.Node], node.value):
-                walk(child)
+                walk(child, argument)
         elif isinstance(node, yaml.MappingNode):
             for key, value in cast(list[tuple[yaml.Node, yaml.Node]], node.value):
                 walk(key)
-                walk(value)
+                arguments = isinstance(key, yaml.ScalarNode) and key.value == "args"
+                walk(value, arguments and isinstance(value, yaml.SequenceNode))
 
     # Composing builds nodes without constructing values, so ESPHome's tags need no constructor.
     with path.open(encoding="utf-8") as stream:
@@ -413,9 +419,18 @@ def lambda_line(scalar: Scalar, directive: Directive, offset: int) -> tuple[int,
     return scalar.lines[offset]
 
 
-def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[str]]]:
-    """Yield the YAML line and pattern of each lambda ESPHome may inline as a bare expression."""
+def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[str], bool]]:
+    """Yield each expression ESPHome may emit inline: its YAML line, its pattern, and its kind.
+
+    The kind is True for an args: entry, which a diagnostic must point inside to belong to it.
+    """
     for scalar in scalars:
+        if scalar.argument:
+            expression = normalize(scalar.text)
+            if not BARE_TOKEN.match(expression):
+                pattern = lambda_pattern(expression).pattern
+                yield scalar.start, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), True
+            continue
         match = RETURN_EXPRESSION.match(normalize(" ".join(text for _, text in scalar.lines)))
         if not match:
             continue
@@ -426,16 +441,23 @@ def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[
         returns = (line for line, text in scalar.lines if text.strip().startswith("return"))
         line = next(returns, scalar.lines[0][0])
         pattern = lambda_pattern(expression).pattern
-        yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)")
+        yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), False
 
 
 class BuildLint:
     """Lints one ESPHome build directory against the repository at the config root."""
 
     def __init__(
-        self, build: Path, root: Path, flags: list[str], owned: dict[str, str], index: YamlIndex
+        self,
+        build: Path,
+        root: Path,
+        flags: list[str],
+        owned: dict[str, str],
+        index: YamlIndex,
+        config: Path | None = None,
     ) -> None:
         self.build = build
+        self.config = config
         self.root = root
         self.flags = flags
         self.owned = owned
@@ -576,12 +598,14 @@ class BuildLint:
                             directive.path, line, 1, diagnostic.severity, diagnostic.message
                         )
                         return
-        yield from self.match_inline(diagnostic, generated)
+        yield from self.match_inline(diagnostic, self.main_lines[index])
 
     def node_files(self) -> list[str]:
         """Return the build's repository YAML: its config, the files #line names, and includes."""
         pending = [d.path for d in self.directives if d.path is not None]
-        pending += self.config_files()
+        config = relative_to_root(self.config, self.root) if self.config else None
+        if config is not None:
+            pending.append(config)
         found: dict[str, None] = {}
         while pending:
             relative = pending.pop()
@@ -589,23 +613,6 @@ class BuildLint:
                 found[relative] = None
                 pending.extend(self.index.includes(relative))
         return list(found)
-
-    def config_files(self) -> list[str]:
-        """Return the repository config a build came from, read from ESPHome's storage file."""
-        data = Path(os.environ.get("ESPHOME_DATA_DIR", self.root / ".esphome"))
-        names: list[str] = []
-        for storage in sorted((data / "storage").glob("*.json")):
-            try:
-                build_path = json.loads(storage.read_text(encoding="utf-8")).get("build_path")
-            except (OSError, ValueError, AttributeError):
-                continue
-            if build_path and Path(os.path.normpath(build_path)) == self.build:
-                names.append(storage.name.removesuffix(".json"))
-        return [
-            p.relative_to(self.root).as_posix()
-            for p in walk_files(self.root, {".yaml", ".yml"})
-            if p.name in names
-        ]
 
     def copies_remote(self, directive: Directive, index: int, generated: str) -> bool:
         """Say whether a generated line copies a lambda line of a remote package's YAML."""
@@ -620,11 +627,17 @@ class BuildLint:
                 return True
         return False
 
-    def match_inline(self, diagnostic: Diagnostic, generated: str) -> Iterator[Finding]:
-        """Attribute a diagnostic to the build's YAML lambdas whose expression was inlined there."""
+    def match_inline(self, diagnostic: Diagnostic, source: str) -> Iterator[Finding]:
+        """Attribute a diagnostic to the build's YAML expressions ESPHome emitted inline there."""
+        generated = normalize(source)
+        # The column counts the raw line, and the patterns match the whitespace-collapsed one.
+        column = len(normalize(source[: diagnostic.column - 1] + "x")) - 1
         for relative in self.node_files():
-            for line, pattern in inline_expressions(self.index.scalars(relative)):
-                if pattern.search(generated):
+            for line, pattern, argument in inline_expressions(self.index.scalars(relative)):
+                spans = [m.span() for m in pattern.finditer(generated)]
+                if argument:
+                    spans = [(a, b) for a, b in spans if a <= column < b]
+                if spans:
                     yield Finding(relative, line, 1, diagnostic.severity, diagnostic.message)
 
 
@@ -672,18 +685,20 @@ def summary(results: list[BuildResult]) -> str:
     return "\n".join([*header, *rows, ""])
 
 
-def build_from_log(log: Path) -> Path:
-    """Return the last build path a saved ESPHome compile log printed."""
+def build_from_log(log: Path) -> tuple[Path, Path | None]:
+    """Return the last build path a saved ESPHome compile log printed, and the config it read."""
     try:
-        matches = BUILD_PATH.findall(log.read_text(encoding="utf-8", errors="replace"))
+        text = log.read_text(encoding="utf-8", errors="replace")
     except OSError as error:
         raise LintError(f"cannot read the compile log {log}: {error}") from error
-    if not matches:
+    builds = BUILD_PATH.findall(text)
+    if not builds:
         raise LintError(f"{log}: the compile log holds no build path")
-    return Path(matches[-1])
+    configs = CONFIG_PATH.findall(text)
+    return Path(builds[-1]), Path(configs[-1]) if configs else None
 
 
-def compile_config(config: Path) -> Path:
+def compile_config(config: Path) -> tuple[Path, Path | None]:
     """Compile a config with the ESPHome CLI, echoing its output, and return its build path."""
     try:
         process = subprocess.Popen(
@@ -705,7 +720,7 @@ def compile_config(config: Path) -> Path:
         raise LintError(f"{config}: the compile failed, so there is no build to lint")
     if build is None:
         raise LintError(f"{config}: the compile printed no build path")
-    return build
+    return build, config.resolve()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -769,11 +784,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.compile:
             # The compile takes minutes, and an editor save during it would shift YAML lines.
             index.preload()
-        builds: list[Path] = [*args.builds, *(build_from_log(log) for log in args.from_log)]
+        builds: list[tuple[Path, Path | None]] = [(build, None) for build in args.builds]
+        builds += [build_from_log(log) for log in args.from_log]
         builds += [compile_config(c) for c in args.compile]
-        for build in builds:
+        for build, config in builds:
             build = Path(os.path.normpath(build.resolve()))
-            results.append(BuildLint(build, root, flags, owned, index).run())
+            results.append(BuildLint(build, root, flags, owned, index, config).run())
     except LintError as error:
         print(f"compile-lint: {error}", file=sys.stderr)
         return 2

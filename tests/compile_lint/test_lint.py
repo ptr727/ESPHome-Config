@@ -449,18 +449,33 @@ def test_an_included_file_with_no_directive_is_searched(tmp_path: Path) -> None:
     assert [(f.path, f.line) for f in result.findings] == [("templates/extra.yaml", 2)]
 
 
-def test_the_build_config_is_found_from_esphome_storage(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_the_build_config_read_from_the_compile_log_is_searched(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     root, build = write_build(tmp_path, "")
-    storage = tmp_path / "data" / "storage"
-    storage.mkdir(parents=True)
-    (storage / "device.yaml.json").write_text(json.dumps({"build_path": str(build)}))
-    monkeypatch.setenv("ESPHOME_DATA_DIR", str(tmp_path / "data"))
-    # No #line names the config, so only the storage file can say this build came from it.
+    # No #line names the config, so only the log can say this build came from it.
     set_main(build, "static void f(float y) {", "  call.set_level(y * 2.5);", "}")
+    log = tmp_path / "compile.log"
+    config = root / "test" / "device.yaml"
+    log.write_text(
+        f"INFO Reading configuration {config}...\nINFO Compiling app... Build path: {build}\n"
+    )
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
+    assert "device-test: test/device.yaml:22:1: warning:" in capsys.readouterr().out
+
+
+def test_an_args_entry_owns_only_the_diagnostic_inside_it(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write(
+            '    text:\n      format: "%.1f %.1f"\n'
+            '      args: ["id(left).state * 2.5", id(right).state]\n'
+        )
+    set_main(
+        build, directive(root, 9), '  str_sprintf("%.1f %.1f", left->state * 2.5,   right->state);'
+    )
     result = lint(root, build).run()
-    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 22)]
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]
 
 
 def test_a_recheck_failing_outside_owned_code_is_a_failure_to_run(

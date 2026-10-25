@@ -419,24 +419,24 @@ interval:
           text:
             format: "Battery %.0f%%  %.2f V  %s"
             args:
-              - "id(battery_level).state"
-              - "id(battery_voltage).state"
+              - "static_cast<double>(id(battery_level).state)"
+              - "static_cast<double>(id(battery_voltage).state)"
               - "id(battery_charging).state ? \"charging\" : \"\""
       - lvgl.label.update:
           id: sensors_light
           text:
             format: "Light %.0f lx  Proximity %.0f"
-            args: ["id(ambient_light).state", "id(proximity).state"]
+            args: ["static_cast<double>(id(ambient_light).state)", "static_cast<double>(id(proximity).state)"]
       - lvgl.label.update:
           id: sensors_temperature
           text:
             format: "PMU %.1f C"
-            args: ["id(pmu_temperature).state"]
+            args: ["static_cast<double>(id(pmu_temperature).state)"]
       - lvgl.label.update:
           id: sensors_sound
           text:
             format: "Sound %.1f dB"
-            args: ["id(sound_level_rms).state"]
+            args: ["static_cast<double>(id(sound_level_rms).state)"]
       - lvgl.bar.update:
           id: sensors_sound_bar
           value: !lambda |-
@@ -455,4 +455,7 @@ interval:
           id: level_accel
           text:
             format: "X %.2f g\nY %.2f g\nZ %.2f g"
-            args: ["id(accel_x).state", "id(accel_y).state", "id(accel_z).state"]
+            args:
+              - "static_cast<double>(id(accel_x).state)"
+              - "static_cast<double>(id(accel_y).state)"
+              - "static_cast<double>(id(accel_z).state)"
