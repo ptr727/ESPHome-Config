@@ -130,6 +130,9 @@ esphome:
             id: lcd_backlight
             brightness: ${backlight_brightness}
 
+        # The RTC sets the clock once at boot, so it never overwrites a network time source later.
+        - bm8563.read_time: rtc_time
+
 # https://esphome.io/components/esp32
 esp32:
   # PlatformIO carries no CoreS3 board definition, and the DevKitC-1 profile matches the module.
@@ -344,6 +347,7 @@ time:
   - platform: bm8563
     id: rtc_time
     i2c_id: board_i2c
+    update_interval: never
 
 # https://esphome.io/components/motion
 motion:

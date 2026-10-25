@@ -244,7 +244,7 @@ Shared building-block includes, composed via `packages:` by the device templates
 - Note: units built from August 2026 carry an ILI9342E panel controller rather than the ILI9342C. The bench unit draws correctly on the ILI9342C init, and an ILI9342E unit is untested.
 - Note: the microSD slot is documented rather than configured. ESPHome core has no SD card component, and the one external SPI component opens its own bus, which collides with the display.
 - An optional [camera overlay][m5stack-cores3-camera] configures the GC0308 camera, composed as a second `packages:` entry. The board template holds the camera in reset without it.
-  - Note: the camera's pixel clock is GPIO45, the pin the ESP32-S3 reads at reset to pick its flash voltage. A reset taken while the camera streams can leave the board looping in its bootloader until it is power cycled. The overlay holds the camera in reset on every orderly shutdown, which covers OTA, restart, and API reboots. Turn the `Camera Power` switch off before flashing over USB, since the reset after a USB flash is not an orderly one.
+  - Note: the camera's pixel clock is GPIO45, the pin the ESP32-S3 reads at reset to pick its flash voltage. A reset taken while the camera streams can leave the board looping in its bootloader until it is power cycled. The overlay holds the camera in reset on every orderly shutdown, which covers OTA, restart, and API reboots. Turn the `Camera Enable` switch off before flashing over USB, since the reset after a USB flash is not an orderly one. Turning it back on resets the sensor's registers, so restart afterwards.
 
 ## Devices
 

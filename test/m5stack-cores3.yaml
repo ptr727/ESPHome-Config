@@ -155,9 +155,16 @@ touchscreen:
           then:
             - lvgl.resume:
             - lvgl.widget.redraw:
-            - light.turn_on:
-                id: lcd_backlight
-                brightness: ${backlight_brightness}
+            - light.turn_on: lcd_backlight
+
+# The slider follows the backlight, so a change from Home Assistant or the idle wake shows on screen.
+# https://esphome.io/components/light
+light:
+  - id: !extend lcd_backlight
+    on_state:
+      - lvgl.slider.update:
+          id: controls_backlight
+          value: !lambda return id(lcd_backlight).current_values.get_brightness() * 100.0f;
 
 # https://esphome.io/components/lvgl
 lvgl:
@@ -433,8 +440,10 @@ interval:
     then:
       - lvgl.widget.update:
           id: level_bubble
-          x: !lambda return (int) std::clamp(-id(accel_x).state * 60.0f, -60.0f, 60.0f);
-          y: !lambda return (int) std::clamp(id(accel_y).state * 60.0f, -60.0f, 60.0f);
+          x: !lambda |-
+            return std::isnan(id(accel_x).state) ? 0 : (int) std::clamp(-id(accel_x).state * 60.0f, -60.0f, 60.0f);
+          y: !lambda |-
+            return std::isnan(id(accel_y).state) ? 0 : (int) std::clamp(id(accel_y).state * 60.0f, -60.0f, 60.0f);
       - lvgl.label.update:
           id: level_accel
           text:
