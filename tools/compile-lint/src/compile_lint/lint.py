@@ -30,6 +30,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import traceback
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -209,8 +210,12 @@ def replace_source(arguments: list[str], entry: dict[str, Any], replacement: Pat
 
 
 def load_compile_database(path: Path) -> list[dict[str, Any]]:
-    """Read a compile database."""
-    return cast(list[dict[str, Any]], json.loads(path.read_text(encoding="utf-8")))
+    """Read a compile database, failing the run where it cannot be read."""
+    try:
+        return cast(list[dict[str, Any]], json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError) as error:
+        # An interrupted build can leave the file truncated.
+        raise LintError(f"cannot read the compile database {path}: {error}") from error
 
 
 def entry_path(entry: dict[str, Any]) -> Path:
@@ -811,24 +816,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    try:
+        return run(args)
+    except LintError as error:
+        print(f"compile-lint: {error}", file=sys.stderr)
+        return 2
+    except Exception as error:  # noqa: BLE001
+        # Any other failure is a bug in the lint, so keep its stack, and never exit 1, a finding.
+        traceback.print_exc()
+        print(f"compile-lint: unexpected {type(error).__name__}: {error}", file=sys.stderr)
+        return 2
+
+
+def run(args: argparse.Namespace) -> int:
+    """Lint every build the arguments name, and return the exit status for what was found."""
     root = Path(os.path.normpath(args.config_root.resolve()))
     flags: list[str] = args.flags or DEFAULT_FLAGS
     owned = owned_sources(root)
     index = YamlIndex(root)
+    if args.compile:
+        # The compile takes minutes, and an editor save during it would shift YAML lines.
+        index.preload()
+    builds: list[tuple[Path, Path | None]] = [(build, None) for build in args.builds]
+    builds += [build_from_log(log) for log in args.from_log]
+    builds += [compile_config(c) for c in args.compile]
     results: list[BuildResult] = []
-    try:
-        if args.compile:
-            # The compile takes minutes, and an editor save during it would shift YAML lines.
-            index.preload()
-        builds: list[tuple[Path, Path | None]] = [(build, None) for build in args.builds]
-        builds += [build_from_log(log) for log in args.from_log]
-        builds += [compile_config(c) for c in args.compile]
-        for build, config in builds:
-            build = Path(os.path.normpath(build.resolve()))
-            results.append(BuildLint(build, root, flags, owned, index, config).run())
-    except LintError as error:
-        print(f"compile-lint: {error}", file=sys.stderr)
-        return 2
+    for build, config in builds:
+        build = Path(os.path.normpath(build.resolve()))
+        results.append(BuildLint(build, root, flags, owned, index, config).run())
     for result in results:
         for finding in result.findings:
             print(
