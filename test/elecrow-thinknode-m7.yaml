@@ -2,6 +2,8 @@
 substitutions:
   device_name: elecrow-thinknode-m7-test
   device_friendly_name: "Elecrow ThinkNode M7 Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/elecrow-thinknode-m7.yaml

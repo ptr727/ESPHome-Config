@@ -6,6 +6,8 @@ substitutions:
   device_friendly_name: "ESP32-S3-WROOM-1-N16R8 Test"
   # Third-party N16R8 boards commonly follow the DevKitC-1 v1.0 layout, RGB LED on GPIO48 not GPIO38.
   rgb_led_pin: GPIO48
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/esp32-s3-devkitc.yaml

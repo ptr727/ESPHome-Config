@@ -2,6 +2,8 @@
 substitutions:
   device_name: norvi-enet-ae06-r-test
   device_friendly_name: "Norvi ENET-AE06-R Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/norvi-enet-ae06-r.yaml
@@ -24,4 +26,5 @@ display:
       const int slot = it.get_height() / 4;
       it.printf(0, slot, id(font_line), TextAlign::CENTER_LEFT, "IP: %s", id(wifi_ip).state.c_str());
       it.strftime(0, 2 * slot, id(font_line), TextAlign::CENTER_LEFT, "Time: %H:%M:%S", id(homeassistant_time).now());
-      it.printf(0, 3 * slot, id(font_line), TextAlign::CENTER_LEFT, "ADC: %.2fV", id(adc_buttons).state);
+      it.printf(0, 3 * slot, id(font_line), TextAlign::CENTER_LEFT, "ADC: %.2fV",
+                static_cast<double>(id(adc_buttons).state));

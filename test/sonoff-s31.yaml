@@ -2,6 +2,8 @@
 substitutions:
   device_name: sonoff-s31-test
   device_friendly_name: "Sonoff S31 Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/sonoff-s31.yaml

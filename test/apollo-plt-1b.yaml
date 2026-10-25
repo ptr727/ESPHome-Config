@@ -2,6 +2,8 @@
 substitutions:
   device_name: apollo-plt-1b-test
   device_friendly_name: "Apollo PLT-1B Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/apollo-plt-1b.yaml

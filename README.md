@@ -19,12 +19,19 @@ ESPHome configuration templates and projects.
 
 ### Release Notes <!-- omit from toc -->
 
-**Version 2.3**:
+**Version 2.4**:
 
-- Changed OTA to encryption only, using the API key, so only the upgrade bridge build still needs the `ota_password` secret.
-- Fixed the compile warnings the templates and the EasyStart component can address.
+- Added M5Stack CoreS3 support, with an LVGL touch screen example device.
+- Added M5Stack GC0308 camera overlay support.
+- Added M5Stack Dial support, with an LVGL and rotary encoder example device.
+- Changed the example devices to disable the API and WiFi reboot timeouts, so a flashed one runs on a bench without Home Assistant.
+- Added a compile lint for compiler warnings in a lambda or the EasyStart component, so a warning surfaces while developing and at pull request time.
+- Added a VS Code task that compiles the open config and lists each lint finding in the Problems pane on its YAML or source line.
+- Added a pull request check that fails a compile leg on a lint finding, annotating its YAML or source line.
+- Added a pull request check that fails an example device that does not disable both reboot timeouts.
+- Fixed the float math warnings the compile lint finds in the templates and the EasyStart component.
 
-See [HISTORY.md][history] for the release notes.
+See [Release History][history] for complete release notes and older versions.
 
 ## Table of Contents <!-- omit from toc -->
 
@@ -231,6 +238,44 @@ Shared building-block includes, composed via `packages:` by the device templates
   - The module is a Quectel L76K on a CASIC chipset, so it speaks PCAS sentences rather than u-blox UBX or MediaTek PMTK. Its substitutions, and the pin direction trap that swaps the UART pair if MeshCore's macros are read literally, are in the [overlay][heltec-l76k-gnss] header.
   - Note: the overlay is untested against an actual fix, because the bench unit had no sky view. The link, the direction and the protocol are confirmed.
 
+#### M5Stack CoreS3 Devkit
+
+- [Template][m5stack-cores3] for the [M5Stack CoreS3][m5stack-shop-cores3-link], an ESP32-S3 with 16MB Quad Flash, 8MB Quad PSRAM, a 320x240 capacitive touch display, and an AXP2101 power management IC. The [CoreS3 docs][m5stack-docs-cores3-link] carry the pin map the template header repeats.
+- Includes the display, the touchscreen, and the backlight as a dimmable light.
+- Includes the RTC written through from Home Assistant time, the ambient light and proximity sensor, and pitch and roll from the IMU.
+- Includes the microphone and speaker on a shared I2S bus, and the battery sensors.
+- Includes switches for the 5V boost, the bus 5V output, and USB OTG power.
+- Optional substitutions:
+  - `backlight_brightness`: `80%` by default, the level the backlight turns on at during boot.
+  - `bus_power_restore_mode`: `ALWAYS_OFF` by default, and `ALWAYS_ON` feeds 5V out to the M5-Bus and the Grove ports.
+  - `mic_gain`: `36dB` by default, the ES7210 microphone gain M5Stack's own configuration uses.
+- Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
+- The display and touch drivers live in the template, because their resets sit on the AW9523B expander and the backlight on an AXP2101 rail. The display carries no lambda, so a device draws on it with [LVGL][esphome-components-lvgl-link], as the [example device][test-m5stack-cores3] does with a tabbed touch interface.
+- ESPHome core has no AXP2101, AW9523B, or AW88298 driver, so the template pulls those from [M5Stack's own components][github-m5stack-esphome-yaml-link], pinned to a commit.
+- Note: units built from August 2026 carry an ILI9342E panel controller rather than the ILI9342C. The bench unit draws correctly on the ILI9342C init, and an ILI9342E unit is untested.
+- Note: the microSD slot is documented rather than configured. ESPHome core has no SD card component, and the one external SPI component opens its own bus, which collides with the display.
+- An optional [camera overlay][m5stack-cores3-camera] configures the GC0308 camera, composed as a second `packages:` entry. The board template holds the camera in reset without it.
+  - Optional substitutions:
+    - `camera_clock_pin`: `GPIO10` by default, a spare M5-Bus pin for the clock ESPHome requires although the camera clocks itself. Move it where a module uses `GPIO10`.
+  - Note: the camera's pixel clock is GPIO45, the pin the ESP32-S3 reads at reset to pick its flash voltage. A reset taken while the camera streams can leave the board looping in its bootloader until it is power cycled. The overlay holds the camera in reset on every orderly shutdown, which covers OTA, restart, and API reboots. Turn the `Camera Enable` switch off before flashing over USB, since the reset after a USB flash is not an orderly one. Turning it back on resets the sensor's registers, so restart afterwards.
+
+#### M5Stack Dial
+
+- [Template][m5stack-dial] for the [M5Stack Dial][m5stack-shop-dial-link], an ESP32-S3 StampS3 with 8MB Quad Flash and no PSRAM. It carries a 240x240 round capacitive touch display, a rotary encoder, an RFID reader, and a passive buzzer. The [Dial docs][m5stack-docs-dial-link] carry the pin map the template header repeats.
+- Includes the display, the touchscreen, and the backlight as a dimmable light.
+- Includes the encoder as a step count, the front button that pressing the screen down operates, and the StampS3 BOOT button.
+- Includes the RTC written through from Home Assistant time.
+- Includes the RFID reader, which fires a Home Assistant tag event on each scan and holds the UID as text while the tag is present.
+- Includes the buzzer as a PWM output, and the StampS3 RGB LED through the [RGB LED status][rgb-led-status] package.
+- Includes a Power Off button, which releases the power hold pin and turns off a board running on its battery.
+- Optional substitutions:
+  - `backlight_brightness`: `80%` by default, the level the backlight turns on at during boot.
+  - `rgb_led_pin`: `GPIO21` by default, the StampS3 RGB LED.
+- Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
+- The display carries no lambda, so a device draws on it with [LVGL][esphome-components-lvgl-link], as the [example device][test-m5stack-dial] does. There the encoder changes page and the front button plays a beep.
+- Note: a V1 unit confirms USB and OTA flashing, the display, touch, the backlight, the encoder, the front button, the buzzer, and the RTC write. Reading an RFID tag, the power hold on battery, the BOOT button, and the RGB LED are untested. So is a V1.1 on the StampS3A.
+- Note: the battery level is not sensed, because no ADC pin reaches the battery.
+
 ## Devices
 
 My deployed devices use the templates and helpers, and are documented in [DEVICES.md][devices].
@@ -327,6 +372,9 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [konnected-blaq]: ./templates/konnected-blaq.yaml
 [license]: ./LICENSE
 [logger]: ./templates/logger.yaml
+[m5stack-cores3]: ./templates/m5stack-cores3.yaml
+[m5stack-cores3-camera]: ./templates/m5stack-cores3-camera.yaml
+[m5stack-dial]: ./templates/m5stack-dial.yaml
 [max17048]: ./templates/max17048.yaml
 [min-version]: ./templates/min-version.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
@@ -344,6 +392,8 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [templates]: ./templates/
 [test]: ./test/
 [test-heltec-wifi-lora32-v4-r8]: ./test/heltec-wifi-lora32-v4-r8.yaml
+[test-m5stack-cores3]: ./test/m5stack-cores3.yaml
+[test-m5stack-dial]: ./test/m5stack-dial.yaml
 [test-norvi-enet-ae06-r]: ./test/norvi-enet-ae06-r.yaml
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
@@ -376,6 +426,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [elecrow-thinknode-m7-wiki-link]: https://www.elecrow.com/wiki/ThinkNode_M7_LoRaWAN_Wireless_Communication_Gateway_Support_PoE_Power.html
 [esphome-components-ethernet-link]: https://esphome.io/components/ethernet/
 [esphome-components-gps-link]: https://esphome.io/components/gps/
+[esphome-components-lvgl-link]: https://esphome.io/components/lvgl/
 [esphome-components-status-led-link]: https://esphome.io/components/status_led/
 [esphome-components-sx126x-link]: https://esphome.io/components/sx126x/
 [esphome-link]: https://esphome.io
@@ -387,6 +438,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [github-esphome-feature-requests-513-link]: https://github.com/esphome/feature-requests/issues/513
 [github-esphome-network-util-link]: https://github.com/esphome/esphome/blob/dev/esphome/components/network/util.h
 [github-konnected-io-konnected-esphome-link]: https://github.com/konnected-io/konnected-esphome/blob/master/garage-door-GDOv2-Q.yaml
+[github-m5stack-esphome-yaml-link]: https://github.com/m5stack/esphome-yaml
 [github-ptr727-esphome-nonroot-link]: https://github.com/ptr727/ESPHome-NonRoot
 [github-smarthomeshop-ceilsense-link]: https://github.com/smarthomeshop/ceilsense/blob/main/ceilsense-v1/ceilsense-complete-wifi-ld2412.yaml
 [gl-inet-products-gl-s10-link]: https://www.gl-inet.com/products/gl-s10/
@@ -397,6 +449,10 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [itead-product-sonoff-th-link]: https://itead.cc/product/sonoff-th/
 [kincony-esp32-sd-card-rtc-ds3231-link]: https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
 [konnected-products-smart-garage-door-opener-blaq-myq-alternative-link]: https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
+[m5stack-docs-cores3-link]: https://docs.m5stack.com/en/core/CoreS3
+[m5stack-docs-dial-link]: https://docs.m5stack.com/en/core/Dial
+[m5stack-shop-cores3-link]: https://shop.m5stack.com/products/m5stack-cores3-esp32s3-iotdevelopment-kit
+[m5stack-shop-dial-link]: https://shop.m5stack.com/products/m5stack-dial-v1-1
 [markdown-all-in-one-link]: https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one
 [markdownlint-cli2-link]: https://github.com/DavidAnson/markdownlint-cli2
 [microair-link]: https://www.microair.net

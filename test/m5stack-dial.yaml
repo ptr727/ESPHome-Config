@@ -1,0 +1,376 @@
+# CI compile-test for templates/m5stack-dial.yaml.
+# The LVGL pages exercise each part of the board, so a flashed unit shows what works.
+# - Turning the encoder changes page, and pressing the screen down plays a beep.
+substitutions:
+  device_name: m5stack-dial-test
+  device_friendly_name: "M5Stack Dial Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
+
+packages:
+  device: !include ../templates/m5stack-dial.yaml
+
+# The bench unit has no Home Assistant, so SNTP sets the clock and writes it through to the RTC.
+# - Each source names itself on the status page, so a boot with no network shows the RTC restoring the time.
+# https://esphome.io/components/time
+time:
+  - id: !extend homeassistant_time
+    on_time_sync:
+      - lvgl.label.update:
+          id: status_source
+          text: "Time from Home Assistant"
+
+  - id: !extend rtc_time
+    on_time_sync:
+      - lvgl.label.update:
+          id: status_source
+          text: "Time from RTC"
+
+  # https://esphome.io/components/time/sntp
+  - platform: sntp
+    id: sntp_time
+    on_time_sync:
+      - bm8563.write_time: rtc_time
+      - lvgl.label.update:
+          id: status_source
+          text: "Time from SNTP, RTC written"
+
+# https://esphome.io/components/rtttl
+rtttl:
+  id: board_rtttl
+  output: buzzer_output
+
+# https://esphome.io/components/script
+script:
+  - id: play_beep
+    then:
+      - rtttl.play:
+          rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
+
+  # The inputs redraw on each count or press, since every one of them runs this.
+  - id: show_inputs
+    then:
+      - lvgl.label.update:
+          id: inputs_encoder
+          text:
+            format: "%.0f"
+            args: ["static_cast<double>(id(board_encoder).state)"]
+      - lvgl.arc.update:
+          id: inputs_encoder_arc
+          value: !lambda |-
+            const int v = (int) id(board_encoder).state % 16;
+            return v < 0 ? v + 16 : v;
+      - lvgl.label.update:
+          id: inputs_buttons
+          text:
+            format: "Button %s  Boot %s"
+            args:
+              - "id(front_button).state ? \"on\" : \"off\""
+              - "id(boot_button).state ? \"on\" : \"off\""
+
+# The same beep as a button entity, so the buzzer can be tested without touching the board.
+# https://esphome.io/components/button/template
+button:
+  - platform: template
+    name: "Beep"
+    on_press:
+      - script.execute: play_beep
+
+# A press or a turn on a dark screen only wakes it.
+# - The wake reads the backlight's target state, so a press during the fade turns it back on.
+# - A press or a turn on a lit screen counts as LVGL activity, since neither the button nor the encoder is an LVGL input device.
+# https://esphome.io/components/binary_sensor
+binary_sensor:
+  - id: !extend front_button
+    on_press:
+      - script.execute: show_inputs
+      - if:
+          condition:
+            lambda: return !id(lcd_backlight).remote_values.is_on();
+          then:
+            - light.turn_on: lcd_backlight
+          else:
+            - lambda: lv_display_trigger_activity(nullptr);
+            - script.execute: play_beep
+    on_release:
+      - script.execute: show_inputs
+
+  - id: !extend boot_button
+    on_press:
+      - script.execute: show_inputs
+    on_release:
+      - script.execute: show_inputs
+
+# https://esphome.io/components/sensor/rotary_encoder
+sensor:
+  - id: !extend board_encoder
+    on_value:
+      - script.execute: show_inputs
+    on_clockwise:
+      - if:
+          condition:
+            lambda: return !id(lcd_backlight).remote_values.is_on();
+          then:
+            - light.turn_on: lcd_backlight
+          else:
+            - lambda: lv_display_trigger_activity(nullptr);
+            - lvgl.page.next:
+                animation: MOVE_LEFT
+                time: 200ms
+    on_anticlockwise:
+      - if:
+          condition:
+            lambda: return !id(lcd_backlight).remote_values.is_on();
+          then:
+            - light.turn_on: lcd_backlight
+          else:
+            - lambda: lv_display_trigger_activity(nullptr);
+            - lvgl.page.previous:
+                animation: MOVE_RIGHT
+                time: 200ms
+
+# https://esphome.io/components/text_sensor
+text_sensor:
+  - id: !extend rfid_tag
+    on_value:
+      - lvgl.label.update:
+          id: inputs_rfid
+          text:
+            format: "Tag %s"
+            args: ["x.empty() ? \"--\" : x.c_str()"]
+
+# Coordinates land in the log, so a tap can be checked against the console.
+# https://esphome.io/components/touchscreen
+touchscreen:
+  - id: !extend board_touch
+    on_touch:
+      - logger.log:
+          format: "Touch at %d, %d, raw %d, %d"
+          args: [touch.x, touch.y, touch.x_raw, touch.y_raw]
+    on_update:
+      - lambda: |-
+          if (touches.empty()) return;
+          const int x = touches[0].x - lv_obj_get_width(id(touch_dot)) / 2;
+          const int y = touches[0].y - lv_obj_get_height(id(touch_dot)) / 2;
+          lv_obj_set_pos(id(touch_dot), x, y);
+          lv_label_set_text_fmt(id(touch_coords), "%d, %d", touches[0].x, touches[0].y);
+    on_release:
+      - if:
+          condition:
+            lambda: return !id(lcd_backlight).remote_values.is_on();
+          then:
+            - light.turn_on: lcd_backlight
+
+# LVGL sleeps once the backlight is off, whatever turned it off, and the arc follows the backlight.
+# https://esphome.io/components/light
+light:
+  - id: !extend lcd_backlight
+    on_turn_on:
+      - lvgl.resume:
+    on_turn_off:
+      - lvgl.pause:
+    on_state:
+      - lvgl.arc.update:
+          id: controls_backlight
+          value: !lambda return id(lcd_backlight).remote_values.get_brightness() * 100.0f;
+
+# https://esphome.io/components/lvgl
+lvgl:
+  displays: [board_display]
+  touchscreens: [board_touch]
+  on_idle:
+    - timeout: 60s
+      then:
+        - light.turn_off: lcd_backlight
+  # The round screen shows the middle of each page, so every page but the touch one centers a single column.
+  pages:
+
+    - id: page_status
+      layout:
+        type: flex
+        flex_flow: column
+        flex_align_main: center
+        flex_align_cross: center
+        flex_align_track: center
+      widgets:
+        - label:
+            id: status_clock
+            text_font: montserrat_28
+            text: "--:--:--"
+        - label:
+            id: status_date
+            text: "----------"
+        - label:
+            id: status_ip
+            text: "IP --"
+        - label:
+            id: status_source
+            text: "Time not set"
+        - label:
+            id: status_uptime
+            text: "Up --"
+
+    - id: page_inputs
+      layout:
+        type: flex
+        flex_flow: column
+        flex_align_main: center
+        flex_align_cross: center
+        flex_align_track: center
+      widgets:
+        - arc:
+            id: inputs_encoder_arc
+            width: 120
+            height: 120
+            start_angle: 0
+            end_angle: 360
+            min_value: 0
+            max_value: 16
+            value: 0
+            clickable: false
+            widgets:
+              - label:
+                  id: inputs_encoder
+                  align: center
+                  text_font: montserrat_28
+                  text: "0"
+        - label:
+            id: inputs_buttons
+            text: "Button --  Boot --"
+        - label:
+            id: inputs_rfid
+            text: "Tag --"
+
+    - id: page_touch
+      scrollable: false
+      pad_all: 0
+      widgets:
+        - label:
+            id: touch_coords
+            align: center
+            y: -36
+            text: "Touch the screen"
+        # Targets 30 pixels in from the edge on each axis and one at the center, for checking the touch mapping.
+        - obj:
+            id: touch_target_top
+            align: top_mid
+            y: 24
+            width: 12
+            height: 12
+            radius: 6
+            bg_opa: transp
+            border_width: 2
+            border_color: 0x0080FF
+            clickable: false
+        - obj:
+            id: touch_target_right
+            align: right_mid
+            x: -24
+            width: 12
+            height: 12
+            radius: 6
+            bg_opa: transp
+            border_width: 2
+            border_color: 0x0080FF
+            clickable: false
+        - obj:
+            id: touch_target_bottom
+            align: bottom_mid
+            y: -24
+            width: 12
+            height: 12
+            radius: 6
+            bg_opa: transp
+            border_width: 2
+            border_color: 0x0080FF
+            clickable: false
+        - obj:
+            id: touch_target_left
+            align: left_mid
+            x: 24
+            width: 12
+            height: 12
+            radius: 6
+            bg_opa: transp
+            border_width: 2
+            border_color: 0x0080FF
+            clickable: false
+        - obj:
+            id: touch_target_center
+            align: center
+            width: 12
+            height: 12
+            radius: 6
+            bg_opa: transp
+            border_width: 2
+            border_color: 0x0080FF
+            clickable: false
+        - obj:
+            id: touch_dot
+            width: 20
+            height: 20
+            radius: 10
+            bg_color: 0xFF4000
+            border_width: 0
+            clickable: false
+
+    - id: page_controls
+      layout:
+        type: flex
+        flex_flow: column
+        flex_align_main: center
+        flex_align_cross: center
+        flex_align_track: center
+      widgets:
+        - arc:
+            id: controls_backlight
+            width: 160
+            height: 160
+            adjustable: true
+            min_value: 10
+            max_value: 100
+            value: 80
+            on_release:
+              - light.turn_on:
+                  id: lcd_backlight
+                  brightness: !lambda return x / 100.0f;
+            widgets:
+              - button:
+                  id: controls_beep
+                  align: center
+                  widgets:
+                    - label:
+                        text: "Beep"
+                  on_click:
+                    - script.execute: play_beep
+
+# The status labels redraw on a timer, since the clock and the uptime change every second.
+# https://esphome.io/components/interval
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            time.has_time:
+              id: sntp_time
+          then:
+            - lvgl.label.update:
+                id: status_clock
+                text:
+                  time_format: "%H:%M:%S"
+                  time: sntp_time
+            - lvgl.label.update:
+                id: status_date
+                text:
+                  time_format: "%a %Y-%m-%d"
+                  time: sntp_time
+      - lvgl.label.update:
+          id: status_ip
+          text:
+            format: "IP %s"
+            args: ["id(wifi_ip).state.c_str()"]
+      - lvgl.label.update:
+          id: status_uptime
+          text:
+            format: "Up %u s"
+            args: ["(unsigned) (millis() / 1000)"]

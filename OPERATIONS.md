@@ -28,7 +28,7 @@ The mechanics below were confirmed against ESPHome 2026.7.3 by validating a scra
 Some templates deviate from the plain shorthand, and each says so in its own block:
 
 - [`easystart.yaml`][easystart-template] is parameterized, so it takes the `url` / `ref` / `files` form with `vars` rather than the one-line shorthand.
-- The overlays are composed on their board template as a second package entry. The `esp32-s3-wroom-*` board definitions compose on [`esp32-s3-devkitc.yaml`][devkitc-template], and [`heltec-l76k-gnss.yaml`][heltec-gnss-template] and [`waveshare-esp32-s3-eth-camera.yaml`][waveshare-camera-template] on their own boards.
+- The overlays are composed on their board template as a second package entry. The `esp32-s3-wroom-*` board definitions compose on [`esp32-s3-devkitc.yaml`][devkitc-template], and [`heltec-l76k-gnss.yaml`][heltec-gnss-template], [`waveshare-esp32-s3-eth-camera.yaml`][waveshare-camera-template] and [`m5stack-cores3-camera.yaml`][m5stack-cores3-camera-template] on their own boards.
 - [`templates/secrets.yaml`][secrets-template] is repository-internal plumbing and is not externally usable, since it re-exports a path that exists only in this tree.
 
 Every substitution a template defines or needs is declared in that template's own header. A template composing others also exposes their knobs, so a consumer reads the composed set rather than one file, and [`common.yaml`][common-template] is the usual composer. [`README.md`][readme] catalogs knobs for an adopter choosing a template, and where it names one, the header is what it has to agree with.
@@ -134,11 +134,24 @@ fi
 - **Point `config_dir` at a checkout rather than at the deployed tree.** The dashboard's container already serves that tree, so compile it there with `docker exec` rather than in a second container.
 - **`latest` gives CI parity, not dashboard parity.** CI pulls `latest` fresh on every run, so run `docker pull ptr727/esphome-nonroot:latest` first for parity. That can be newer than the dashboard's last pull. Before an install, rerun with the image tag set to the dashboard's ESPHome version, per [Running the ESPHome CLI][running-the-esphome-cli]. The image's Docker Hub tag list carries each ESPHome release as a tag, such as `2026.9.1`.
 - **Compile a [`test/`][test] example device to gate a template change.** A top-level device config works the same way, but the example device is what CI builds.
+- **An example device sets `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`.** A flashed one then keeps running on a bench with no Home Assistant and no network, rather than rebooting every 15 minutes. Every template that sets a reboot timeout reads the matching substitution. A template with no `wifi:` block, such as an ethernet-only board's, ignores the WiFi half. CI's change-detection job fails an example device that leaves either one out.
 - **`secrets.yaml` belongs at the repository root**, not beside the config being compiled, because [`templates/secrets.yaml`][secrets-template] re-exports the root file and every template resolves `!secret` through it. Generate one from [`secrets._yaml`][secrets-example], and the guard above keeps a real one from being overwritten.
 - **`/entrypoint/cache.sh` runs first**, and it prepares the `/cache` mount the image expects.
 - **`/cache` holds the toolchain and the build tree, so keep it between runs.** A fresh directory each time makes every local compile a cold ESP-IDF build of several minutes. It also holds ESPHome's ccache store, `home/.cache/esphome/idf/ccache`, so a kept directory turns most repeat compiles into cache hits. CI uses one regardless, since it discards the runner.
 - **The container runs as the invoking user**, so what it writes stays owned by that user. The image points its build tree and its data directory at `/cache`. The only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files differently.
 - **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when no example device in [`test/`][test] includes a device template. An overlay composes into its board's example device rather than getting one of its own. A new utility include joins that job's exemption list instead.
+
+### Compile Lint
+
+A lambda is C++ that only compiles inside the `main.cpp` ESPHome generates. Its warnings land in a compile log among hundreds from ESPHome and the framework, where they are easy to miss. The compile lint in [`tools/compile-lint`][compile-lint] reruns the compile of `main.cpp` from the build ESPHome left behind. The rerun is syntax-only, uses the build's own flags plus `-Wdouble-promotion`, and keeps only the diagnostics located in this repository's code. It never builds firmware and never changes what gets flashed.
+
+- **Run it with every compile.** The VS Code task "ESPHome: Compile and Lint" compiles the open file in the dashboard's container, then lints that build. Each finding lands in the Problems pane on its YAML or source line. On a throwaway container, replace the compile call in [Compiling the Way CI Does][compiling-the-way-ci-does] with `PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config --compile /config/test/<template>.yaml`.
+- **CI runs it on every compile leg** of [`test-pull-request.yml`][test-workflow]. A finding annotates its YAML or source line, appears in the step summary, and fails the leg.
+- **What counts as this repository's code.** A line of a YAML lambda counts, and so does a lambda ESPHome inlined as a bare expression. A C++ file in this tree counts too, including the build's copy of an external component. Everything else is set aside, including code from a remote package, and `--verbose` lists it.
+- **ESPHome rewrites a lambda before it emits it.** It resolves substitutions, turns `id(x)` into `x`, or `x->value()` for a global, and blanks comments. The lint applies the same rewrites before matching each generated line against its YAML line. That match is how it tells a lambda's code from generated code that ESPHome attributes to the same YAML lines.
+- **A `text: format:` argument is checked too.** ESPHome emits each `args:` entry as an argument to `str_sprintf`, so a finding there lands on the entry it points inside.
+- **Fixing `-Wdouble-promotion`.** Write a float literal with an `f` suffix, as in `x / 60.0f`, so the arithmetic stays in the single-precision FPU. A float passed to a printf-style call, or listed under `args:`, takes an explicit `static_cast<double>()`, since a variadic call always promotes it.
+- **Exit status** is `0` when nothing was found, and `1` when a finding landed in this repository's code. It is `2` when the lint could not run, such as after a failed compile.
 
 ## Flashing and sdkconfig
 
@@ -288,7 +301,7 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 [`templates/heltec-wifi-lora32-v4-r8.yaml`][heltec-template] is a board template. [`templates/heltec-l76k-gnss.yaml`][heltec-gnss-template] is an overlay for the GNSS module that plugs into its header. It composes as a second `packages:` entry, the way the camera overlay above composes onto its board template.
 
 - **What is confirmed on hardware is USB and OTA flashing, WiFi, the OLED, both rails, the GNSS UART and the battery ADC.** The user button is untested. The radio and front-end pins are documented rather than claimed, so nothing exercises them.
-- **The board bus is an `i2c:` list entry, and a mapping there loses the bus in silence.** `merge_config` keeps only the consuming config's value when one side is a mapping and the other a list, so a consumer's list entry silently drops a template's mapping bus and nothing reports it. Two list entries concatenate instead, which is why [Waveshare ESP32-S3-ETH Camera][waveshare-camera] takes that form. A device on the merged bus then needs an explicit `i2c_id`, and says so with `Too many candidates found`. Seven templates declare a bus, all in the list form, and the six board buses use the id `board_i2c`.
+- **The board bus is an `i2c:` list entry, and a mapping there loses the bus in silence.** `merge_config` keeps only the consuming config's value when one side is a mapping and the other a list. A consumer's list entry therefore drops a template's mapping bus, and nothing reports it. Two list entries concatenate instead, which is why [Waveshare ESP32-S3-ETH Camera][waveshare-camera] takes that form. A device on the merged bus then needs an explicit `i2c_id`, and says so with `Too many candidates found`. Every template that declares a bus uses the list form, and each board bus uses the id `board_i2c`.
 - **`Vext` gates the I2C bus and its pull-ups, so the rail has to come up before the bus.** The bus sets up at `BUS` priority and the `switch` raising the rail at `HARDWARE`, which is the wrong order. An `on_boot` handler at priority 1100 raises the rail first, through the IDF GPIO API. Without it the bus recovery reads SCL low and errors on every boot.
 - **The GNSS UART direction is the trap on this board, and the vendor macro names cause it.** MeshCore calls `Serial1.setPins(PIN_GPS_TX, PIN_GPS_RX)` into a signature that takes rx first. Its `PIN_GPS_RX=38` and `PIN_GPS_TX=39` therefore name the module's pins rather than the MCU's. The MCU side is tx on GPIO38 and rx on GPIO39.
 - **ESPHome writes the module nothing, which is what makes the overlay a test.** The `gps` component only reads NMEA, so a silent link is the module's own state. The `$PCAS` buttons are the only writes. They separate a dead link from a module whose saved configuration disabled NMEA output, since a version query answers in both cases.
@@ -303,7 +316,44 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The 15% figure applies to a raw count read against the hardware scale.** A framework that normalizes a calibrated reading onto a fixed 1100mV scale is a separate case, and its constant is correct there. Check which scale a count is on before applying either number.
 - **The status LED is dark when healthy, deliberately.** ESPHome drives the pin low when healthy, which lights an active low LED. This board's LED is active high and bright white on a unit that runs from a cell. It blinks through a PWM output capped at `status_led_brightness`, 50% by default, since full drive glares.
 - **The SX1262 cannot be driven through ESPHome on this board.** The `sx126x` component reaches an RF switch only through the radio's own DIO2. The KCT8103L front-end is wired to three ESP32 pins instead, one selecting the transmit or receive path per packet. Those pins are documented and left unclaimed.
-- **A bench unit needs both reboot timeouts disabled.** Override `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`. Every template that sets a reboot timeout reads the matching substitution, so this reaches far more than this board. An ethernet board carries no `wifi:` block, so the WiFi half does nothing there. A unit on a desk with no Home Assistant restarts part way through a cold GNSS acquisition.
+- **A bench unit needs both reboot timeouts disabled**, as every example device does per [Compiling the Way CI Does][compiling-the-way-ci-does]. On this board a unit on a desk with no Home Assistant otherwise restarts part way through a cold GNSS acquisition.
+
+### M5Stack CoreS3
+
+[`templates/m5stack-cores3.yaml`][m5stack-cores3-template] is a board template. [`templates/m5stack-cores3-camera.yaml`][m5stack-cores3-camera-template] is an overlay for its camera, composed as a second `packages:` entry.
+
+- **The display, touch and backlight drivers sit in the board template, unlike the OLED boards.** The LCD reset is AW9523B pin 9, the touch reset is pin 0, and the backlight is the AXP2101's DLDO1 rail. A device writing its own display block would rebuild that plumbing. The display carries no lambda and `update_interval: never`, which is what LVGL needs. A lambda device extends `board_display` with its lambda, an update interval and `auto_clear_enabled: true`.
+- **The AXP2101, AW9523B and AW88298 drivers are M5Stack's external components, pinned to a commit.** ESPHome core closed the pull requests for the first two and pointed at M5Stack's repository instead. That repository changes without releases, so moving the ref needs a bench re-test.
+- **An AXP2101 rail output does nothing until something turns it on.** The output platform enables a rail only in `write_state`, so a declared rail keeps whatever the previous firmware or the PMU default left. An `on_boot` at priority 800 turns on every rail but the backlight's, which the backlight light turns on at priority 600. M5Stack's own YAML declares the rails without turning them on, which works only because its factory firmware already did.
+- **The vendor AXP2101 component enables the PMU watchdog and never feeds it.** Its default mode raises an interrupt that does not reach the ESP32, and a bench unit ran for hours without a PMU reset. Do not switch the watchdog to a reset mode without adding a feed.
+- **GPIO35 is both the display DC pin and the microSD MISO.** M5GFX switches the pin's function on every chip select and `mipi_spi` does not, which is one more reason the slot stays unclaimed.
+- **The GC0308 has no JPEG encoder.** With the default `pixel_format: JPEG` the driver returns `ESP_ERR_NOT_SUPPORTED` and `esp32_camera` marks itself failed. `RGB565` with a `jpeg_quality` converts in software, which needs PSRAM.
+- **VGA with auto exposure returned one byte-identical flat frame on the bench, every time.** QVGA with the manual exposure and gain from M5Stack's Stack-chan firmware returns a real image. Both changed together, so which one mattered is not established.
+- **The camera's pixel clock is GPIO45, and GPIO45 picks the flash voltage at every reset.** The PMU keeps the camera powered across an ESP32 reset, so a streaming camera can hold the strap high. The flash then runs from the 1.8V LDO and the bootloader loops on misreads. Every reset taken with the camera streaming outside the shutdown hook looped on the bench, and every cold power on booted. The evidence, in order:
+  - The loop printed `rst:0x3 (RTC_SW_SYS_RST),boot:0x3c` and `partition 0 invalid magic number 0x10aa`, where the magic is `0x50aa`.
+  - The partition table read back from flash was byte-identical to the built one, so the bootloader misread intact flash.
+  - esptool's ESP32-S3 target defines `GPIO_STRAP_VDDSPI_MASK = 1 << 4`, and `0x3c` has bit 4 set, so GPIO45 read high.
+  - `espefuse summary` showed `VDD_SPI_FORCE` unburned, so the strap alone decides the flash voltage.
+- **A power cycle recovers, and the overlay prevents the orderly cases.** Hold the power button for 6 seconds, since a reset leaves the camera streaming. The overlay's `on_shutdown` holds the camera in reset, and an OTA reboot with the camera streaming came back clean. The reset after an esptool flash bypasses that hook. Turn `Camera Enable` off over the API first, and a USB flash then boots without a power cycle. The switch drives the sensor's reset line rather than its rail, so turning it back on resets the sensor's registers and needs a restart. A crash or a brownout bypasses the shutdown hook as well.
+- **Burning `VDD_SPI` to 3.3V removes the hazard, and nothing here does it.** `espefuse set-flash-voltage 3.3V` is permanent, and the flash voltage is inferred from behavior rather than read from a schematic. The template leaves it to the owner.
+- **The camera snapshot endpoint has no authentication.** `esp32_camera_web_server` serves it on port 8081 with no option to protect it, so flash the example device only onto a bench network.
+- **The camera web server asserts on reboot after the camera failed setup.** `esp32_camera_web_server` marks itself failed before it creates its semaphore, and its `on_shutdown` deletes the null semaphore in `vQueueDelete`. It shows as a crash on the reboot after an OTA, and a working camera never reaches it.
+- **The microphone and the speaker share one I2S bus, so only one runs at a time.** The example device stops its `sound_level` sensor, waits until the microphone stops capturing, plays the tune, and restarts the sensor when playback finishes. A version without the wait froze the screen on a press, and the version with it has not.
+- **The touch mapping matches M5GFX, 0 to 319 and 0 to 239 with no offset.** A raw capture over the API ran from y 0 at the top edge to 239 at the bottom. Fingertip taps read up to about 20 pixels low near the bottom and within 4 pixels near the top. That is finger contact rather than a panel offset, so the template does not correct for it.
+- **The FT6336 drops quick taps once it falls into its monitor scan.** It slows its scan a few seconds after the last touch. Waking a dark screen then took several taps, and the touchscreen component logged one of three. ESPHome's `ft63x6` driver sets the active scan rate in register 0x88 and leaves the power mode in register 0x86 at its default. The board template writes 0 to register 0x86 through the touchscreen's own I2C device. It does so in an `on_boot` at priority -100, since the driver's setup resets the controller. A single tap then wakes the screen.
+- **The example device swipes between tabs only from the screen edge.** LVGL's tabview swipe is a plain scroll that also starts on the slider and the drawing pad, so the example turns it off. A drag starting within 24 pixels of the left or right edge and moving 60 pixels inward changes tab instead.
+
+### M5Stack Dial
+
+[`templates/m5stack-dial.yaml`][m5stack-dial-template] is a board template, with every part on the StampS3 GPIO pins rather than behind an expander or a PMU.
+
+- **GPIO46 is the power hold, an output.** On battery the front button or the RTC alarm powers the board on, and it stays on only while the firmware drives GPIO46 high. ESPHome's device page configures it as a "Hold Button" input instead, so a board on battery turns off as soon as the button is released. On USB or the DC input the pin does nothing, so the bench unit could not test it.
+- **A restart releases the power hold until the switch sets up again.** The reset returns GPIO46 to an input with its pulldown. Whether a board on battery stays powered through an OTA reboot or a restart is untested.
+- **GPIO8 resets both the LCD and the WS1850S RFID reader.** The display owns the pin, so the reader takes no `reset_pin`. On the bench the reader set up without an error after the display's reset pulse.
+- **The FT3267 touch controller runs on the `ft5x06` driver.** The boot I2C scan lists only 0x28 and 0x51, but the driver then reads vendor ID 0x11 at 0x38, and touch works. Do not chase the missing address.
+- **The touch mapping matches the display with no calibration.** Taps on rings 30 pixels in from each edge and at the center landed on them. The reported coordinates sit one pixel below the raw ones.
+- **`resolution: 1` gives one encoder step per detent.** M5Stack's example uses 4, which counts four steps per click.
+- **The RTC is a BM8563, which the docs also call an RTC8563 and M5Stack's example drives as a PCF8563.** The template uses the `bm8563` platform, as the CoreS3 template does.
 
 ### RGB LED Status
 
@@ -627,7 +677,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 
   `--user "$(id -u):$(id -g)"` runs the container as the invoking host user rather than the image's own default, so it reads `$lint_root` through the same owner permission bits `mktemp -d`'s default `0700` already grants, with no `chmod` opening it to any other local account. This assumes a standard rootful Docker daemon, where the container's user namespace is the host's own. Under **rootless** Docker the daemon runs in its own user namespace, so the host UID passed to `--user` maps to an unrelated subordinate UID inside the container rather than to the owner of the bind mount, and the snapshot becomes unreadable instead. On a rootless daemon, `chmod -R o+rX "$lint_root"` after the tar step is the fallback, accepting the wider local-account readability for the run's duration. The trap removes the snapshot on exit either way.
 
-  **This includes the hub's `scripts/docker_lint.py` wrapper, and it cannot currently take this snapshot as its `--root`.** Its own target discovery runs `git -C "$root" ls-files`, and the snapshot above deliberately holds only the `git ls-files` output, not `.git` itself, so `--root "$lint_root"` fails with "not a git repository" before any linter runs. Passing the live checkout instead would defeat the whole point of the snapshot. Until the wrapper accepts a plain snapshot or file manifest, lint this repository with the direct `docker run` invocations above rather than `docker_lint.py`.
+  **The hub's `scripts/docker_lint.py` wrapper builds this same snapshot itself.** It copies the `git ls-files --cached --others --exclude-standard` output into a temporary tree, and each container mounts only that tree, read-only with networking off. So `secrets.yaml` never reaches a container, and running the wrapper with `--root` on a checkout is the route for this repository.
 
 - **The installed `gh` is old enough that `gh pr edit` always fails**, on every repository, and the message names a GraphQL field rather than a permission. See [The `gh` CLI Is Too Old for `gh pr edit`][gh-cli-too-old] for the cause and the REST workaround.
 - **A compile job that fails in about 18 seconds is a registry timeout, not a template defect.** The compile jobs pull the [`ptr727/esphome-nonroot`][esphome-nonroot-link] image, and a slow Docker Hub kills the job with `registry-1.docker.io ... context deadline exceeded` before any ESPHome work starts. A real esp-idf compile runs for minutes, so the duration tells the two apart at a glance. Re-run the job rather than reading the template for a fault that is not there.
@@ -652,6 +702,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
+[compile-lint]: ./tools/compile-lint/
 [compiling-the-way-ci-does]: #compiling-the-way-ci-does
 [config-and-compile-validation]: #config-and-compile-validation
 [debugging]: #debugging
@@ -667,6 +718,9 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [governance-write-safety]: ./GOVERNANCE.md#repository-boundaries-and-write-safety
 [heltec-gnss-template]: ./templates/heltec-l76k-gnss.yaml
 [heltec-template]: ./templates/heltec-wifi-lora32-v4-r8.yaml
+[m5stack-cores3-camera-template]: ./templates/m5stack-cores3-camera.yaml
+[m5stack-cores3-template]: ./templates/m5stack-cores3.yaml
+[m5stack-dial-template]: ./templates/m5stack-dial.yaml
 [max17048-template]: ./templates/max17048.yaml
 [min-version-template]: ./templates/min-version.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml

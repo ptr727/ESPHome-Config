@@ -2,6 +2,8 @@
 substitutions:
   device_name: gls10-bluetooth-proxy-test
   device_friendly_name: "GL-S10 Bluetooth Proxy Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/gls10-bluetooth-proxy.yaml
