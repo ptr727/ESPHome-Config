@@ -545,3 +545,12 @@ def test_a_malformed_compile_database_is_a_failure_to_run(tmp_path: Path, conten
     root, build = write_build(tmp_path, "")
     (build / "build" / "compile_commands.json").write_text(content)
     assert main(["--config-root", str(root), str(build)]) == 2
+
+
+def test_an_unexpected_failure_keeps_its_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, build = write_build(tmp_path, "")
+    (build / "build" / "compile_commands.json").write_text('{"directory": "/x"}')
+    assert main(["--config-root", str(root), str(build)]) == 2
+    assert "Traceback (most recent call last)" in capsys.readouterr().err

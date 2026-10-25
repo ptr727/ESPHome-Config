@@ -30,6 +30,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import traceback
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -821,7 +822,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"compile-lint: {error}", file=sys.stderr)
         return 2
     except Exception as error:  # noqa: BLE001
-        # Any other failure means the lint did not run, so it must not read as exit 1, a finding.
+        # Any other failure is a bug in the lint, so keep its stack, and never exit 1, a finding.
+        traceback.print_exc()
         print(f"compile-lint: unexpected {type(error).__name__}: {error}", file=sys.stderr)
         return 2
 
