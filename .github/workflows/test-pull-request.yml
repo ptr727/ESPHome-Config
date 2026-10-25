@@ -151,7 +151,7 @@ jobs:
           key="$(python3 -c 'import base64, os; print(base64.b64encode(os.urandom(32)).decode())')"
           sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" secrets.yaml
 
-      # The cache sits at a fixed path, so the lint step reads the build this step leaves there.
+      # The cache sits at a fixed path, and the log there names the build path, so the lint step finds the build.
       - name: Compile template test config step
         run: |
           set -Eeuo pipefail
@@ -166,7 +166,7 @@ jobs:
               set -Eeuo pipefail
               /entrypoint/cache.sh
               esphome config /config/test/${{ matrix.config }}.yaml > /dev/null
-              esphome compile /config/test/${{ matrix.config }}.yaml
+              esphome compile /config/test/${{ matrix.config }}.yaml 2>&1 | tee /cache/compile.log
             '
 
       # Recompile the generated main.cpp syntax-only with stricter warnings, keeping what lands in this repository's code.
@@ -183,7 +183,7 @@ jobs:
             ptr727/esphome-nonroot:latest \
             bash -c '
               set -Eeuo pipefail
-              python3 -m compile_lint --config-root /config --annotate --summary /summary.md /cache/build/*
+              python3 -m compile_lint --config-root /config --annotate --summary /summary.md --from-log /cache/compile.log
             '
 
   # GitHub Actions does not support required status checks on conditional jobs.

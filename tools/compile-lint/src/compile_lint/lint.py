@@ -70,6 +70,7 @@ COMMENT = re.compile(
 ID_REFERENCE = re.compile(r"\bid\(\s*([\w${}]+)\s*\)")
 RETURN_EXPRESSION = re.compile(r"^return\s+(?P<expression>[^;]+);?$")
 BARE_TOKEN = re.compile(r"^[\w.]+$")
+YAML_PATH = re.compile(r"^[\w./-]+\.ya?ml$")
 BUILD_PATH = re.compile(r"Build path: (?P<path>\S+)")
 
 
@@ -97,11 +98,15 @@ class Finding:
 
 @dataclass(frozen=True)
 class Scalar:
-    """A YAML scalar's 1-based line span and its text."""
+    """A YAML scalar's 1-based line span, its text, and its lines as ESPHome emits them.
+
+    Each emitted line pairs the YAML line its code sits on with its text after comment removal.
+    """
 
     start: int
     end: int
     text: str
+    lines: tuple[tuple[int, str], ...]
 
 
 @dataclass(frozen=True)
@@ -114,6 +119,7 @@ class Directive:
     index: int
     line: int
     path: str | None
+    absolute: Path
 
 
 @dataclass
@@ -255,6 +261,42 @@ def relative_to_root(path: Path, root: Path) -> str | None:
         return None
 
 
+def emitted_lines(text: str, first: int) -> tuple[tuple[int, str], ...]:
+    """Split lambda text into the lines ESPHome emits, each with the YAML line its code sits on.
+
+    ESPHome removes comments from the whole lambda, so a block comment spanning lines joins them.
+    """
+    chars: list[tuple[str, int]] = []
+    line = first
+    position = 0
+
+    def keep(chunk: str) -> None:
+        nonlocal line
+        for char in chunk:
+            chars.append((char, line))
+            line += char == "\n"
+
+    for match in COMMENT.finditer(text):
+        keep(text[position : match.start()])
+        if match[0].startswith("/"):
+            chars.append((" ", line))
+            line += match[0].count("\n")
+        else:
+            keep(match[0])
+        position = match.end()
+    keep(text[position:])
+    lines: list[tuple[int, str]] = []
+    current: list[tuple[str, int]] = []
+    for char, source in [*chars, ("\n", line)]:
+        if char != "\n":
+            current.append((char, source))
+            continue
+        code = [source for char, source in current if not char.isspace()]
+        lines.append((code[0] if code else source, "".join(char for char, _ in current)))
+        current = []
+    return tuple(lines)
+
+
 def yaml_scalars(path: Path) -> list[Scalar]:
     """Return every scalar in a YAML file with its line span, tags and all left unresolved."""
     scalars: list[Scalar] = []
@@ -262,8 +304,16 @@ def yaml_scalars(path: Path) -> list[Scalar]:
     def walk(node: yaml.Node) -> None:
         if isinstance(node, yaml.ScalarNode):
             start = node.start_mark.line + 1
-            end = node.end_mark.line + (1 if node.end_mark.column > 0 else 0)
-            scalars.append(Scalar(start=start, end=max(start, end), text=str(node.value)))
+            end = max(start, node.end_mark.line + (1 if node.end_mark.column > 0 else 0))
+            text = str(node.value)
+            if node.style == "|":
+                # A literal block keeps its lines, and its body starts below the indicator.
+                lines = emitted_lines(text, start + 1)
+            else:
+                # Any other style folds to one logical line, on the indicator's next line for >.
+                first = start + 1 if node.style == ">" else start
+                lines = ((first, " ".join(text for _, text in emitted_lines(text, first))),)
+            scalars.append(Scalar(start, end, text, lines))
         elif isinstance(node, yaml.SequenceNode):
             for child in cast(list[yaml.Node], node.value):
                 walk(child)
@@ -286,19 +336,34 @@ def yaml_scalars(path: Path) -> list[Scalar]:
 
 
 class YamlIndex:
-    """Caches each repository YAML file's scalars, read on first use or all at once."""
+    """Caches each YAML file's scalars, read on first use or all at once."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
-        self._scalars: dict[str, list[Scalar]] = {}
+        self._scalars: dict[Path, list[Scalar]] = {}
 
     def scalars(self, relative: str) -> list[Scalar]:
-        if relative not in self._scalars:
-            try:
-                self._scalars[relative] = yaml_scalars(self.root / relative)
-            except (OSError, yaml.YAMLError) as error:
-                raise LintError(f"cannot read {relative}: {error}") from error
-        return self._scalars[relative]
+        """Return a repository file's scalars, failing the run where it does not parse."""
+        try:
+            return self.scalars_at(self.root / relative)
+        except (OSError, yaml.YAMLError) as error:
+            raise LintError(f"cannot read {relative}: {error}") from error
+
+    def scalars_at(self, path: Path) -> list[Scalar]:
+        """Return any file's scalars, such as a remote package's in the build cache."""
+        if path not in self._scalars:
+            self._scalars[path] = yaml_scalars(path)
+        return self._scalars[path]
+
+    def includes(self, relative: str) -> Iterator[str]:
+        """Yield the repository YAML files a file names by relative path, as !include or file:."""
+        directory = (self.root / relative).parent
+        for scalar in self.scalars(relative):
+            if YAML_PATH.match(scalar.text) and not scalar.text.startswith("/"):
+                target = Path(os.path.normpath(directory / scalar.text))
+                included = relative_to_root(target, self.root)
+                if included is not None and target.is_file():
+                    yield included
 
     def preload(self) -> None:
         """Read every YAML file now, so a later edit cannot shift lines against a build."""
@@ -341,40 +406,25 @@ def lambda_pattern(text: str) -> re.Pattern[str]:
 def lambda_line(scalar: Scalar, directive: Directive, offset: int) -> tuple[int, str] | None:
     """Return the YAML line and text a generated line copies, offset lines after a directive.
 
-    ESPHome numbers a lambda's #line one past the scalar's first line.
-    A block scalar's body starts on that line, so its body maps line for line.
-    A lambda written inline after its key is the scalar's only line.
+    ESPHome numbers a lambda's #line one past the scalar's first line, which anchors the scalar.
     """
-    if scalar.start + 1 != directive.line:
+    if scalar.start + 1 != directive.line or offset >= len(scalar.lines):
         return None
-    lines = scalar.text.splitlines()
-    if scalar.start == scalar.end:
-        return (scalar.start, scalar.text) if offset == 0 else None
-    if offset >= len(lines):
-        return None
-    return directive.line + offset, lines[offset]
+    return scalar.lines[offset]
 
 
 def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[str]]]:
     """Yield the YAML line and pattern of each lambda ESPHome may inline as a bare expression."""
     for scalar in scalars:
-        match = RETURN_EXPRESSION.match(normalize(strip_comments(scalar.text)))
+        match = RETURN_EXPRESSION.match(normalize(" ".join(text for _, text in scalar.lines)))
         if not match:
             continue
         expression = match["expression"].strip()
         # A bare name or number would match any generated line that mentions it.
         if BARE_TOKEN.match(ID_REFERENCE.sub(r"\1", expression)):
             continue
-        line = scalar.start
-        if scalar.start != scalar.end:
-            body = scalar.text.splitlines()
-            starts = (
-                i
-                for i, text in enumerate(body)
-                if strip_comments(text).strip().startswith("return")
-            )
-            # A comment spanning lines can hide the return, so fall back to the first body line.
-            line += 1 + next(starts, 0)
+        returns = (line for line, text in scalar.lines if text.strip().startswith("return"))
+        line = next(returns, scalar.lines[0][0])
         pattern = lambda_pattern(expression).pattern
         yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)")
 
@@ -392,6 +442,7 @@ class BuildLint:
         self.index = index
         self.main_lines: list[str] = []
         self.directives: list[Directive] = []
+        self.failed: list[str] = []
 
     def run(self) -> BuildResult:
         database = find_compile_database(self.build)
@@ -404,14 +455,21 @@ class BuildLint:
                 diagnostics = self.compile(entry, entry_arguments(entry))
             else:
                 continue
+            owned_error = False
             for diagnostic in diagnostics:
                 findings = list(self.classify(diagnostic, Path(str(entry["directory"]))))
                 if not findings:
                     result.ignored.append(diagnostic)
+                owned_error |= any(f.severity == "error" for f in findings)
                 for finding in findings:
                     if finding not in seen:
                         seen.add(finding)
                         result.findings.append(finding)
+            if str(entry["file"]) in self.failed and not owned_error:
+                # The build compiled, so an error outside owned code means the recheck itself broke.
+                raise LintError(
+                    f"{self.build.name}: the syntax-only compile of {entry['file']} failed"
+                )
         result.findings.sort()
         return result
 
@@ -433,7 +491,8 @@ class BuildLint:
                 else None
             )
             if match:
-                self.directives.append(Directive(index, int(match["line"]), relative))
+                absolute = Path(os.path.normpath(match["path"]))
+                self.directives.append(Directive(index, int(match["line"]), relative, absolute))
             blanked.append("" if match else text)
         with tempfile.TemporaryDirectory(prefix="compile-lint-") as scratch:
             copy = Path(scratch) / "main.cpp"
@@ -464,6 +523,8 @@ class BuildLint:
                 f"{self.build.name}: the syntax-only compile of {entry['file']} failed "
                 f"with no diagnostic:\n{completed.stderr}"
             )
+        if completed.returncode != 0:
+            self.failed.append(str(entry["file"]))
         return diagnostics
 
     def owned_path(self, path: Path) -> str | None:
@@ -498,30 +559,70 @@ class BuildLint:
             return
         generated = normalize(self.main_lines[index])
         preceding = [d for d in self.directives if d.index < index]
-        if preceding and preceding[-1].path is None:
-            # Code after a remote package's #line is that package's, or generated after it.
-            return
         if preceding:
             directive = preceding[-1]
-            assert directive.path is not None
-            for scalar in self.index.scalars(directive.path):
-                located = lambda_line(scalar, directive, index - directive.index - 1)
-                if located is None:
-                    continue
-                line, text = located
-                if lambda_pattern(text).fullmatch(generated):
-                    # The generated column counts ESPHome's indentation, not the YAML's.
-                    yield Finding(directive.path, line, 1, diagnostic.severity, diagnostic.message)
+            if directive.path is None:
+                if self.copies_remote(directive, index, generated):
                     return
+            else:
+                for scalar in self.index.scalars(directive.path):
+                    located = lambda_line(scalar, directive, index - directive.index - 1)
+                    if located is None:
+                        continue
+                    line, text = located
+                    if lambda_pattern(text).fullmatch(generated):
+                        # The generated column counts ESPHome's indentation, not the YAML's.
+                        yield Finding(
+                            directive.path, line, 1, diagnostic.severity, diagnostic.message
+                        )
+                        return
         yield from self.match_inline(diagnostic, generated)
 
-    def match_inline(self, diagnostic: Diagnostic, generated: str) -> Iterator[Finding]:
-        """Attribute a diagnostic to the build's YAML lambdas whose expression was inlined there.
+    def node_files(self) -> list[str]:
+        """Return the build's repository YAML: its config, the files #line names, and includes."""
+        pending = [d.path for d in self.directives if d.path is not None]
+        pending += self.config_files()
+        found: dict[str, None] = {}
+        while pending:
+            relative = pending.pop()
+            if relative not in found:
+                found[relative] = None
+                pending.extend(self.index.includes(relative))
+        return list(found)
 
-        The build's YAML is each repository file a #line directive names.
-        """
-        node_files = dict.fromkeys(d.path for d in self.directives if d.path is not None)
-        for relative in node_files:
+    def config_files(self) -> list[str]:
+        """Return the repository config a build came from, read from ESPHome's storage file."""
+        data = Path(os.environ.get("ESPHOME_DATA_DIR", self.root / ".esphome"))
+        names: list[str] = []
+        for storage in sorted((data / "storage").glob("*.json")):
+            try:
+                build_path = json.loads(storage.read_text(encoding="utf-8")).get("build_path")
+            except (OSError, ValueError, AttributeError):
+                continue
+            if build_path and Path(os.path.normpath(build_path)) == self.build:
+                names.append(storage.name.removesuffix(".json"))
+        return [
+            p.relative_to(self.root).as_posix()
+            for p in walk_files(self.root, {".yaml", ".yml"})
+            if p.name in names
+        ]
+
+    def copies_remote(self, directive: Directive, index: int, generated: str) -> bool:
+        """Say whether a generated line copies a lambda line of a remote package's YAML."""
+        try:
+            scalars = self.index.scalars_at(directive.absolute)
+        except (OSError, yaml.YAMLError):
+            # A remote file the build cache no longer holds cannot be told apart, so set it aside.
+            return True
+        for scalar in scalars:
+            located = lambda_line(scalar, directive, index - directive.index - 1)
+            if located is not None and lambda_pattern(located[1]).fullmatch(generated):
+                return True
+        return False
+
+    def match_inline(self, diagnostic: Diagnostic, generated: str) -> Iterator[Finding]:
+        """Attribute a diagnostic to the build's YAML lambdas whose expression was inlined there."""
+        for relative in self.node_files():
             for line, pattern in inline_expressions(self.index.scalars(relative)):
                 if pattern.search(generated):
                     yield Finding(relative, line, 1, diagnostic.severity, diagnostic.message)
@@ -571,6 +672,17 @@ def summary(results: list[BuildResult]) -> str:
     return "\n".join([*header, *rows, ""])
 
 
+def build_from_log(log: Path) -> Path:
+    """Return the last build path a saved ESPHome compile log printed."""
+    try:
+        matches = BUILD_PATH.findall(log.read_text(encoding="utf-8", errors="replace"))
+    except OSError as error:
+        raise LintError(f"cannot read the compile log {log}: {error}") from error
+    if not matches:
+        raise LintError(f"{log}: the compile log holds no build path")
+    return Path(matches[-1])
+
+
 def compile_config(config: Path) -> Path:
     """Compile a config with the ESPHome CLI, echoing its output, and return its build path."""
     try:
@@ -613,6 +725,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="compile this config with the ESPHome CLI first, then lint its build, repeatable",
     )
     parser.add_argument(
+        "--from-log",
+        type=Path,
+        action="append",
+        default=[],
+        metavar="LOG",
+        help="lint the build a saved ESPHome compile log names, repeatable",
+    )
+    parser.add_argument(
         "--config-root",
         type=Path,
         default=Path.cwd(),
@@ -633,8 +753,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--verbose", action="store_true", help="also list the diagnostics set aside as not owned"
     )
     args = parser.parse_args(argv)
-    if not args.builds and not args.compile:
-        parser.error("give a BUILD directory or a --compile CONFIG")
+    if not args.builds and not args.compile and not args.from_log:
+        parser.error("give a BUILD directory, a --compile CONFIG, or a --from-log LOG")
     return args
 
 
@@ -649,7 +769,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.compile:
             # The compile takes minutes, and an editor save during it would shift YAML lines.
             index.preload()
-        builds: list[Path] = [*args.builds, *(compile_config(c) for c in args.compile)]
+        builds: list[Path] = [*args.builds, *(build_from_log(log) for log in args.from_log)]
+        builds += [compile_config(c) for c in args.compile]
         for build in builds:
             build = Path(os.path.normpath(build.resolve()))
             results.append(BuildLint(build, root, flags, owned, index).run())

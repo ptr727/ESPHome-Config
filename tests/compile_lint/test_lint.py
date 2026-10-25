@@ -23,8 +23,13 @@ from compile_lint.lint import (
 
 # Stands in for the cross compiler, warning on each source line that holds a "2.5" double literal.
 FAKE_COMPILER = """
+import os
 import sys
 from pathlib import Path
+
+if os.environ.get("FAKE_COMPILER_FAIL"):
+    print("/framework/core.h:1:1: error: expected declaration", file=sys.stderr)
+    raise SystemExit(1)
 
 for argument in sys.argv[1:]:
     path = Path(argument)
@@ -373,10 +378,94 @@ def test_preload_skips_a_broken_file_the_build_does_not_use(tmp_path: Path) -> N
     assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 11)]
 
 
-def test_an_inlined_block_lambda_behind_a_spanning_comment_does_not_crash(tmp_path: Path) -> None:
+def test_an_inlined_block_lambda_behind_a_spanning_comment_lands_on_its_return(
+    tmp_path: Path,
+) -> None:
     root, build = write_build(tmp_path, "")
     with (root / "test" / "device.yaml").open("a") as stream:
         stream.write("    spanned: !lambda |-\n      /* scale\n      it */ return z * 2.5;\n")
     set_main(build, directive(root, 9), "  call.set_spanned(z * 2.5);")
     result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]
+
+
+def test_from_log_lints_the_last_build_path_a_compile_log_names(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = tmp_path / "compile.log"
+    log.write_text(f"INFO Reading\nINFO Compiling app... Build path: {build}\nINFO Done\n")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0
+
+
+def test_from_log_without_a_build_path_is_a_failure_to_run(tmp_path: Path) -> None:
+    root, _ = write_build(tmp_path, "")
+    log = tmp_path / "compile.log"
+    log.write_text("ERROR Error while reading config\n")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 2
+
+
+def test_a_spanning_block_comment_in_a_line_lambda_keeps_later_lines_mapped(
+    tmp_path: Path,
+) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write(
+            "    commented: !lambda |-\n      /* two\n      lines */\n      w = w * 2.5;\n"
+        )
+    # ESPHome collapses the comment, so the code is the second emitted line, from YAML line 29.
+    set_main(build, directive(root, 27), "         ", "      w = w * 2.5;")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 29)]
+
+
+def test_a_folded_lambda_is_one_logical_line(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write("    folded: >-\n      return v\n      * 2.5;\n")
+    set_main(build, directive(root, 27), "  call.set_folded(v * 2.5);")
+    result = lint(root, build).run()
     assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 27)]
+
+
+def test_repo_code_after_a_remote_lambda_is_still_searched(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    remote = tmp_path / "data" / "packages" / "remote.yaml"
+    remote.parent.mkdir(parents=True)
+    remote.write_text("sensor:\n  - lambda: return q * 2.5;\n")
+    line = f'      #line 3 "{remote}"'
+    set_main(build, directive(root, 9), line, "      return q * 2.5;", "  call.set_level(y * 2.5);")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 22)]
+    assert len(result.ignored) == 1
+
+
+def test_an_included_file_with_no_directive_is_searched(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    (root / "templates").mkdir()
+    (root / "templates" / "extra.yaml").write_text("sensor:\n  - level: !lambda return u * 2.5;\n")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write("packages:\n  extra: !include ../templates/extra.yaml\n")
+    set_main(build, directive(root, 9), "  call.set_level(u * 2.5);")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("templates/extra.yaml", 2)]
+
+
+def test_the_build_config_is_found_from_esphome_storage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, build = write_build(tmp_path, "")
+    storage = tmp_path / "data" / "storage"
+    storage.mkdir(parents=True)
+    (storage / "device.yaml.json").write_text(json.dumps({"build_path": str(build)}))
+    monkeypatch.setenv("ESPHOME_DATA_DIR", str(tmp_path / "data"))
+    # No #line names the config, so only the storage file can say this build came from it.
+    set_main(build, "static void f(float y) {", "  call.set_level(y * 2.5);", "}")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 22)]
+
+
+def test_a_recheck_failing_outside_owned_code_is_a_failure_to_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    monkeypatch.setenv("FAKE_COMPILER_FAIL", "1")
+    assert main(["--config-root", str(root), str(build)]) == 2
