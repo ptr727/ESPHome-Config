@@ -1,0 +1,456 @@
+# CI compile-test for templates/m5stack-cores3.yaml and its m5stack-cores3-camera.yaml overlay.
+# The LVGL screens exercise each part of the board, so a flashed unit shows what works.
+substitutions:
+  device_name: m5stack-cores3-test
+  device_friendly_name: "M5Stack CoreS3 Test"
+
+packages:
+  device: !include ../templates/m5stack-cores3.yaml
+  camera: !include ../templates/m5stack-cores3-camera.yaml
+
+# The camera's snapshot endpoint, which shows a frame without Home Assistant.
+# https://esphome.io/components/esp32_camera_web_server
+esp32_camera_web_server:
+  - port: 8081
+    mode: snapshot
+
+# The bench unit has no Home Assistant, so SNTP sets the clock and writes it through to the RTC.
+# - Each source names itself on the status tab, so a boot with no network shows the RTC restoring the time.
+# https://esphome.io/components/time
+time:
+  - id: !extend homeassistant_time
+    on_time_sync:
+      - lvgl.label.update:
+          id: status_source
+          text: "Time from Home Assistant"
+
+  - id: !extend rtc_time
+    on_time_sync:
+      - lvgl.label.update:
+          id: status_source
+          text: "Time from RTC"
+
+  # https://esphome.io/components/time/sntp
+  - platform: sntp
+    id: sntp_time
+    on_time_sync:
+      - bm8563.write_time: rtc_time
+      - lvgl.label.update:
+          id: status_source
+          text: "Time from SNTP, RTC written"
+
+# The sound level holds the shared I2S bus, so the beep releases the microphone before it plays.
+# https://esphome.io/components/script
+script:
+  - id: play_beep
+    mode: single
+    then:
+      - sound_level.stop: board_sound_level
+      - wait_until:
+          condition:
+            not:
+              microphone.is_capturing: board_mic
+          timeout: 1s
+      - rtttl.play:
+          rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
+
+# The same beep as a button entity, so the speaker can be tested without touching the screen.
+# https://esphome.io/components/button/template
+button:
+  - platform: template
+    name: "Beep"
+    on_press:
+      - script.execute: play_beep
+
+# https://esphome.io/components/rtttl
+rtttl:
+  id: board_rtttl
+  speaker: board_speaker
+  on_finished_playback:
+    - sound_level.start: board_sound_level
+
+# https://esphome.io/components/sensor
+sensor:
+
+  # The microphone level in dBFS, which shows the microphone path works.
+  # https://esphome.io/components/sensor/sound_level
+  - platform: sound_level
+    id: board_sound_level
+    microphone: board_mic
+    passive: false
+    measurement_duration: 500ms
+    rms:
+      name: "Sound Level"
+      id: sound_level_rms
+
+  # https://esphome.io/components/motion
+  - platform: motion
+    type: acceleration_x
+    id: accel_x
+    motion_id: board_motion
+    internal: true
+
+  - platform: motion
+    type: acceleration_y
+    id: accel_y
+    motion_id: board_motion
+    internal: true
+
+  - platform: motion
+    type: acceleration_z
+    id: accel_z
+    motion_id: board_motion
+    internal: true
+
+# Set once a press has changed tab, so one edge swipe moves one tab.
+# https://esphome.io/components/globals
+globals:
+  - id: edge_swipe_done
+    type: bool
+    initial_value: "false"
+
+# Coordinates land in the log, so a tap can be checked against the console.
+# https://esphome.io/components/touchscreen
+touchscreen:
+  - id: !extend board_touch
+    on_touch:
+      - globals.set:
+          id: edge_swipe_done
+          value: "false"
+      - logger.log:
+          format: "Touch at %d, %d, raw %d, %d"
+          args: [touch.x, touch.y, touch.x_raw, touch.y_raw]
+    on_update:
+
+      # A drag that starts at the left or right edge changes tab, and one that starts inside the screen is left to LVGL.
+      - lambda: |-
+          if (touches.empty() || id(edge_swipe_done) || !id(lcd_backlight).remote_values.is_on()) return;
+          const auto &t = touches[0];
+          const int edge = 24, travel = 60;
+          const int dx = t.x - t.x_org;
+          if (std::abs(t.y - t.y_org) > travel) return;
+          const int active = lv_tabview_get_tab_active(id(tabs));
+          if (t.x_org < edge && dx > travel && active > 0) {
+            lv_tabview_set_active(id(tabs), active - 1, LV_ANIM_ON);
+            id(edge_swipe_done) = true;
+          } else if (t.x_org > id(board_display).get_width() - edge && dx < -travel &&
+                     active < (int) lv_tabview_get_tab_count(id(tabs)) - 1) {
+            lv_tabview_set_active(id(tabs), active + 1, LV_ANIM_ON);
+            id(edge_swipe_done) = true;
+          }
+
+      - lambda: |-
+          // The dot sits inside the touch tab, so the screen coordinates are offset by that tab's origin.
+          if (touches.empty()) return;
+          lv_area_t pad;
+          lv_obj_get_coords(id(touch_pad), &pad);
+          const int x = touches[0].x - pad.x1 - lv_obj_get_width(id(touch_dot)) / 2;
+          const int y = touches[0].y - pad.y1 - lv_obj_get_height(id(touch_dot)) / 2;
+          lv_obj_set_pos(id(touch_dot), x, y);
+          lv_label_set_text_fmt(id(touch_coords), "%d, %d  raw %d, %d", touches[0].x, touches[0].y, touches[0].x_raw,
+                                touches[0].y_raw);
+    on_release:
+      - if:
+          condition:
+            lambda: return !id(lcd_backlight).remote_values.is_on();
+          then:
+            - light.turn_on: lcd_backlight
+
+# LVGL sleeps once the backlight finishes turning off, whatever turned it off, and the slider follows the backlight.
+# - The touch wake and the edge swipe read the target state, so a tap during the fade turns the backlight back on.
+# - Resuming LVGL redraws the screen and restarts the idle timeout.
+# - The target brightness is in remote_values, since current_values lags until the transition ends.
+# https://esphome.io/components/light
+light:
+  - id: !extend lcd_backlight
+    on_turn_on:
+      - lvgl.resume:
+    on_turn_off:
+      - lvgl.pause:
+    on_state:
+      - lvgl.slider.update:
+          id: controls_backlight
+          value: !lambda return id(lcd_backlight).remote_values.get_brightness() * 100.0f;
+
+# https://esphome.io/components/lvgl
+lvgl:
+  displays: [board_display]
+  touchscreens: [board_touch]
+  # LVGL's own tab swipe also starts on the slider and the drawing pad, so the edge swipe above replaces it.
+  on_boot:
+    - lambda: lv_obj_remove_flag(lv_tabview_get_content(id(tabs)), LV_OBJ_FLAG_SCROLLABLE);
+  on_idle:
+    - timeout: 60s
+      then:
+        - light.turn_off: lcd_backlight
+  widgets:
+    - tabview:
+        id: tabs
+        position: top
+        size: 52
+        tab_style:
+          items:
+            text_font: montserrat_20
+        tabs:
+
+          - name: "\uF015" # Home symbol, status
+            id: tab_status
+            layout:
+              type: flex
+              flex_flow: column
+            widgets:
+              - label:
+                  id: status_clock
+                  text_font: montserrat_40
+                  text: "--:--:--"
+              - label:
+                  id: status_ip
+                  text: "IP --"
+              - label:
+                  id: status_date
+                  text: "----------"
+              - label:
+                  id: status_source
+                  text: "Time not set"
+              - label:
+                  id: status_uptime
+                  text: "Up --"
+
+          - name: "\uF00B" # List symbol, sensors
+            id: tab_sensors
+            layout:
+              type: flex
+              flex_flow: column
+            widgets:
+              - label:
+                  id: sensors_battery
+                  text: "Battery --"
+              - label:
+                  id: sensors_light
+                  text: "Light --"
+              - label:
+                  id: sensors_temperature
+                  text: "PMU --"
+              - label:
+                  id: sensors_sound
+                  text: "Sound --"
+              - bar:
+                  id: sensors_sound_bar
+                  width: 100%
+                  height: 16
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+
+          # The bubble moves opposite the tilt, as the bubble in a spirit level does.
+          - name: "\uF124" # Location symbol, level
+            id: tab_level
+            scrollable: false
+            widgets:
+              - obj:
+                  id: level_ring
+                  align: left_mid
+                  width: 150
+                  height: 150
+                  radius: 75
+                  border_width: 2
+                  scrollable: false
+                  widgets:
+                    - obj:
+                        id: level_bubble
+                        align: center
+                        width: 24
+                        height: 24
+                        radius: 12
+                        bg_color: 0x00C000
+                        border_width: 0
+              - label:
+                  id: level_accel
+                  align: right_mid
+                  text: "X --\nY --\nZ --"
+
+          - name: "\uF304" # Edit symbol, touch
+            id: tab_touch
+            scrollable: false
+            pad_all: 0
+            widgets:
+              - obj:
+                  id: touch_pad
+                  width: 100%
+                  height: 100%
+                  pad_all: 0
+                  border_width: 0
+                  scrollable: false
+                  widgets:
+                    - label:
+                        id: touch_coords
+                        align: top_mid
+                        text: "Touch the screen"
+                    # Targets 20 pixels in from each corner and one at the center, for checking the touch calibration.
+                    - obj:
+                        id: touch_target_1
+                        align: top_left
+                        x: 14
+                        y: 14
+                        width: 12
+                        height: 12
+                        radius: 6
+                        bg_opa: transp
+                        border_width: 2
+                        border_color: 0x0080FF
+                        clickable: false
+                    - obj:
+                        id: touch_target_2
+                        align: top_right
+                        x: -14
+                        y: 14
+                        width: 12
+                        height: 12
+                        radius: 6
+                        bg_opa: transp
+                        border_width: 2
+                        border_color: 0x0080FF
+                        clickable: false
+                    - obj:
+                        id: touch_target_3
+                        align: bottom_right
+                        x: -14
+                        y: -14
+                        width: 12
+                        height: 12
+                        radius: 6
+                        bg_opa: transp
+                        border_width: 2
+                        border_color: 0x0080FF
+                        clickable: false
+                    - obj:
+                        id: touch_target_4
+                        align: bottom_left
+                        x: 14
+                        y: -14
+                        width: 12
+                        height: 12
+                        radius: 6
+                        bg_opa: transp
+                        border_width: 2
+                        border_color: 0x0080FF
+                        clickable: false
+                    - obj:
+                        id: touch_target_5
+                        align: center
+                        x: 0
+                        y: 0
+                        width: 12
+                        height: 12
+                        radius: 6
+                        bg_opa: transp
+                        border_width: 2
+                        border_color: 0x0080FF
+                        clickable: false
+                    - obj:
+                        id: touch_dot
+                        width: 20
+                        height: 20
+                        radius: 10
+                        bg_color: 0xFF4000
+                        border_width: 0
+                        clickable: false
+
+          - name: "\uF013" # Settings symbol, controls
+            id: tab_controls
+            layout:
+              type: flex
+              flex_flow: column
+            widgets:
+              - label:
+                  text: "Backlight"
+              - slider:
+                  id: controls_backlight
+                  width: 90%
+                  min_value: 10
+                  max_value: 100
+                  value: 80
+                  on_release:
+                    - light.turn_on:
+                        id: lcd_backlight
+                        brightness: !lambda return x / 100.0;
+              - button:
+                  id: controls_beep
+                  widgets:
+                    - label:
+                        text: "Beep"
+                  on_click:
+                    - script.execute: play_beep
+
+# The labels redraw on a timer rather than per sensor, since several of them are children of a platform.
+# https://esphome.io/components/interval
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            time.has_time:
+              id: sntp_time
+          then:
+            - lvgl.label.update:
+                id: status_clock
+                text:
+                  time_format: "%H:%M:%S"
+                  time: sntp_time
+            - lvgl.label.update:
+                id: status_date
+                text:
+                  time_format: "%A %Y-%m-%d"
+                  time: sntp_time
+      - lvgl.label.update:
+          id: status_ip
+          text:
+            format: "IP %s"
+            args: ["id(wifi_ip).state.c_str()"]
+      - lvgl.label.update:
+          id: status_uptime
+          text:
+            format: "Up %u s"
+            args: ["(unsigned) (millis() / 1000)"]
+      - lvgl.label.update:
+          id: sensors_battery
+          text:
+            format: "Battery %.0f%%  %.2f V  %s"
+            args:
+              - "id(battery_level).state"
+              - "id(battery_voltage).state"
+              - "id(battery_charging).state ? \"charging\" : \"\""
+      - lvgl.label.update:
+          id: sensors_light
+          text:
+            format: "Light %.0f lx  Proximity %.0f"
+            args: ["id(ambient_light).state", "id(proximity).state"]
+      - lvgl.label.update:
+          id: sensors_temperature
+          text:
+            format: "PMU %.1f C"
+            args: ["id(pmu_temperature).state"]
+      - lvgl.label.update:
+          id: sensors_sound
+          text:
+            format: "Sound %.1f dB"
+            args: ["id(sound_level_rms).state"]
+      - lvgl.bar.update:
+          id: sensors_sound_bar
+          value: !lambda |-
+            return std::isnan(id(sound_level_rms).state) ? 0 : (int) (id(sound_level_rms).state + 100);
+
+  # The level redraws faster than the labels, so tilting the board moves the bubble smoothly.
+  - interval: 250ms
+    then:
+      - lvgl.widget.update:
+          id: level_bubble
+          x: !lambda |-
+            return std::isnan(id(accel_x).state) ? 0 : (int) std::clamp(-id(accel_x).state * 60.0f, -60.0f, 60.0f);
+          y: !lambda |-
+            return std::isnan(id(accel_y).state) ? 0 : (int) std::clamp(id(accel_y).state * 60.0f, -60.0f, 60.0f);
+      - lvgl.label.update:
+          id: level_accel
+          text:
+            format: "X %.2f g\nY %.2f g\nZ %.2f g"
+            args: ["id(accel_x).state", "id(accel_y).state", "id(accel_z).state"]

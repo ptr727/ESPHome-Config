@@ -1,0 +1,81 @@
+# External usage:
+# packages:
+#   device: github://ptr727/ESPHome-Config/templates/m5stack-cores3.yaml@main
+#   camera: github://ptr727/ESPHome-Config/templates/m5stack-cores3-camera.yaml@main
+# - An overlay, not a standalone device, so it is composed on the board template.
+# - Secrets resolve from a secrets.yaml beside the including config, see secrets._yaml for the names.
+
+# Optional substitutions:
+# - camera_clock_pin - GPIO10, a spare M5-Bus pin for the clock ESPHome insists on, move it if a module uses GPIO10.
+
+# M5Stack CoreS3 GC0308 camera
+# Camera overlay for m5stack-cores3.yaml, which holds the camera in reset until this releases it.
+
+# The pixel clock is GPIO45, which the ESP32-S3 samples at every reset to pick the flash voltage.
+# - The PMU keeps the camera powered across a reset, so a streaming camera can strap the flash to 1.8V.
+# - The bootloader then misreads the partition table and loops, and only a power cycle clears it.
+# - This overlay holds the camera in reset on every orderly shutdown, which covers OTA, restart and API reboots.
+# - A crash, a brownout or the reset after a USB flash bypasses the shutdown, and a power cycle recovers.
+# - Turning Camera Enable off before a USB flash avoids that power cycle.
+# - Burning VDD_SPI to 3.3V removes the hazard, once the flash is confirmed a 3.3V part, and it is permanent.
+
+# GPIO39, GPIO40, GPIO41, GPIO42, GPIO15, GPIO16, GPIO48, GPIO47 : d0 to d7
+# GPIO46 : vsync
+# GPIO38 : href
+# GPIO45 : pclk
+# - The module clocks itself, so no GPIO carries xclk, and esp32_camera still requires one.
+# - The sensor registers sit on the board I2C bus at 0x21.
+
+# https://esphome.io/components/substitutions
+substitutions:
+  camera_clock_pin: GPIO10
+
+# https://esphome.io/components/esphome
+esphome:
+
+  # https://esphome.io/components/esphome#on-shutdown
+  on_shutdown:
+    - switch.turn_off: camera_reset
+
+# https://esphome.io/components/switch
+switch:
+
+  # The board template holds the camera in reset, and this releases it at boot.
+  # - Off holds the sensor in reset, and on resets its registers, so turning it back on needs a restart.
+  - id: !extend camera_reset
+    name: "Camera Enable"
+    restore_mode: ALWAYS_ON
+    internal: false
+    entity_category: config
+
+# https://esphome.io/components/esp32_camera
+esp32_camera:
+  name: "Camera"
+  id: board_camera
+  i2c_id: board_i2c
+  data_pins: [GPIO39, GPIO40, GPIO41, GPIO42, GPIO15, GPIO16, GPIO48, GPIO47]
+  vsync_pin:
+    number: GPIO46 # Strapping pin, fixed board wiring, so the warning is acknowledged.
+    ignore_strapping_warning: true
+  href_pin: GPIO38
+  pixel_clock_pin:
+    number: GPIO45 # Strapping pin, the flash voltage hazard above is why the shutdown hook exists.
+    ignore_strapping_warning: true
+  external_clock:
+    pin: ${camera_clock_pin}
+
+  # The GC0308 has no JPEG encoder, so the driver refuses JPEG with ESP_ERR_NOT_SUPPORTED.
+  # - A quality turns on the software conversion to JPEG, which the API and the snapshot server need.
+  pixel_format: RGB565
+  jpeg_quality: 12
+
+  # These are the values M5Stack's own Stack-chan firmware uses on this board.
+  # - VGA with auto exposure returned one flat frame on a bench unit, and these values return a real image.
+  # https://github.com/m5stack/esphome-yaml/blob/main/examples/kit/stackchan-bsp.factory.yaml
+  setup_priority: -200
+  resolution: 320X240
+  max_framerate: 15 fps
+  aec_mode: manual
+  aec_value: 800
+  agc_mode: manual
+  agc_value: 30
