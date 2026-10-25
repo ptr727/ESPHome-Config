@@ -105,7 +105,7 @@ jobs:
             echo "Templates that no example device in test/ includes: ${missing[*]}"
             exit 1
           fi
-          # A flashed example device runs on a bench with no Home Assistant and maybe no network, so it must reboot for lack of neither.
+          # A flashed example device runs on a bench with no Home Assistant and maybe no network, so it must not reboot for lack of either.
           rebooting=()
           for path in test/*.yaml; do
             grep -qE '^  api_reboot_timeout: "?0s"?( *#.*)?$' "$path" && grep -qE '^  wifi_reboot_timeout: "?0s"?( *#.*)?$' "$path" || rebooting+=("$path")
