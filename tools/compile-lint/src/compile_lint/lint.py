@@ -262,8 +262,7 @@ def owned_sources(root: Path) -> dict[str, str]:
 def relative_to_root(path: Path, root: Path) -> str | None:
     """Return a path relative to the config root, or None outside it or in a dot directory.
 
-    A dot directory such as .esphome holds ESPHome's build tree and fetched packages, not this
-    repository's code.
+    A dot directory such as .esphome holds ESPHome's build tree and packages, not owned code.
     """
     try:
         relative = path.relative_to(root)
