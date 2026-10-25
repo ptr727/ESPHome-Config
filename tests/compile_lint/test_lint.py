@@ -12,6 +12,7 @@ from compile_lint.lint import (
     Finding,
     YamlIndex,
     annotation,
+    cpp_string,
     lambda_pattern,
     main,
     owned_sources,
@@ -493,3 +494,17 @@ def test_a_bare_args_entry_is_attributed_at_its_column(tmp_path: Path) -> None:
     set_main(build, directive(root, 9), '  ESP_LOGD("main", "v %.1f", x2.5);')
     result = lint(root, build).run()
     assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]
+
+
+def test_an_args_entry_matches_only_beside_its_own_format(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write('    float_log:\n      format: "v %.1f\\n"\n      args: [x2.5]\n')
+        stream.write('    bool_log:\n      format: "b %d"\n      args: [x2.5]\n')
+    set_main(build, directive(root, 9), '  ESP_LOGD("main", "v %.1f\\012", x2.5);')
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]
+
+
+def test_cpp_string_matches_esphome_escaping() -> None:
+    assert cpp_string('a "b"\n\\') == '"a \\042b\\042\\012\\134"'

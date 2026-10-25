@@ -109,6 +109,8 @@ class Scalar:
     text: str
     lines: tuple[tuple[int, str], ...]
     argument: bool = False
+    # The C string literal of the format: beside an args: entry, as ESPHome emits it.
+    format_literal: str = ""
 
 
 @dataclass(frozen=True)
@@ -306,7 +308,7 @@ def yaml_scalars(path: Path) -> list[Scalar]:
     """
     scalars: list[Scalar] = []
 
-    def walk(node: yaml.Node, argument: bool = False) -> None:
+    def walk(node: yaml.Node, argument: bool = False, literal: str = "") -> None:
         if isinstance(node, yaml.ScalarNode):
             start = node.start_mark.line + 1
             end = max(start, node.end_mark.line + (1 if node.end_mark.column > 0 else 0))
@@ -318,15 +320,26 @@ def yaml_scalars(path: Path) -> list[Scalar]:
                 # Any other style folds to one logical line, on the indicator's next line for >.
                 first = start + 1 if node.style == ">" else start
                 lines = ((first, " ".join(text for _, text in emitted_lines(text, first))),)
-            scalars.append(Scalar(start, end, text, lines, argument))
+            scalars.append(Scalar(start, end, text, lines, argument, literal))
         elif isinstance(node, yaml.SequenceNode):
             for child in cast(list[yaml.Node], node.value):
-                walk(child, argument)
+                walk(child, argument, literal)
         elif isinstance(node, yaml.MappingNode):
-            for key, value in cast(list[tuple[yaml.Node, yaml.Node]], node.value):
+            pairs = cast(list[tuple[yaml.Node, yaml.Node]], node.value)
+            formats = [
+                str(v.value)
+                for k, v in pairs
+                if isinstance(k, yaml.ScalarNode)
+                and k.value == "format"
+                and isinstance(v, yaml.ScalarNode)
+            ]
+            for key, value in pairs:
                 walk(key)
                 arguments = isinstance(key, yaml.ScalarNode) and key.value == "args"
-                walk(value, arguments and isinstance(value, yaml.SequenceNode))
+                if arguments and isinstance(value, yaml.SequenceNode) and formats:
+                    walk(value, True, cpp_string(formats[0]))
+                else:
+                    walk(value)
 
     # Composing builds nodes without constructing values, so ESPHome's tags need no constructor.
     with path.open(encoding="utf-8") as stream:
@@ -381,6 +394,15 @@ class YamlIndex:
                 continue
 
 
+def cpp_string(text: str) -> str:
+    """Return text as the C string literal ESPHome's cpp_string_escape emits for it."""
+    escaped = "".join(
+        chr(byte) if 32 <= byte < 127 and byte not in b'\\"' else f"\\{byte:03o}"
+        for byte in text.encode("utf-8")
+    )
+    return f'"{escaped}"'
+
+
 def normalize(text: str) -> str:
     """Collapse whitespace, so text matches however the generator spaced it."""
     return " ".join(text.split())
@@ -419,16 +441,17 @@ def lambda_line(scalar: Scalar, directive: Directive, offset: int) -> tuple[int,
     return scalar.lines[offset]
 
 
-def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[str], bool]]:
-    """Yield each expression ESPHome may emit inline: its YAML line, its pattern, and its kind.
+def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[str], str]]:
+    """Yield each expression ESPHome may emit inline: its YAML line, its pattern, and its format.
 
-    The kind is True for an args: entry, which a diagnostic must point inside to belong to it.
+    The format is set for an args: entry only, whose generated line must carry that format.
+    A diagnostic must also point inside the entry for it to own the diagnostic.
     """
     for scalar in scalars:
         if scalar.argument:
             # The diagnostic's column confines an argument's match, so even a bare name is safe.
             pattern = lambda_pattern(normalize(scalar.text)).pattern
-            yield scalar.start, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), True
+            yield scalar.start, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), scalar.format_literal
             continue
         match = RETURN_EXPRESSION.match(normalize(" ".join(text for _, text in scalar.lines)))
         if not match:
@@ -440,7 +463,7 @@ def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[
         returns = (line for line, text in scalar.lines if text.strip().startswith("return"))
         line = next(returns, scalar.lines[0][0])
         pattern = lambda_pattern(expression).pattern
-        yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), False
+        yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), ""
 
 
 class BuildLint:
@@ -632,9 +655,11 @@ class BuildLint:
         # The column counts the raw line, and the patterns match the whitespace-collapsed one.
         column = len(normalize(source[: diagnostic.column - 1] + "x")) - 1
         for relative in self.node_files():
-            for line, pattern, argument in inline_expressions(self.index.scalars(relative)):
+            for line, pattern, literal in inline_expressions(self.index.scalars(relative)):
+                if literal and literal not in source:
+                    continue
                 spans = [m.span() for m in pattern.finditer(generated)]
-                if argument:
+                if literal:
                     spans = [(a, b) for a, b in spans if a <= column < b]
                 if spans:
                     yield Finding(relative, line, 1, diagnostic.severity, diagnostic.message)
