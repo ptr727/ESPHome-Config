@@ -23,7 +23,7 @@ ESPHome configuration templates and projects.
 
 - Added M5Stack CoreS3 support, the first touchscreen template, with an LVGL example device.
 - Added an M5Stack CoreS3 camera overlay for the GC0308 camera.
-- Added M5Stack Dial support, with an LVGL example device the encoder navigates.
+- Added M5Stack Dial support, with an LVGL example device that changes pages with the encoder.
 
 See [HISTORY.md][history] for the release notes.
 
