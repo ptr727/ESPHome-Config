@@ -45,7 +45,7 @@ script:
       - rtttl.play:
           rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
 
-  # The inputs redraw on each turn or press, since every one of them runs this.
+  # The inputs redraw on each count or press, since every one of them runs this.
   - id: show_inputs
     then:
       - lvgl.label.update:
@@ -76,7 +76,7 @@ button:
 
 # A press or a turn on a dark screen only wakes it.
 # - The wake reads the backlight's target state, so a press during the fade turns it back on.
-# - A turn is LVGL activity, since the encoder is not an LVGL input device and the idle timeout would otherwise ignore it.
+# - A press or a turn on a lit screen counts as LVGL activity, since neither the button nor the encoder is an LVGL input device.
 # https://esphome.io/components/binary_sensor
 binary_sensor:
   - id: !extend front_button
@@ -102,8 +102,9 @@ binary_sensor:
 # https://esphome.io/components/sensor/rotary_encoder
 sensor:
   - id: !extend board_encoder
-    on_clockwise:
+    on_value:
       - script.execute: show_inputs
+    on_clockwise:
       - if:
           condition:
             lambda: return !id(lcd_backlight).remote_values.is_on();
@@ -115,7 +116,6 @@ sensor:
                 animation: MOVE_LEFT
                 time: 200ms
     on_anticlockwise:
-      - script.execute: show_inputs
       - if:
           condition:
             lambda: return !id(lcd_backlight).remote_values.is_on();

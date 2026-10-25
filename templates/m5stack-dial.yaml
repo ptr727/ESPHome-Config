@@ -130,11 +130,11 @@ output:
     id: lcd_backlight_output
     pin: GPIO9
 
-  # Channel 2 is on the second LEDC timer, so a buzzer note never retunes the backlight PWM.
+  # Channel 7 is on the last LEDC timer, so a buzzer note never retunes the backlight or a device's own ledc output.
   # https://esphome.io/components/output/ledc
   - platform: ledc
     id: buzzer_output
-    channel: 2
+    channel: 7
     pin:
       number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
       ignore_strapping_warning: true
