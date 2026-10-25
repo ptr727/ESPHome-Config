@@ -209,8 +209,19 @@ def replace_source(arguments: list[str], entry: dict[str, Any], replacement: Pat
 
 
 def load_compile_database(path: Path) -> list[dict[str, Any]]:
-    """Read a compile database."""
-    return cast(list[dict[str, Any]], json.loads(path.read_text(encoding="utf-8")))
+    """Read a compile database, failing the run where it is unreadable or not one."""
+    try:
+        entries: Any = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise LintError(f"cannot read the compile database {path}: {error}") from error
+    if not isinstance(entries, list) or not all(
+        isinstance(entry, dict)
+        and {"directory", "file"} <= entry.keys()
+        and ("command" in entry or "arguments" in entry)
+        for entry in cast(list[Any], entries)
+    ):
+        raise LintError(f"{path}: not a compile database of directory, file and command entries")
+    return cast(list[dict[str, Any]], entries)
 
 
 def entry_path(entry: dict[str, Any]) -> Path:
