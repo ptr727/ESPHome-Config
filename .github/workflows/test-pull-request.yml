@@ -108,7 +108,7 @@ jobs:
           # A flashed example device runs on a bench with no Home Assistant and maybe no network, so it must not reboot for lack of either.
           rebooting=()
           for path in test/*.yaml; do
-            grep -qE '^  api_reboot_timeout: "?0s"?( *#.*)?$' "$path" && grep -qE '^  wifi_reboot_timeout: "?0s"?( *#.*)?$' "$path" || rebooting+=("$path")
+            grep -qE '^  api_reboot_timeout: ["\x27]?0s["\x27]?( *#.*)?$' "$path" && grep -qE '^  wifi_reboot_timeout: ["\x27]?0s["\x27]?( *#.*)?$' "$path" || rebooting+=("$path")
           done
           if (( ${#rebooting[@]} > 0 )); then
             echo "Example devices not setting api_reboot_timeout and wifi_reboot_timeout to 0s: ${rebooting[*]}"
