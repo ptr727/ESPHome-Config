@@ -23,6 +23,7 @@ ESPHome configuration templates and projects.
 
 - Added M5Stack CoreS3 support, the first touchscreen template, with an LVGL example device.
 - Added an M5Stack CoreS3 camera overlay for the GC0308 camera.
+- Added M5Stack Dial support, with an LVGL example device that changes pages with the encoder.
 
 See [HISTORY.md][history] for the release notes.
 
@@ -252,6 +253,23 @@ Shared building-block includes, composed via `packages:` by the device templates
     - `camera_clock_pin`: `GPIO10` by default, a spare M5-Bus pin for the clock ESPHome requires although the camera clocks itself. Move it where a module uses `GPIO10`.
   - Note: the camera's pixel clock is GPIO45, the pin the ESP32-S3 reads at reset to pick its flash voltage. A reset taken while the camera streams can leave the board looping in its bootloader until it is power cycled. The overlay holds the camera in reset on every orderly shutdown, which covers OTA, restart, and API reboots. Turn the `Camera Enable` switch off before flashing over USB, since the reset after a USB flash is not an orderly one. Turning it back on resets the sensor's registers, so restart afterwards.
 
+#### M5Stack Dial
+
+- [Template][m5stack-dial] for the [M5Stack Dial][m5stack-shop-dial-link], an ESP32-S3 StampS3 with 8MB Quad Flash and no PSRAM. It carries a 240x240 round capacitive touch display, a rotary encoder, an RFID reader, and a passive buzzer. The [Dial docs][m5stack-docs-dial-link] carry the pin map the template header repeats.
+- Includes the display, the touchscreen, and the backlight as a dimmable light.
+- Includes the encoder as a step count, the front button that pressing the screen down operates, and the StampS3 BOOT button.
+- Includes the RTC written through from Home Assistant time.
+- Includes the RFID reader, which fires a Home Assistant tag event on each scan and holds the UID as text while the tag is present.
+- Includes the buzzer as a PWM output, and the StampS3 RGB LED through the [RGB LED status][rgb-led-status] package.
+- Includes a Power Off button, which releases the power hold pin and turns off a board running on its battery.
+- Optional substitutions:
+  - `backlight_brightness`: `80%` by default, the level the backlight turns on at during boot.
+  - `rgb_led_pin`: `GPIO21` by default, the StampS3 RGB LED.
+- Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
+- The display carries no lambda, so a device draws on it with [LVGL][esphome-components-lvgl-link], as the [example device][test-m5stack-dial] does. There the encoder changes page and the front button plays a beep.
+- Note: a V1 unit confirms USB and OTA flashing, the display, touch, the backlight, the encoder, the front button, the buzzer, and the RTC write. Reading an RFID tag, the power hold on battery, the BOOT button, and the RGB LED are untested. So is a V1.1 on the StampS3A.
+- Note: the battery level is not sensed, because no ADC pin reaches the battery.
+
 ## Devices
 
 My deployed devices use the templates and helpers, and are documented in [DEVICES.md][devices].
@@ -350,6 +368,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [logger]: ./templates/logger.yaml
 [m5stack-cores3]: ./templates/m5stack-cores3.yaml
 [m5stack-cores3-camera]: ./templates/m5stack-cores3-camera.yaml
+[m5stack-dial]: ./templates/m5stack-dial.yaml
 [max17048]: ./templates/max17048.yaml
 [min-version]: ./templates/min-version.yaml
 [norvi-enet-ae06-r]: ./templates/norvi-enet-ae06-r.yaml
@@ -368,6 +387,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [test]: ./test/
 [test-heltec-wifi-lora32-v4-r8]: ./test/heltec-wifi-lora32-v4-r8.yaml
 [test-m5stack-cores3]: ./test/m5stack-cores3.yaml
+[test-m5stack-dial]: ./test/m5stack-dial.yaml
 [test-norvi-enet-ae06-r]: ./test/norvi-enet-ae06-r.yaml
 [time]: ./templates/time.yaml
 [unexpectedmaker-pros3d]: ./templates/unexpectedmaker-pros3d.yaml
@@ -424,7 +444,9 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 [kincony-esp32-sd-card-rtc-ds3231-link]: https://www.kincony.com/esp32-sd-card-rtc-ds3231.html
 [konnected-products-smart-garage-door-opener-blaq-myq-alternative-link]: https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
 [m5stack-docs-cores3-link]: https://docs.m5stack.com/en/core/CoreS3
+[m5stack-docs-dial-link]: https://docs.m5stack.com/en/core/Dial
 [m5stack-shop-cores3-link]: https://shop.m5stack.com/products/m5stack-cores3-esp32s3-iotdevelopment-kit
+[m5stack-shop-dial-link]: https://shop.m5stack.com/products/m5stack-dial-v1-1
 [markdown-all-in-one-link]: https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one
 [markdownlint-cli2-link]: https://github.com/DavidAnson/markdownlint-cli2
 [microair-link]: https://www.microair.net
