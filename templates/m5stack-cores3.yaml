@@ -17,7 +17,8 @@
 # https://shop.m5stack.com/products/m5stack-cores3-esp32s3-iotdevelopment-kit
 # https://docs.m5stack.com/en/core/CoreS3
 
-# Board tested: 2026-10-24, USB and OTA flash, display, touch, backlight, speaker, microphone, RTC, light, proximity, IMU, PMU temperature.
+# Board tested: 2026-10-24, USB and OTA flash, display, touch, backlight, speaker, microphone, RTC write, light, proximity, IMU, PMU temperature.
+# - The RTC read at boot is checked in code only.
 # - Battery sensing is untested, since the bench unit had no cell fitted.
 # - The bench unit draws correctly on the ILI9342C init, and a unit carrying an ILI9342E is untested.
 

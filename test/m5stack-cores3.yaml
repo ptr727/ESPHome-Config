@@ -124,7 +124,7 @@ touchscreen:
 
       # A drag that starts at the left or right edge changes tab, and one that starts inside the screen is left to LVGL.
       - lambda: |-
-          if (touches.empty() || id(edge_swipe_done)) return;
+          if (touches.empty() || id(edge_swipe_done) || !id(lcd_backlight).remote_values.is_on()) return;
           const auto &t = touches[0];
           const int edge = 24, travel = 60;
           const int dx = t.x - t.x_org;
@@ -151,20 +151,21 @@ touchscreen:
                                 touches[0].y_raw);
     on_release:
       - if:
-          condition: lvgl.is_paused
+          condition:
+            light.is_off: lcd_backlight
           then:
             - light.turn_on: lcd_backlight
 
-# The slider follows the backlight, and turning it on from anywhere wakes the screen.
-# - The activity call restarts the idle timeout, which no touch has reset while the screen slept.
+# LVGL sleeps exactly while the backlight is off, whatever turned it off, and the slider follows the backlight.
+# - Resuming LVGL redraws the screen and restarts the idle timeout.
 # - The target brightness is in remote_values, since current_values lags until the transition ends.
 # https://esphome.io/components/light
 light:
   - id: !extend lcd_backlight
     on_turn_on:
       - lvgl.resume:
-      - lvgl.widget.redraw:
-      - lambda: lv_display_trigger_activity(nullptr);
+    on_turn_off:
+      - lvgl.pause:
     on_state:
       - lvgl.slider.update:
           id: controls_backlight
@@ -181,7 +182,6 @@ lvgl:
     - timeout: 60s
       then:
         - light.turn_off: lcd_backlight
-        - lvgl.pause:
   widgets:
     - tabview:
         id: tabs
