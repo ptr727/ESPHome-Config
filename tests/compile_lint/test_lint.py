@@ -484,3 +484,12 @@ def test_a_recheck_failing_outside_owned_code_is_a_failure_to_run(
     root, build = write_build(tmp_path, "int main() { return 0; }\n")
     monkeypatch.setenv("FAKE_COMPILER_FAIL", "1")
     assert main(["--config-root", str(root), str(build)]) == 2
+
+
+def test_a_bare_args_entry_is_attributed_at_its_column(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write('    log:\n      format: "v %.1f"\n      args: [x2.5]\n')
+    set_main(build, directive(root, 9), '  ESP_LOGD("main", "v %.1f", x2.5);')
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]

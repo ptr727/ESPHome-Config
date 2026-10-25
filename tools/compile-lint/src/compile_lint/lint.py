@@ -426,10 +426,9 @@ def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[
     """
     for scalar in scalars:
         if scalar.argument:
-            expression = normalize(scalar.text)
-            if not BARE_TOKEN.match(expression):
-                pattern = lambda_pattern(expression).pattern
-                yield scalar.start, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), True
+            # The diagnostic's column confines an argument's match, so even a bare name is safe.
+            pattern = lambda_pattern(normalize(scalar.text)).pattern
+            yield scalar.start, re.compile(rf"(?<![\w.]){pattern}(?!\w)"), True
             continue
         match = RETURN_EXPRESSION.match(normalize(" ".join(text for _, text in scalar.lines)))
         if not match:
