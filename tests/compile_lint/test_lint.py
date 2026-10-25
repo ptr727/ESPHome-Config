@@ -517,3 +517,11 @@ def test_an_args_entry_beside_a_substituted_format_still_matches(tmp_path: Path)
     set_main(build, directive(root, 9), '  ESP_LOGD("main", "kitchen %.1f", x2.5);')
     result = lint(root, build).run()
     assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 28)]
+
+
+def test_an_inlined_expression_owns_only_the_occurrence_at_the_column(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    # The lambda's y * 2.5 is on the line, but the warning sits on the first call, q * 2.5.
+    set_main(build, directive(root, 9), "  other(q * 2.5); call.set_level(y * 2.5);")
+    result = lint(root, build).run()
+    assert result.findings == []

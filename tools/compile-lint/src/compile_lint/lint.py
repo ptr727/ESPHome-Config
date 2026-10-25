@@ -665,10 +665,9 @@ class BuildLint:
             for line, pattern, literal in inline_expressions(self.index.scalars(relative)):
                 if literal and not format_pattern(literal).search(source):
                     continue
+                # Only the occurrence holding the diagnostic's column owns it.
                 spans = [m.span() for m in pattern.finditer(generated)]
-                if literal:
-                    spans = [(a, b) for a, b in spans if a <= column < b]
-                if spans:
+                if any(a <= column < b for a, b in spans):
                     yield Finding(relative, line, 1, diagnostic.severity, diagnostic.message)
 
 

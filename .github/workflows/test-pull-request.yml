@@ -207,9 +207,9 @@ jobs:
             exit 1
           fi
           # The compile job is skipped when the change gate says nothing it covers moved.
-          # Only a real failure blocks, a skip must still pass.
-          # The matrix aggregates to a single result, failure if any leg failed.
-          if [[ "${{ needs.template-compile-test.result }}" == "failure" ]]; then
-            echo "Job 'template-compile-test' failed; refusing to pass."
+          # A skip must still pass, and anything else short of success blocks, a cancelled leg included.
+          result="${{ needs.template-compile-test.result }}"
+          if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+            echo "Job 'template-compile-test' did not succeed ($result); refusing to pass."
             exit 1
           fi
