@@ -129,7 +129,7 @@ sensor:
     name: "Uptime"
     unit_of_measurement: min
     filters:
-      - lambda: return x / 60.0;
+      - lambda: return x / 60.0f;
   - platform: wifi_signal
     name: "WiFi Signal"
     update_interval: 60s

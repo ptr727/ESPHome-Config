@@ -54,7 +54,7 @@ script:
           id: inputs_encoder
           text:
             format: "%.0f"
-            args: ["id(board_encoder).state"]
+            args: ["static_cast<double>(id(board_encoder).state)"]
       - lvgl.arc.update:
           id: inputs_encoder_arc
           value: !lambda |-
@@ -333,7 +333,7 @@ lvgl:
             on_release:
               - light.turn_on:
                   id: lcd_backlight
-                  brightness: !lambda return x / 100.0;
+                  brightness: !lambda return x / 100.0f;
             widgets:
               - button:
                   id: controls_beep

@@ -3,18 +3,21 @@
 # Add a project by listing its directory in members, and put its tests under tests/<package>/.
 
 [tool.uv.workspace]
-members = ["easystart/python"]
+members = ["easystart/python", "tools/compile-lint"]
 
 [tool.uv.sources]
+compile-lint = { workspace = true }
 easystart-monitor = { workspace = true }
 
 [dependency-groups]
 dev = [
+  "compile-lint",
   "easystart-monitor",
   "pyright",
   "pytest",
   "pytest-cov",
   "ruff",
+  "types-pyyaml",
 ]
 
 [tool.ruff]
@@ -23,17 +26,17 @@ line-length = 100
 # Python sources only, so the Markdown code blocks in the carried fleet docs are never reformatted.
 include = ["*.py", "*.pyi", "**/pyproject.toml"]
 # Each member's src directory, so its package sorts as first-party.
-src = ["easystart/python/src"]
+src = ["easystart/python/src", "tools/compile-lint/src"]
 
 [tool.ruff.lint]
 extend-select = ["I"]  # import sorting (isort)
 
 [tool.pyright]
 # The ESPHome codegen under easystart/components imports esphome, which is not a workspace dependency, so it stays out of the type check.
-include = ["easystart/python/src", "tests"]
-strict = ["easystart/python/src"]
+include = ["easystart/python/src", "tools/compile-lint/src", "tests"]
+strict = ["easystart/python/src", "tools/compile-lint/src"]
 pythonVersion = "3.13"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["--cov=easystart_monitor"]
+addopts = ["--cov=easystart_monitor", "--cov=compile_lint"]

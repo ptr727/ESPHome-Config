@@ -141,6 +141,18 @@ fi
 - **The container runs as the invoking user**, so what it writes stays owned by that user. The image points its build tree and its data directory at `/cache`. The only thing it leaves in the checkout is `test/.gitignore`, which is ignored. CI pins uid 1000 and chmods the checkout instead, because its runner owns the files differently.
 - **A local compile is not the whole gate.** CI runs source lint too. Its change-detection job also fails when no example device in [`test/`][test] includes a device template. An overlay composes into its board's example device rather than getting one of its own. A new utility include joins that job's exemption list instead.
 
+### Compile Lint
+
+A lambda is C++ that only compiles inside the `main.cpp` ESPHome generates. Its warnings land in a compile log among hundreds from ESPHome and the framework, where they are easy to miss. The compile lint in [`tools/compile-lint`][compile-lint] reruns the compile of `main.cpp` from the build ESPHome left behind. The rerun is syntax-only, uses the build's own flags plus `-Wdouble-promotion`, and keeps only the diagnostics located in this repository's code. It never builds firmware and never changes what gets flashed.
+
+- **Run it with every compile.** The VS Code task "ESPHome: Compile and Lint" compiles the open file in the dashboard's container, then lints that build. Each finding lands in the Problems pane on its YAML or source line. On a throwaway container, replace the compile call in [Compiling the Way CI Does][compiling-the-way-ci-does] with `PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config --compile /config/test/<template>.yaml`.
+- **CI runs it on every compile leg** of [`test-pull-request.yml`][test-workflow]. A finding annotates its YAML or source line, appears in the step summary, and fails the leg.
+- **What counts as this repository's code.** A line of a YAML lambda counts, and so does a lambda ESPHome inlined as a bare expression. A C++ file in this tree counts too, including the build's copy of an external component. Everything else is set aside, including code from a remote package, and `--verbose` lists it.
+- **ESPHome rewrites a lambda before it emits it.** It resolves substitutions, turns `id(x)` into `x`, or `x->value()` for a global, and blanks comments. The lint applies the same rewrites before matching each generated line against its YAML line. That match is how it tells a lambda's code from generated code that ESPHome attributes to the same YAML lines.
+- **A `text: format:` argument is checked too.** ESPHome emits each `args:` entry as an argument to `str_sprintf`, so a finding there lands on the entry it points inside.
+- **Fixing `-Wdouble-promotion`.** Write a float literal with an `f` suffix, as in `x / 60.0f`, so the arithmetic stays in the single-precision FPU. A float passed to a printf-style call, or listed under `args:`, takes an explicit `static_cast<double>()`, since a variadic call always promotes it.
+- **Exit status** is `0` when nothing was found, and `1` when a finding landed in this repository's code. It is `2` when the lint could not run, such as after a failed compile.
+
 ## Flashing and sdkconfig
 
 - **`esphome upload` does not compile.** It flashes the last built binary, so after editing YAML run `esphome compile` first, or `esphome run`, which is compile plus upload plus logs. Skipping the compile flashes a stale binary and shows no change. On a cleaned build tree `upload` fails with `FileNotFoundError` on the firmware file. The file takes the node's `esphome:` `name`: `build/<name>.bin` on the native ESP-IDF toolchain, or `.pioenvs/<name>/firmware.bin` on PlatformIO.
@@ -689,6 +701,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [ceilsense-template]: ./templates/smarthome-ceilsense.yaml
 [codestyle]: ./CODESTYLE.md
 [common-template]: ./templates/common.yaml
+[compile-lint]: ./tools/compile-lint/
 [compiling-the-way-ci-does]: #compiling-the-way-ci-does
 [config-and-compile-validation]: #config-and-compile-validation
 [debugging]: #debugging

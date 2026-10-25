@@ -196,8 +196,9 @@ class EasyStart : public PollingComponent, public ble_client::BLEClientNode {
 
     const char *state_str = (state <= 9) ? STATE_TEXT[state] : "Not Defined";
 
-    ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%" PRIu32 " faults=%u", state_str, current_a,
-             freq_hz, peak_a, total_starts, total_faults);
+    ESP_LOGI(TAG, "state=%s current=%.1fA freq=%.2fHz peak=%.1fA starts=%" PRIu32 " faults=%u", state_str,
+             static_cast<double>(current_a), static_cast<double>(freq_hz), static_cast<double>(peak_a), total_starts,
+             total_faults);
 
     // "running" is driven by BLE connection state, not by this frame.
     if (this->current_sensor_ != nullptr)
