@@ -3,6 +3,8 @@
 substitutions:
   device_name: heltec-wifi-lora32-v4-r8-test
   device_friendly_name: "Heltec WiFi LoRa 32 V4-R8 Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/heltec-wifi-lora32-v4-r8.yaml
