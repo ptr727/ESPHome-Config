@@ -260,11 +260,18 @@ def owned_sources(root: Path) -> dict[str, str]:
 
 
 def relative_to_root(path: Path, root: Path) -> str | None:
-    """Return a path relative to the config root, or None when it lies outside it."""
+    """Return a path relative to the config root, or None outside it or in a dot directory.
+
+    A dot directory such as .esphome holds ESPHome's build tree and fetched packages, not this
+    repository's code.
+    """
     try:
-        return path.relative_to(root).as_posix()
+        relative = path.relative_to(root)
     except ValueError:
         return None
+    if any(part.startswith(".") for part in relative.parts[:-1]):
+        return None
+    return relative.as_posix()
 
 
 def emitted_lines(text: str, first: int) -> tuple[tuple[int, str], ...]:
