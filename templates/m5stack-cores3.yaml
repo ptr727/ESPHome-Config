@@ -138,9 +138,7 @@ esphome:
     # - Register 0x86 at 0 keeps it scanning at the active rate, and this runs after the touchscreen setup resets it.
     - priority: -100
       then:
-        - lambda: |-
-            const uint8_t keep_active[] = {0x86, 0x00};
-            id(board_i2c)->write(0x38, keep_active, sizeof(keep_active));
+        - lambda: id(board_touch)->write_byte(0x86, 0x00);
 
 # https://esphome.io/components/esp32
 esp32:
