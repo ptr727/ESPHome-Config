@@ -539,6 +539,7 @@ def test_a_build_tree_under_a_dot_directory_is_not_repository_code(tmp_path: Pat
     assert lint_build.owned_path(root / "test" / "device.yaml") == "test/device.yaml"
 
 
+# Invalid JSON is caught where it is read, and the other shapes by main's catch-all.
 @pytest.mark.parametrize("content", ["{not json", '{"directory": "/x"}', '[{"file": "a.cpp"}]'])
 def test_a_malformed_compile_database_is_a_failure_to_run(tmp_path: Path, content: str) -> None:
     root, build = write_build(tmp_path, "")
