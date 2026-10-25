@@ -371,3 +371,12 @@ def test_preload_skips_a_broken_file_the_build_does_not_use(tmp_path: Path) -> N
     index.preload()
     result = BuildLint(build, root, [], {}, index).run()
     assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 11)]
+
+
+def test_an_inlined_block_lambda_behind_a_spanning_comment_does_not_crash(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    with (root / "test" / "device.yaml").open("a") as stream:
+        stream.write("    spanned: !lambda |-\n      /* scale\n      it */ return z * 2.5;\n")
+    set_main(build, directive(root, 9), "  call.set_spanned(z * 2.5);")
+    result = lint(root, build).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 27)]

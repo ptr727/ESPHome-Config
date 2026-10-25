@@ -368,11 +368,13 @@ def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[
         line = scalar.start
         if scalar.start != scalar.end:
             body = scalar.text.splitlines()
-            line += 1 + next(
+            starts = (
                 i
                 for i, text in enumerate(body)
                 if strip_comments(text).strip().startswith("return")
             )
+            # A comment spanning lines can hide the return, so fall back to the first body line.
+            line += 1 + next(starts, 0)
         pattern = lambda_pattern(expression).pattern
         yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)")
 
