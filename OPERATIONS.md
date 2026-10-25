@@ -329,6 +329,17 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 - **The FT6336 drops quick taps once it falls into its monitor scan.** It slows its scan a few seconds after the last touch. Waking a dark screen then took several taps, and the touchscreen component logged one of three. ESPHome's `ft63x6` driver sets the active scan rate in register 0x88 and leaves the power mode in register 0x86 at its default. The board template writes 0 to register 0x86 through the touchscreen's own I2C device. It does so in an `on_boot` at priority -100, since the driver's setup resets the controller. A single tap then wakes the screen.
 - **The example device swipes between tabs only from the screen edge.** LVGL's tabview swipe is a plain scroll that also starts on the slider and the drawing pad, so the example turns it off. A drag starting within 24 pixels of the left or right edge and moving 60 pixels inward changes tab instead.
 
+### M5Stack Dial
+
+[`templates/m5stack-dial.yaml`][m5stack-dial-template] is a board template, with every part on the StampS3 GPIO pins rather than behind an expander or a PMU.
+
+- **GPIO46 is the power hold, an output.** On battery the front button or the RTC alarm powers the board on, and it stays on only while the firmware drives GPIO46 high. ESPHome's device page and M5Stack's own example configure it as a "Hold Button" input instead. That would let a battery-powered board turn itself off. On USB or the DC input the pin does nothing, so the bench unit could not test it.
+- **GPIO8 resets both the LCD and the WS1850S RFID reader.** The display owns the pin, so the reader takes no `reset_pin`. On the bench the reader set up without an error after the display's reset pulse.
+- **The FT3267 touch controller runs on the `ft5x06` driver.** The boot I2C scan lists only 0x28 and 0x51, but the driver then reads vendor ID 0x11 at 0x38, and touch works. Do not chase the missing address.
+- **The touch mapping matches the display with no calibration.** Taps on rings 30 pixels in from each edge and at the center landed on them. The reported coordinates sit one pixel below the raw ones.
+- **`resolution: 1` gives one encoder step per detent.** M5Stack's example uses 4, which counts four steps per click.
+- **The RTC is a BM8563, which the docs also call an RTC8563 and M5Stack's example drives as a PCF8563.** The template uses the `bm8563` platform, as the CoreS3 template does.
+
 ### RGB LED Status
 
 [`templates/rgb-led-status.yaml`][rgb-led-status-template] derives from [Flo-R1der's package][flo-r1der-link] but does not import it, because that version binds its state to `wifi:` `on_connect` triggers and so cannot run on an Ethernet board.
@@ -693,6 +704,7 @@ Sharp edges in the tooling around this repository, each one learned by tripping 
 [heltec-template]: ./templates/heltec-wifi-lora32-v4-r8.yaml
 [m5stack-cores3-camera-template]: ./templates/m5stack-cores3-camera.yaml
 [m5stack-cores3-template]: ./templates/m5stack-cores3.yaml
+[m5stack-dial-template]: ./templates/m5stack-dial.yaml
 [max17048-template]: ./templates/max17048.yaml
 [min-version-template]: ./templates/min-version.yaml
 [office-bluetooth-proxy]: ./office-bluetooth-proxy.yaml

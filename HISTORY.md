@@ -7,6 +7,7 @@ ESPHome configuration templates and projects.
 - Version 2.4:
   - Added M5Stack CoreS3 support, the first touchscreen template, with an LVGL example device.
   - Added an M5Stack CoreS3 camera overlay for the GC0308 camera.
+  - Added M5Stack Dial support, with an LVGL example device the encoder navigates.
 - Version 2.3:
   - Changed OTA to encryption only, using the API key, so only the upgrade bridge build still needs the `ota_password` secret.
   - Fixed the compile warnings the templates and the EasyStart component can address.
