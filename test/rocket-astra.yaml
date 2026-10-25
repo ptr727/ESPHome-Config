@@ -2,6 +2,8 @@
 substitutions:
   device_name: rocket-astra-test
   device_friendly_name: "RocketController ASTRA Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/rocket-astra.yaml

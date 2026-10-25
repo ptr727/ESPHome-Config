@@ -3,6 +3,7 @@ name: Test pull request action
 # Source lint plus a change-gated compile test, run on the ptr727/esphome-nonroot image the repo deploys.
 # - template-compile-test builds the example devices, which between them compose every published template.
 # - test/easystart.yaml also covers the easystart external component.
+# - Each leg then lints the build it compiled, failing on a compiler warning in this repository's own code.
 # It costs minutes of esp-idf build, so it runs only when what it covers moves.
 # Operational model.
 # - develop takes direct signed commits, where push runs advisory CI.
@@ -80,7 +81,8 @@ jobs:
           fi
           WORKFLOW='\.github/workflows/test-pull-request\.yml$'
           # The test/ tree hosts the example devices, and test/easystart.yaml compiles easystart/components.
-          if grep -qE "^(templates/|test/|easystart/components/|$WORKFLOW)" <<<"$DIFF"; then
+          # The compile lint runs in the same legs, so a change to it reruns them too.
+          if grep -qE "^(templates/|test/|easystart/components/|tools/compile-lint/|$WORKFLOW)" <<<"$DIFF"; then
             echo "template-test=true" >> "$GITHUB_OUTPUT"
           else
             echo "template-test=false" >> "$GITHUB_OUTPUT"
@@ -103,6 +105,15 @@ jobs:
           done
           if (( ${#missing[@]} > 0 )); then
             echo "Templates that no example device in test/ includes: ${missing[*]}"
+            exit 1
+          fi
+          # A flashed example device runs on a bench with no Home Assistant and maybe no network, so it must not reboot for lack of either.
+          rebooting=()
+          for path in test/*.yaml; do
+            grep -qE "^  api_reboot_timeout: [\"']?0s[\"']?( *#.*)?\$" "$path" && grep -qE "^  wifi_reboot_timeout: [\"']?0s[\"']?( *#.*)?\$" "$path" || rebooting+=("$path")
+          done
+          if (( ${#rebooting[@]} > 0 )); then
+            echo "Example devices not setting api_reboot_timeout and wifi_reboot_timeout to 0s: ${rebooting[*]}"
             exit 1
           fi
           CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
@@ -140,10 +151,12 @@ jobs:
           key="$(python3 -c 'import base64, os; print(base64.b64encode(os.urandom(32)).decode())')"
           sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" secrets.yaml
 
+      # The cache sits at a fixed path, and the log there names the build path, so the lint step finds the build.
       - name: Compile template test config step
         run: |
           set -Eeuo pipefail
-          cache="$(mktemp -d)"
+          cache="$RUNNER_TEMP/esphome-cache"
+          mkdir -p "$cache"
           chmod -R 0777 "$cache" .
           docker run --rm --user 1000:1000 \
             --volume "$PWD":/config \
@@ -153,7 +166,24 @@ jobs:
               set -Eeuo pipefail
               /entrypoint/cache.sh
               esphome config /config/test/${{ matrix.config }}.yaml > /dev/null
-              esphome compile /config/test/${{ matrix.config }}.yaml
+              esphome compile /config/test/${{ matrix.config }}.yaml 2>&1 | tee /cache/compile.log
+            '
+
+      # Recompile the generated main.cpp syntax-only with stricter warnings, keeping what lands in this repository's code.
+      # A finding annotates its YAML lambda line or component file, and fails the leg, per OPERATIONS.md "Compile Lint".
+      # It runs as the runner's own user, so it can append to the step summary file mounted into the container.
+      - name: Lint compiled code step
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --volume "$PWD":/config \
+            --volume "$RUNNER_TEMP/esphome-cache":/cache \
+            --volume "$GITHUB_STEP_SUMMARY":/summary.md \
+            --env PYTHONPATH=/config/tools/compile-lint/src \
+            ptr727/esphome-nonroot:latest \
+            bash -c '
+              set -Eeuo pipefail
+              python3 -m compile_lint --config-root /config --annotate --summary /summary.md --from-log /cache/compile.log
             '
 
   # GitHub Actions does not support required status checks on conditional jobs.
@@ -177,9 +207,9 @@ jobs:
             exit 1
           fi
           # The compile job is skipped when the change gate says nothing it covers moved.
-          # Only a real failure blocks, a skip must still pass.
-          # The matrix aggregates to a single result, failure if any leg failed.
-          if [[ "${{ needs.template-compile-test.result }}" == "failure" ]]; then
-            echo "Job 'template-compile-test' failed; refusing to pass."
+          # A skip must still pass, and anything else short of success blocks, a cancelled leg included.
+          result="${{ needs.template-compile-test.result }}"
+          if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+            echo "Job 'template-compile-test' did not succeed ($result); refusing to pass."
             exit 1
           fi

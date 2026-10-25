@@ -2,6 +2,8 @@
 substitutions:
   device_name: kincony-kc868-asr-test
   device_friendly_name: "Kincony KC868-ASR Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/kincony-kc868-asr.yaml

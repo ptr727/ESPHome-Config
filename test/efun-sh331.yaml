@@ -2,6 +2,8 @@
 substitutions:
   device_name: efun-sh331-test
   device_friendly_name: "EFUN SH331 Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/efun-sh331.yaml

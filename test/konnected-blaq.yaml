@@ -2,6 +2,8 @@
 substitutions:
   device_name: konnected-blaq-test
   device_friendly_name: "Konnected blaQ Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/konnected-blaq.yaml

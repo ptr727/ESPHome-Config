@@ -85,7 +85,7 @@ sensor:
     name: "Uptime"
     unit_of_measurement: min
     filters:
-      - lambda: return x / 60.0;
+      - lambda: return x / 60.0f;
 
 # Change version sensor name
 text_sensor:

@@ -5,6 +5,8 @@
 substitutions:
   device_name: easystart-test
   device_friendly_name: "EasyStart Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/waveshare-esp32-s3-eth.yaml

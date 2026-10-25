@@ -2,6 +2,8 @@
 substitutions:
   device_name: waveshare-esp32-s3-eth-test
   device_friendly_name: "Waveshare ESP32-S3-ETH Test"
+  api_reboot_timeout: 0s
+  wifi_reboot_timeout: 0s
 
 packages:
   device: !include ../templates/waveshare-esp32-s3-eth.yaml
