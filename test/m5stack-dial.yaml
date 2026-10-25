@@ -38,49 +38,91 @@ rtttl:
   id: board_rtttl
   output: buzzer_output
 
+# https://esphome.io/components/script
+script:
+  - id: play_beep
+    then:
+      - rtttl.play:
+          rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
+
+  # The inputs redraw on each turn or press, since every one of them runs this.
+  - id: show_inputs
+    then:
+      - lvgl.label.update:
+          id: inputs_encoder
+          text:
+            format: "%.0f"
+            args: ["id(board_encoder).state"]
+      - lvgl.arc.update:
+          id: inputs_encoder_arc
+          value: !lambda |-
+            const int v = (int) id(board_encoder).state % 16;
+            return v < 0 ? v + 16 : v;
+      - lvgl.label.update:
+          id: inputs_buttons
+          text:
+            format: "Button %s  Boot %s"
+            args:
+              - "id(front_button).state ? \"on\" : \"off\""
+              - "id(boot_button).state ? \"on\" : \"off\""
+
 # The same beep as a button entity, so the buzzer can be tested without touching the board.
 # https://esphome.io/components/button/template
 button:
   - platform: template
     name: "Beep"
     on_press:
-      - rtttl.play:
-          rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
+      - script.execute: play_beep
 
 # A press or a turn on a dark screen only wakes it.
+# - The wake reads the backlight's target state, so a press during the fade turns it back on.
+# - A turn is LVGL activity, since the encoder is not an LVGL input device and the idle timeout would otherwise ignore it.
 # https://esphome.io/components/binary_sensor
 binary_sensor:
   - id: !extend front_button
     on_press:
+      - script.execute: show_inputs
       - if:
           condition:
-            light.is_off: lcd_backlight
+            lambda: return !id(lcd_backlight).remote_values.is_on();
           then:
             - light.turn_on: lcd_backlight
           else:
-            - rtttl.play:
-                rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
+            - lambda: lv_display_trigger_activity(nullptr);
+            - script.execute: play_beep
+    on_release:
+      - script.execute: show_inputs
+
+  - id: !extend boot_button
+    on_press:
+      - script.execute: show_inputs
+    on_release:
+      - script.execute: show_inputs
 
 # https://esphome.io/components/sensor/rotary_encoder
 sensor:
   - id: !extend board_encoder
     on_clockwise:
+      - script.execute: show_inputs
       - if:
           condition:
-            light.is_off: lcd_backlight
+            lambda: return !id(lcd_backlight).remote_values.is_on();
           then:
             - light.turn_on: lcd_backlight
           else:
+            - lambda: lv_display_trigger_activity(nullptr);
             - lvgl.page.next:
                 animation: MOVE_LEFT
                 time: 200ms
     on_anticlockwise:
+      - script.execute: show_inputs
       - if:
           condition:
-            light.is_off: lcd_backlight
+            lambda: return !id(lcd_backlight).remote_values.is_on();
           then:
             - light.turn_on: lcd_backlight
           else:
+            - lambda: lv_display_trigger_activity(nullptr);
             - lvgl.page.previous:
                 animation: MOVE_RIGHT
                 time: 200ms
@@ -93,7 +135,7 @@ text_sensor:
           id: inputs_rfid
           text:
             format: "Tag %s"
-            args: ["x.c_str()"]
+            args: ["x.empty() ? \"--\" : x.c_str()"]
 
 # Coordinates land in the log, so a tap can be checked against the console.
 # https://esphome.io/components/touchscreen
@@ -113,7 +155,7 @@ touchscreen:
     on_release:
       - if:
           condition:
-            light.is_off: lcd_backlight
+            lambda: return !id(lcd_backlight).remote_values.is_on();
           then:
             - light.turn_on: lcd_backlight
 
@@ -298,10 +340,9 @@ lvgl:
                     - label:
                         text: "Beep"
                   on_click:
-                    - rtttl.play:
-                        rtttl: "beep:d=16,o=6,b=180:c,e,g,c7"
+                    - script.execute: play_beep
 
-# The labels redraw on a timer rather than per entity.
+# The status labels redraw on a timer, since the clock and the uptime change every second.
 # https://esphome.io/components/interval
 interval:
   - interval: 1s
@@ -331,24 +372,3 @@ interval:
           text:
             format: "Up %u s"
             args: ["(unsigned) (millis() / 1000)"]
-
-  # The inputs redraw faster than the labels, so a turn or a press shows at once.
-  - interval: 100ms
-    then:
-      - lvgl.label.update:
-          id: inputs_encoder
-          text:
-            format: "%.0f"
-            args: ["id(board_encoder).state"]
-      - lvgl.arc.update:
-          id: inputs_encoder_arc
-          value: !lambda |-
-            const int v = (int) id(board_encoder).state % 16;
-            return v < 0 ? v + 16 : v;
-      - lvgl.label.update:
-          id: inputs_buttons
-          text:
-            format: "Button %s  Boot %s"
-            args:
-              - "id(front_button).state ? \"on\" : \"off\""
-              - "id(boot_button).state ? \"on\" : \"off\""

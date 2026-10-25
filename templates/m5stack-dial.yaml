@@ -22,8 +22,9 @@
 # - The BOOT button and the RGB LED sit inside the case, so neither is tested.
 # - A V1.1 on a StampS3A is untested.
 
-# The display, the touchscreen and the backlight are configured here, so a device draws with LVGL, see test/m5stack-dial.yaml.
-# - The display carries no lambda, so a lambda device extends board_display with lambda, update_interval and auto_clear_enabled true instead.
+# The display, the touchscreen and the backlight are configured here.
+# - The display carries no lambda, so a device draws with LVGL, see test/m5stack-dial.yaml.
+# - A lambda device extends board_display with lambda, update_interval and auto_clear_enabled true instead.
 
 # GPIO19, GPIO20 : native USB, so flashing needs no adapter and no UART bridge
 # GPIO0  : BOOT button on the StampS3, held at power on for download mode
@@ -36,6 +37,7 @@
 # Power hold
 # - On battery the front button or the RTC alarm powers the board on, and the board stays on only while GPIO46 is high.
 # - The Power Off button drives it low, which turns a board on battery off and does nothing on USB or the DC input.
+# - A restart releases the pin until the switch sets up again, and whether a board on battery survives that is untested.
 # - Battery level is not sensed, since no ADC pin reaches the battery.
 
 # Internal I2C bus
@@ -51,7 +53,7 @@
 # GPIO8 : LCD reset, also wired to the WS1850S reset
 # GPIO9 : LCD backlight, PWM
 
-# GC9A01 240x240 round IPS
+# GC9A01 240x240 round IPS, with an FT3267 touch panel
 # GPIO14 : touch interrupt
 # GPIO10 : WS1850S interrupt, unclaimed here
 
@@ -128,9 +130,11 @@ output:
     id: lcd_backlight_output
     pin: GPIO9
 
+  # Channel 2 is on the second LEDC timer, so a buzzer note never retunes the backlight PWM.
   # https://esphome.io/components/output/ledc
   - platform: ledc
     id: buzzer_output
+    channel: 2
     pin:
       number: GPIO3 # Strapping pin, fixed board wiring, so the warning is acknowledged.
       ignore_strapping_warning: true
@@ -203,6 +207,7 @@ sensor:
         input: true
         pullup: true
     resolution: 1
+    publish_initial_value: true
 
 # https://esphome.io/components/display/mipi_spi
 display:
@@ -241,16 +246,22 @@ time:
     i2c_id: board_i2c
     update_interval: never
 
-# The WS1850S answers as an MFRC522, and the tag UID reaches Home Assistant as text.
+# The WS1850S answers as an MFRC522.
+# - Each scan fires a Home Assistant tag event, and the text sensor holds the UID until the tag leaves.
 # https://esphome.io/components/binary_sensor/rc522
 rc522_i2c:
   - id: board_rfid
     i2c_id: board_i2c
     address: 0x28
     on_tag:
+      - homeassistant.tag_scanned: !lambda return x;
       - text_sensor.template.publish:
           id: rfid_tag
           state: !lambda return x;
+    on_tag_removed:
+      - text_sensor.template.publish:
+          id: rfid_tag
+          state: ""
 
 # https://esphome.io/components/text_sensor/template
 text_sensor:

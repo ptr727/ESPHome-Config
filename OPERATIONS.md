@@ -333,7 +333,8 @@ Do not `!remove` blocks from Apollo's package without checking what depends on t
 
 [`templates/m5stack-dial.yaml`][m5stack-dial-template] is a board template, with every part on the StampS3 GPIO pins rather than behind an expander or a PMU.
 
-- **GPIO46 is the power hold, an output.** On battery the front button or the RTC alarm powers the board on, and it stays on only while the firmware drives GPIO46 high. ESPHome's device page and M5Stack's own example configure it as a "Hold Button" input instead. That would let a battery-powered board turn itself off. On USB or the DC input the pin does nothing, so the bench unit could not test it.
+- **GPIO46 is the power hold, an output.** On battery the front button or the RTC alarm powers the board on, and it stays on only while the firmware drives GPIO46 high. ESPHome's device page configures it as a "Hold Button" input instead, so a board on battery turns off as soon as the button is released. On USB or the DC input the pin does nothing, so the bench unit could not test it.
+- **A restart releases the power hold until the switch sets up again.** The reset returns GPIO46 to an input with its pulldown. Whether a board on battery stays powered through an OTA reboot or a restart is untested.
 - **GPIO8 resets both the LCD and the WS1850S RFID reader.** The display owns the pin, so the reader takes no `reset_pin`. On the bench the reader set up without an error after the display's reset pulse.
 - **The FT3267 touch controller runs on the `ft5x06` driver.** The boot I2C scan lists only 0x28 and 0x51, but the driver then reads vendor ID 0x11 at 0x38, and touch works. Do not chase the missing address.
 - **The touch mapping matches the display with no calibration.** Taps on rings 30 pixels in from each edge and at the center landed on them. The reported coordinates sit one pixel below the raw ones.

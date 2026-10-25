@@ -258,11 +258,13 @@ Shared building-block includes, composed via `packages:` by the device templates
 - [Template][m5stack-dial] for the [M5Stack Dial][m5stack-shop-dial-link], an ESP32-S3 StampS3 with 8MB Quad Flash and no PSRAM. It carries a 240x240 round capacitive touch display, a rotary encoder, an RFID reader, and a passive buzzer. The [Dial docs][m5stack-docs-dial-link] carry the pin map the template header repeats.
 - Includes the display, the touchscreen, and the backlight as a dimmable light.
 - Includes the encoder as a step count, the front button that pressing the screen down operates, and the StampS3 BOOT button.
-- Includes the RTC written through from Home Assistant time, and the RFID reader publishing each tag UID as text.
+- Includes the RTC written through from Home Assistant time.
+- Includes the RFID reader, which fires a Home Assistant tag event on each scan and holds the UID as text while the tag is present.
 - Includes the buzzer as a PWM output, and the StampS3 RGB LED through the [RGB LED status][rgb-led-status] package.
 - Includes a Power Off button, which releases the power hold pin and turns off a board running on its battery.
 - Optional substitutions:
   - `backlight_brightness`: `80%` by default, the level the backlight turns on at during boot.
+  - `rgb_led_pin`: `GPIO21` by default, the StampS3 RGB LED.
 - Flash over USB-C. The port is the chip's native USB with no UART bridge, so no adapter is needed.
 - The display carries no lambda, so a device draws on it with [LVGL][esphome-components-lvgl-link], as the [example device][test-m5stack-dial] does. There the encoder changes page and the front button plays a beep.
 - Note: a V1 unit confirms USB and OTA flashing, the display, touch, the backlight, the encoder, the front button, the buzzer, and the RTC write. Reading an RFID tag, the power hold on battery, the BOOT button, and the RGB LED are untested. So is a V1.1 on the StampS3A.
