@@ -55,7 +55,8 @@ DIAGNOSTIC = re.compile(
 LINE_DIRECTIVE = re.compile(r'^\s*#line\s+(?P<line>\d+)\s+"(?P<path>[^"]+)"')
 # The rewrites ESPHome applies to lambda text before it emits it, tried in this order.
 # - A substitution, ${name} or $name, which the generated code carries resolved.
-# - An id(name) before a member access, which becomes name-> on a component, and keeps its dot after name->value() on a global.
+# - An id(name) before a member access, which becomes name-> on a component.
+# - On a global, that id(name) becomes name->value() and keeps its dot.
 # - A bare id(name), which becomes name, or name->value() for a global.
 REWRITE = re.compile(
     r"(?P<substitution>\$\{[^}]*\}|\$[A-Za-z_]\w*)"
@@ -271,7 +272,7 @@ def yaml_scalars(path: Path) -> list[Scalar]:
                 walk(key)
                 walk(value)
 
-    # Composing builds the node tree without constructing values, so ESPHome's own tags need no constructor.
+    # Composing builds nodes without constructing values, so ESPHome's tags need no constructor.
     with path.open(encoding="utf-8") as stream:
         loader = yaml.SafeLoader(stream)
         try:
@@ -302,7 +303,11 @@ class YamlIndex:
     def preload(self) -> None:
         """Read every YAML file now, so a later edit cannot shift lines against a build."""
         for path in walk_files(self.root, {".yaml", ".yml"}):
-            self.scalars(path.relative_to(self.root).as_posix())
+            # A file that does not parse fails the run only if a build turns out to need it.
+            try:
+                self.scalars(path.relative_to(self.root).as_posix())
+            except LintError:
+                continue
 
 
 def normalize(text: str) -> str:
@@ -363,7 +368,11 @@ def inline_expressions(scalars: list[Scalar]) -> Iterator[tuple[int, re.Pattern[
         line = scalar.start
         if scalar.start != scalar.end:
             body = scalar.text.splitlines()
-            line += 1 + next(i for i, text in enumerate(body) if "return" in text)
+            line += 1 + next(
+                i
+                for i, text in enumerate(body)
+                if strip_comments(text).strip().startswith("return")
+            )
         pattern = lambda_pattern(expression).pattern
         yield line, re.compile(rf"(?<![\w.]){pattern}(?!\w)")
 
@@ -499,13 +508,13 @@ class BuildLint:
                     continue
                 line, text = located
                 if lambda_pattern(text).fullmatch(generated):
-                    # The generated column counts ESPHome's indentation and rewrites, not the YAML's.
+                    # The generated column counts ESPHome's indentation, not the YAML's.
                     yield Finding(directive.path, line, 1, diagnostic.severity, diagnostic.message)
                     return
         yield from self.match_inline(diagnostic, generated)
 
     def match_inline(self, diagnostic: Diagnostic, generated: str) -> Iterator[Finding]:
-        """Attribute a diagnostic to the build's YAML lambdas whose expression ESPHome inlined there.
+        """Attribute a diagnostic to the build's YAML lambdas whose expression was inlined there.
 
         The build's YAML is each repository file a #line directive names.
         """

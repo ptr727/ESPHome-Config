@@ -61,6 +61,7 @@ sensor:
     brightness: !lambda return x / 2.5f;
   - platform: template
     level: !lambda |-
+      // returns the scaled level
       return y * 2.5;
     flag: !lambda return id(total);
     member: !lambda |-
@@ -277,7 +278,7 @@ def test_an_inlined_block_lambda_is_reported_on_its_code_line(tmp_path: Path) ->
         build, directive(root, 9), "static void f(float y) {", "  call.set_level(y * 2.5);", "}"
     )
     result = lint(root, build).run()
-    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 21)]
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 22)]
 
 
 def test_inline_search_matches_whole_tokens_only(tmp_path: Path) -> None:
@@ -299,9 +300,9 @@ def test_a_global_member_access_and_a_quoted_comment_match_the_generated_line(
     tmp_path: Path,
 ) -> None:
     root, build = write_build(tmp_path, "")
-    set_main(build, directive(root, 24), "      total->value().reset(2.5);  ")
+    set_main(build, directive(root, 25), "      total->value().reset(2.5);  ")
     result = lint(root, build).run()
-    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 24)]
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 25)]
 
 
 def test_code_after_a_remote_package_directive_is_set_aside(tmp_path: Path) -> None:
@@ -360,3 +361,13 @@ def test_an_unreadable_yaml_file_is_a_failure_to_run(tmp_path: Path) -> None:
     (root / "test" / "device.yaml").write_text("sensor: [unclosed\n")
     set_main(build, directive(root, 12), "      return x * 2.5;")
     assert main(["--config-root", str(root), str(build)]) == 2
+
+
+def test_preload_skips_a_broken_file_the_build_does_not_use(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "")
+    (root / "test" / "scratch.yaml").write_text("sensor: [unclosed\n")
+    set_main(build, "auto f = [](float x) {", directive(root, 12), "      return x * 2.5;", "});")
+    index = YamlIndex(root)
+    index.preload()
+    result = BuildLint(build, root, [], {}, index).run()
+    assert [(f.path, f.line) for f in result.findings] == [("test/device.yaml", 11)]
