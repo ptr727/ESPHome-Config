@@ -22,6 +22,7 @@ It is 2 when the lint could not run, such as after a failed compile or without a
 """
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -76,6 +77,10 @@ BARE_TOKEN = re.compile(r"^[\w.]+$")
 YAML_PATH = re.compile(r"^[\w./-]+\.ya?ml$")
 BUILD_PATH = re.compile(r"Build path: (?P<path>\S+)")
 CONFIG_PATH = re.compile(r"Reading configuration (?P<path>\S+?)\.\.\.")
+# ESPHome's own warning lines, such as a deprecated key, which it prints while validating the config.
+ESPHOME_WARNING = re.compile(r"^WARNING (?P<message>.+?)\s*$")
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+ALLOWED_WARNINGS = Path("tools/compile-lint/allowed-warnings.yaml")
 
 
 @dataclass(frozen=True)
@@ -136,6 +141,21 @@ class BuildResult:
     node: str
     findings: list[Finding] = field(default_factory=lambda: list[Finding]())
     ignored: list[Diagnostic] = field(default_factory=lambda: list[Diagnostic]())
+    allowed: list[str] = field(default_factory=lambda: list[str]())
+
+
+@dataclass(frozen=True)
+class Allowance:
+    """An ESPHome warning the lint lets through, limited to the configs it names."""
+
+    pattern: re.Pattern[str]
+    configs: tuple[str, ...]
+    reason: str
+
+    def allows(self, config: str, message: str) -> bool:
+        if self.pattern.fullmatch(message) is None:
+            return False
+        return any(fnmatch.fnmatchcase(config, glob) for glob in self.configs)
 
 
 class LintError(Exception):
@@ -726,8 +746,70 @@ def summary(results: list[BuildResult]) -> str:
     return "\n".join([*header, *rows, ""])
 
 
-def build_from_log(log: Path) -> tuple[Path, Path | None]:
-    """Return the last build path a saved ESPHome compile log printed, and the config it read."""
+def esphome_warnings(text: str) -> list[str]:
+    """Return each distinct ESPHome warning in compile output, in order, since validation prints them twice."""
+    found: dict[str, None] = {}
+    for raw in text.splitlines():
+        match = ESPHOME_WARNING.match(ANSI_ESCAPE.sub("", raw))
+        if match:
+            found.setdefault(match["message"], None)
+    return list(found)
+
+
+def load_allowances(path: Path) -> list[Allowance]:
+    """Read the allowed ESPHome warnings, an absent file allowing none."""
+    if not path.is_file():
+        return []
+    try:
+        data: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as error:
+        raise LintError(f"cannot read the allowed warnings {path}: {error}") from error
+    if data is None:
+        return []
+    if not isinstance(data, list):
+        raise LintError(f"{path}: the allowed warnings must be a list")
+    allowances: list[Allowance] = []
+    for number, raw in enumerate(cast(list[Any], data), start=1):
+        entry = cast(dict[str, Any], raw) if isinstance(raw, dict) else {}
+        pattern, configs, reason = entry.get("pattern"), entry.get("configs"), entry.get("reason")
+        if (
+            not isinstance(pattern, str)
+            or not isinstance(reason, str)
+            or not reason.strip()
+            or not isinstance(configs, list)
+            or not configs
+            or not all(isinstance(c, str) for c in cast(list[Any], configs))
+        ):
+            raise LintError(f"{path}: entry {number} needs a pattern, a configs list, and a reason")
+        try:
+            compiled = re.compile(pattern)
+        except re.error as error:
+            raise LintError(f"{path}: entry {number} has a bad pattern: {error}") from error
+        allowances.append(Allowance(compiled, tuple(cast(list[str], configs)), reason))
+    return allowances
+
+
+def check_warnings(
+    result: BuildResult, text: str, config: Path | None, root: Path, allowances: list[Allowance]
+) -> None:
+    """Add each ESPHome warning in the compile output to the result, as a finding or as allowed."""
+    warnings = esphome_warnings(text)
+    if not warnings:
+        return
+    relative = None if config is None else relative_to_root(Path(os.path.normpath(config)), root)
+    if relative is None:
+        raise LintError(
+            f"{result.node}: ESPHome warned, and the config it read is not in {root} to report on"
+        )
+    for message in warnings:
+        if any(a.allows(relative, message) for a in allowances):
+            result.allowed.append(message)
+        else:
+            result.findings.append(Finding(relative, 1, 1, "warning", f"ESPHome: {message}"))
+
+
+def build_from_log(log: Path) -> tuple[Path, Path | None, str]:
+    """Return the last build path a saved ESPHome compile log printed, the config it read, and the log."""
     try:
         text = log.read_text(encoding="utf-8", errors="replace")
     except OSError as error:
@@ -736,11 +818,11 @@ def build_from_log(log: Path) -> tuple[Path, Path | None]:
     if not builds:
         raise LintError(f"{log}: the compile log holds no build path")
     configs = CONFIG_PATH.findall(text)
-    return Path(builds[-1]), Path(configs[-1]) if configs else None
+    return Path(builds[-1]), Path(configs[-1]) if configs else None, text
 
 
-def compile_config(config: Path) -> tuple[Path, Path | None]:
-    """Compile a config with the ESPHome CLI, echoing its output, and return its build path."""
+def compile_config(config: Path) -> tuple[Path, Path | None, str]:
+    """Compile a config with the ESPHome CLI, echoing its output, and return its build path and output."""
     try:
         process = subprocess.Popen(
             ["esphome", "compile", str(config)],
@@ -751,9 +833,11 @@ def compile_config(config: Path) -> tuple[Path, Path | None]:
     except OSError as error:
         raise LintError(f"cannot run the ESPHome CLI: {error}") from error
     build: Path | None = None
+    output: list[str] = []
     assert process.stdout is not None
     for line in process.stdout:
         sys.stdout.write(line)
+        output.append(line)
         match = BUILD_PATH.search(line)
         if match:
             build = Path(match["path"])
@@ -761,7 +845,7 @@ def compile_config(config: Path) -> tuple[Path, Path | None]:
         raise LintError(f"{config}: the compile failed, so there is no build to lint")
     if build is None:
         raise LintError(f"{config}: the compile printed no build path")
-    return build, config.resolve()
+    return build, config.resolve(), "".join(output)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -802,6 +886,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"an extra warning flag, repeatable, default {' '.join(DEFAULT_FLAGS)}",
     )
     parser.add_argument(
+        "--allowed-warnings",
+        type=Path,
+        metavar="FILE",
+        help=f"the ESPHome warnings to let through, default {ALLOWED_WARNINGS} in the config root",
+    )
+    parser.add_argument(
         "--annotate", action="store_true", help="also print GitHub workflow annotations"
     )
     parser.add_argument("--summary", type=Path, help="append a Markdown summary to this file")
@@ -837,13 +927,17 @@ def run(args: argparse.Namespace) -> int:
     if args.compile:
         # The compile takes minutes, and an editor save during it would shift YAML lines.
         index.preload()
-    builds: list[tuple[Path, Path | None]] = [(build, None) for build in args.builds]
+    allowances = load_allowances(args.allowed_warnings or root / ALLOWED_WARNINGS)
+    # A bare build directory carries no compile output, so only a log or a compile is checked for ESPHome warnings.
+    builds: list[tuple[Path, Path | None, str]] = [(build, None, "") for build in args.builds]
     builds += [build_from_log(log) for log in args.from_log]
     builds += [compile_config(c) for c in args.compile]
     results: list[BuildResult] = []
-    for build, config in builds:
+    for build, config, text in builds:
         build = Path(os.path.normpath(build.resolve()))
-        results.append(BuildLint(build, root, flags, owned, index, config).run())
+        result = BuildLint(build, root, flags, owned, index, config).run()
+        check_warnings(result, text, config, root, allowances)
+        results.append(result)
     for result in results:
         for finding in result.findings:
             print(
@@ -854,7 +948,8 @@ def run(args: argparse.Namespace) -> int:
                 print(annotation(result.node, finding))
         print(
             f"{result.node}: {len(result.findings)} in this repository's code, "
-            f"{len(result.ignored)} set aside as generated or third-party"
+            f"{len(result.ignored)} set aside as generated or third-party, "
+            f"{len(result.allowed)} ESPHome warnings allowed"
         )
         if args.verbose:
             for diagnostic in result.ignored:
@@ -862,6 +957,8 @@ def run(args: argparse.Namespace) -> int:
                     f"  set aside: {diagnostic.path}:{diagnostic.line}:{diagnostic.column}: "
                     f"{diagnostic.message}"
                 )
+            for message in result.allowed:
+                print(f"  allowed: ESPHome: {message}")
     if args.summary:
         with args.summary.open("a", encoding="utf-8") as stream:
             stream.write(summary(results))

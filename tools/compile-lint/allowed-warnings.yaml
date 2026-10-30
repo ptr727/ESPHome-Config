@@ -1,0 +1,25 @@
+# ESPHome warnings the compile lint lets through, per OPERATIONS.md "Compile Lint".
+# A pattern is a Python regular expression matched against the whole warning text.
+# The configs are globs relative to the repository root, so the same warning on any other config still fails.
+# Every entry says why the warning cannot be fixed here, and when the entry can go.
+
+- pattern: "The 'esp32_improv:' top-level key is deprecated; rename it to 'improv_ble:'\\. Removed in 2027\\.4\\.0\\."
+  configs:
+    - garage-door-controller.yaml
+    - test/konnected-blaq.yaml
+    - test/apollo-plt-1b.yaml
+  reason: >-
+    The Konnected and Apollo packages still declare esp32_improv.
+    Renaming the templates' !remove key to improv_ble fails validation while the vendor key remains.
+    Drop this entry once both vendors rename the key, and before 2027.4.0.
+
+- pattern: "GPIO20 is used by the USB-Serial-JTAG interface\\. .*"
+  configs:
+    - garage-presence-sensor.yaml
+    - test/smarthome-ceilsense.yaml
+  reason: The CeilSense LED sits on GPIO20, and ESPHome offers no per-pin opt-out for this warning.
+
+- pattern: "Using experimental features in ESP-IDF may result in unexpected failures\\."
+  configs:
+    - test/esp32-s3-wroom-2-n32r8v.yaml
+  reason: The template opts in deliberately, since ESPHome rejects 32MB flash with OTA otherwise.
