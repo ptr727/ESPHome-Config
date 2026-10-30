@@ -39,6 +39,9 @@ esphome:
   # Removed to stop the ESPHome Update Manager auto updating.
   # Safe here because no sub-package reads the ESPHOME_PROJECT_NAME or ESPHOME_PROJECT_VERSION macros.
   project: !remove
+  # Removed so each device builds under its own name.
+  # The vendor's fixed build/ceilsense path makes every CeilSense config share one build tree, so an upload can flash another device's firmware.
+  build_path: !remove
   # Stands in for the unimported wifi.yaml boot phase 1, without its BLE actions.
   # The remaining self-test phases come from the sub-packages' own on_boot entries.
   # The LED turns on only while the Startup LED Self-Test switch is on, as in the vendor's own phase 1.

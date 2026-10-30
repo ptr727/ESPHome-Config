@@ -110,7 +110,7 @@ sensor:
     unit_of_measurement: m³
     # Convert gal to m³
     lambda: |-
-      return id(water_total).state / 264.2;
+      return id(water_total).state / 264.2f;
 
   - platform: template
     name: "Gas Meter Total (m³)"
@@ -121,7 +121,7 @@ sensor:
     unit_of_measurement: m³
     # Convert ft³ to m³
     lambda: |-
-      return id(gas_total).state / 35.315;
+      return id(gas_total).state / 35.315f;
 
 # https://esphome.io/components/climate
 climate:
@@ -168,4 +168,4 @@ display:
       const float celsius = std::isnan(id(temp).state) ? 0.0f : id(temp).state;
       it.printf(0, slot, id(font_line), TextAlign::CENTER_LEFT, "IP: %s", id(wifi_ip).state.c_str());
       it.strftime(0, 2 * slot, id(font_line), TextAlign::CENTER_LEFT, "Time: %H:%M:%S", id(homeassistant_time).now());
-      it.printf(0, 3 * slot, id(font_line), TextAlign::CENTER_LEFT, "Temp: %.2f°C", celsius);
+      it.printf(0, 3 * slot, id(font_line), TextAlign::CENTER_LEFT, "Temp: %.2f°C", static_cast<double>(celsius));
