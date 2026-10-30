@@ -10,7 +10,7 @@
 # The name, friendly_name, project_name, and project_version substitutions are machinery for Konnected's own package, not knobs.
 
 # Optional substitutions:
-# - wifi_reboot_timeout (15min, 0s wherever a reboot loop is more dangerous than a stale connection, see the note at its definition)
+# - api_reboot_timeout and wifi_reboot_timeout (15min, both 0s wherever a reboot loop is more dangerous than a stale connection, see the note at the wifi_reboot_timeout definition)
 
 # Konnected blaQ Garage Door Controller
 # https://konnected.io/products/smart-garage-door-opener-blaq-myq-alternative
@@ -23,7 +23,8 @@ substitutions:
   # Used by garage-door-GDOv2-Q.yaml
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-  # A per-device 0s disables the reboot loop that can let a Sec+ 1.0 UART glitch open the door.
+  # On a Security+ 1.0 opener, set this and api_reboot_timeout to 0s per device.
+  # Either reboot loop can let the boot-time UART glitch open the door.
   wifi_reboot_timeout: 15min
   # Overridden rather than removed, because upstream lambdas read the project macros.
   # ESPHOME_PROJECT_NAME and ESPHOME_PROJECT_VERSION exist only while esphome.project is set.
@@ -91,6 +92,10 @@ sensor:
 text_sensor:
   - id: !extend esphome_version
     name: "Version"
+  # Hide the project version, which only ever reads the 0.0.0 placeholder set above.
+  # Kept internal rather than removed, because Konnected's on_boot publishes to its id.
+  - id: !extend project_version
+    internal: true
 
 # Add status sensor
 binary_sensor:
