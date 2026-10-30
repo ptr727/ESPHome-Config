@@ -110,7 +110,7 @@ sensor:
     unit_of_measurement: m³
     # Convert gal to m³
     lambda: |-
-      return id(water_total).state / 264.2f;
+      return id(water_total).state / 264.172f;
 
   - platform: template
     name: "Gas Meter Total (m³)"
