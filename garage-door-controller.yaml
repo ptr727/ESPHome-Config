@@ -1,6 +1,6 @@
 # Drives a LiftMaster 98022 opener over Security+ 2.0.
 # It replaced a Security+ 1.0 opener that this controller opened twice without a command.
-# GPIO1, the Sec+ TX line, is uncontrolled on every boot between esp_restart() and secplus_gdo::setup().
+# GPIO1, the Sec+ TX line, is uncontrolled on every boot, from reset until secplus_gdo::setup() runs.
 # A Security+ 1.0 opener reads a stray low pulse on that line as a wall-button press.
 # Security+ 2.0 openers do not trigger on a momentary low pulse, per the Konnected maintainer in the upstream report below.
 #   - https://github.com/ptr727/ESPHome-Config/issues/29           (incident report)
