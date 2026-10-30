@@ -4,7 +4,7 @@
 [project]
 name = "compile-lint"
 version = "1.0.0"
-description = "Report compiler warnings in this repository's lambdas and components from an ESPHome build."
+description = "Report compiler warnings in this repository's lambdas and components, and ESPHome's own warnings, from an ESPHome build."
 requires-python = ">=3.13"
 # PyYAML is also what ESPHome itself depends on, so the image the compile runs on already has it.
 dependencies = ["pyyaml>=6"]

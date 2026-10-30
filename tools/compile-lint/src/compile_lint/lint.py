@@ -1,4 +1,4 @@
-"""Report compiler warnings that land in this repository's own code from an ESPHome build.
+"""Report compiler warnings that land in this repository's own code from an ESPHome build, and ESPHome's own warnings.
 
 A lambda only compiles inside the generated main.cpp, so the lint reads the build ESPHome produced.
 It reruns the compile of main.cpp, and of any translation unit this repository authored.
@@ -10,6 +10,10 @@ A diagnostic is this repository's when it lands in one of these places:
   - a lambda ESPHome inlined as a bare expression, found by searching the YAML for it
   - a C/C++ file under the config root, or a copy of one in the build tree, matched by content
 
+A compile or a compile log also carries ESPHome's own WARNING lines, such as a deprecated key.
+Each one printed while ESPHome reads the config and generates code is a finding on line 1 of the config.
+An entry in tools/compile-lint/allowed-warnings.yaml lets a known one through for the configs it names.
+
 Run it on any route that runs the ESPHome CLI, shown here in the container with the tree at /config.
 It either compiles a config first or reads a build already compiled:
   PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config \\
@@ -17,7 +21,7 @@ It either compiles a config first or reads a build already compiled:
   PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config \\
     /cache/build/<node>
 
-Exit status is 0 when nothing was found, and 1 when a warning or error landed in owned code.
+Exit status is 0 when nothing was found, and 1 when a finding landed in owned code or ESPHome warned.
 It is 2 when the lint could not run, such as after a failed compile or without a compile database.
 """
 
@@ -747,10 +751,19 @@ def summary(results: list[BuildResult]) -> str:
 
 
 def esphome_warnings(text: str) -> list[str]:
-    """Return each distinct ESPHome warning in compile output, in order, since validation prints them twice."""
+    """Return the first line of each distinct ESPHome warning from reading the config to the build.
+
+    Validation prints a warning twice, so each is kept once, in order.
+    The build itself logs toolchain and download retries that depend on the network rather than the config.
+    So the window ends at the build path line, and starts at the config read where the output has one.
+    """
+    lines = [ANSI_ESCAPE.sub("", raw) for raw in text.splitlines()]
+    start = next((i for i, line in enumerate(lines) if CONFIG_PATH.search(line)), 0)
     found: dict[str, None] = {}
-    for raw in text.splitlines():
-        match = ESPHOME_WARNING.match(ANSI_ESCAPE.sub("", raw))
+    for line in lines[start:]:
+        if BUILD_PATH.search(line):
+            break
+        match = ESPHOME_WARNING.match(line)
         if match:
             found.setdefault(match["message"], None)
     return list(found)
@@ -796,7 +809,11 @@ def check_warnings(
     warnings = esphome_warnings(text)
     if not warnings:
         return
-    relative = None if config is None else relative_to_root(Path(os.path.normpath(config)), root)
+    relative = None
+    if config is not None:
+        # ESPHome prints the config path as it was given, so a relative one is read against the config root.
+        absolute = config if config.is_absolute() else root / config
+        relative = relative_to_root(Path(os.path.normpath(absolute)), root)
     if relative is None:
         raise LintError(
             f"{result.node}: ESPHome warned, and the config it read is not in {root} to report on"
@@ -851,7 +868,8 @@ def compile_config(config: Path) -> tuple[Path, Path | None, str]:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="compile-lint",
-        description="Report compiler warnings in this repository's code from ESPHome builds.",
+        description="Report compiler warnings in this repository's code, and ESPHome's own warnings, "
+        "from ESPHome builds.",
     )
     parser.add_argument(
         "builds", nargs="*", type=Path, metavar="BUILD", help="an ESPHome build directory"
@@ -896,7 +914,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--summary", type=Path, help="append a Markdown summary to this file")
     parser.add_argument(
-        "--verbose", action="store_true", help="also list the diagnostics set aside as not owned"
+        "--verbose",
+        action="store_true",
+        help="also list the diagnostics set aside as not owned and the ESPHome warnings allowed",
     )
     args = parser.parse_args(argv)
     if not args.builds and not args.compile and not args.from_log:

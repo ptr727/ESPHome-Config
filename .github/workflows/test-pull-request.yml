@@ -1,9 +1,10 @@
 name: Test pull request action
 
 # Source lint plus a change-gated compile test, run on the ptr727/esphome-nonroot image the repo deploys.
-# - template-compile-test builds the example devices, which between them compose every published template.
+# - template-compile-test builds the example devices, which between them compose every published template, and every deployed device config.
 # - test/easystart.yaml also covers the easystart external component.
 # - Each leg then lints the build it compiled, failing on a compiler warning in this repository's own code.
+# - It also fails on an ESPHome warning that tools/compile-lint/allowed-warnings.yaml does not let through.
 # It costs minutes of esp-idf build, so it runs only when what it covers moves.
 # Operational model.
 # - develop takes direct signed commits, where push runs advisory CI.

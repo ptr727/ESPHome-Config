@@ -1,5 +1,5 @@
 # ESPHome warnings the compile lint lets through, per OPERATIONS.md "Compile Lint".
-# A pattern is a Python regular expression matched against the whole warning text.
+# A pattern is a Python regular expression matched against the whole first line of the warning.
 # The configs are globs relative to the repository root, so the same warning on any other config still fails.
 # Every entry says why the warning cannot be fixed here, and when the entry can go.
 

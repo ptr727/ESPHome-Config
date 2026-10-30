@@ -656,3 +656,30 @@ def test_compile_mode_reports_the_warnings_the_compile_prints(
     fake_esphome(tmp_path, monkeypatch, output, 0)
     status = main(["--config-root", str(root), "--compile", str(root / "test" / "device.yaml")])
     assert status == 1
+
+
+def test_a_warning_the_build_logs_after_the_build_path_is_not_a_finding(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = warning_log(tmp_path, build, root)
+    log.write_text(log.read_text() + "WARNING Could not prefetch a tool: connection reset\n")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0
+
+
+def test_a_warning_before_the_config_is_read_is_not_a_finding(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = warning_log(tmp_path, build, root)
+    log.write_text("WARNING Using a cached copy\n" + log.read_text())
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0
+
+
+def test_a_relative_config_path_in_the_log_resolves_against_the_config_root(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = tmp_path / "compile.log"
+    log.write_text(
+        "INFO Reading configuration test/device.yaml...\n"
+        f"WARNING {DEPRECATED}\nINFO Compiling app... Build path: {build}\n"
+    )
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
+    assert "device-test: test/device.yaml:1:1: warning: ESPHome: " in capsys.readouterr().out
