@@ -91,6 +91,10 @@ sensor:
 text_sensor:
   - id: !extend esphome_version
     name: "Version"
+  # Hide the project version, which only ever reads the 0.0.0 placeholder set above.
+  # Kept internal rather than removed, because Konnected's on_boot publishes to its id.
+  - id: !extend project_version
+    internal: true
 
 # Add status sensor
 binary_sensor:
