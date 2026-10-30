@@ -753,7 +753,7 @@ def summary(results: list[BuildResult]) -> str:
 def esphome_warnings(text: str) -> list[str]:
     """Return the first line of each distinct ESPHome warning from reading the config to the build.
 
-    Validation prints a warning twice, so each is kept once, in order.
+    A warning can repeat, such as where a clean and a compile share one log, so each is kept once, in order.
     The build itself logs toolchain and download retries that depend on the network rather than the config.
     So the window ends at the build path line, and starts at the config read where the output has one.
     """
@@ -809,11 +809,7 @@ def check_warnings(
     warnings = esphome_warnings(text)
     if not warnings:
         return
-    relative = None
-    if config is not None:
-        # ESPHome prints the config path as it was given, so a relative one is read against the config root.
-        absolute = config if config.is_absolute() else root / config
-        relative = relative_to_root(Path(os.path.normpath(absolute)), root)
+    relative = None if config is None else relative_to_root(Path(os.path.normpath(config)), root)
     if relative is None:
         raise LintError(
             f"{result.node}: ESPHome warned, and the config it read is not in {root} to report on"
@@ -825,7 +821,7 @@ def check_warnings(
             result.findings.append(Finding(relative, 1, 1, "warning", f"ESPHome: {message}"))
 
 
-def build_from_log(log: Path) -> tuple[Path, Path | None, str]:
+def build_from_log(log: Path, root: Path) -> tuple[Path, Path | None, str]:
     """Return the last build path a saved ESPHome compile log printed, the config it read, and the log."""
     try:
         text = log.read_text(encoding="utf-8", errors="replace")
@@ -835,7 +831,11 @@ def build_from_log(log: Path) -> tuple[Path, Path | None, str]:
     if not builds:
         raise LintError(f"{log}: the compile log holds no build path")
     configs = CONFIG_PATH.findall(text)
-    return Path(builds[-1]), Path(configs[-1]) if configs else None, text
+    if not configs:
+        return Path(builds[-1]), None, text
+    # ESPHome prints the config path as it was given, so a relative one is read against the config root.
+    config = Path(configs[-1])
+    return Path(builds[-1]), config if config.is_absolute() else root / config, text
 
 
 def compile_config(config: Path) -> tuple[Path, Path | None, str]:
@@ -950,7 +950,7 @@ def run(args: argparse.Namespace) -> int:
     allowances = load_allowances(args.allowed_warnings or root / ALLOWED_WARNINGS)
     # A bare build directory carries no compile output, so only a log or a compile is checked for ESPHome warnings.
     builds: list[tuple[Path, Path | None, str]] = [(build, None, "") for build in args.builds]
-    builds += [build_from_log(log) for log in args.from_log]
+    builds += [build_from_log(log, root) for log in args.from_log]
     builds += [compile_config(c) for c in args.compile]
     results: list[BuildResult] = []
     for build, config, text in builds:

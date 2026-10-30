@@ -3,6 +3,13 @@
 # The configs are globs relative to the repository root, so the same warning on any other config still fails.
 # Every entry says why the warning cannot be fixed here, and when the entry can go.
 
+- pattern: "Could not (check if .* has changed|download from .*) due to network error .*"
+  configs:
+    - "*"
+  reason: >-
+    ESPHome falls back to a cached file when a remote file cannot be fetched while it reads the config.
+    That depends on the network rather than the config, and only a run with a kept cache, such as the VS Code task, can print it.
+
 - pattern: "The 'esp32_improv:' top-level key is deprecated; rename it to 'improv_ble:'\\. Removed in 2027\\.4\\.0\\."
   configs:
     - garage-door-controller.yaml
