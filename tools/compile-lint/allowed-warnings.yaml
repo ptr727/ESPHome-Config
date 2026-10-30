@@ -9,6 +9,7 @@
   reason: >-
     ESPHome falls back to a cached file when a remote file cannot be fetched while it reads the config.
     That depends on the network rather than the config, and only a run with a kept cache, such as the VS Code task, can print it.
+    Drop this entry if ESPHome stops logging the fallback as a warning.
 
 - pattern: "The 'esp32_improv:' top-level key is deprecated; rename it to 'improv_ble:'\\. Removed in 2027\\.4\\.0\\."
   configs:
@@ -24,9 +25,13 @@
   configs:
     - garage-presence-sensor.yaml
     - test/smarthome-ceilsense.yaml
-  reason: The CeilSense LED sits on GPIO20, and ESPHome offers no per-pin opt-out for this warning.
+  reason: >-
+    The CeilSense LED sits on GPIO20, and ESPHome offers no per-pin opt-out for this warning.
+    Drop this entry once ESPHome offers one, or the template stops driving GPIO20.
 
 - pattern: "Using experimental features in ESP-IDF may result in unexpected failures\\."
   configs:
     - test/esp32-s3-wroom-2-n32r8v.yaml
-  reason: The template opts in deliberately, since ESPHome rejects 32MB flash with OTA otherwise.
+  reason: >-
+    The template opts in deliberately, since ESPHome rejects 32MB flash with OTA otherwise.
+    Drop this entry once ESPHome accepts 32MB flash with OTA without the opt-in.

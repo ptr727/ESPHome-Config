@@ -683,3 +683,14 @@ def test_a_relative_config_path_in_the_log_resolves_against_the_config_root(
     )
     assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
     assert "device-test: test/device.yaml:1:1: warning: ESPHome: " in capsys.readouterr().out
+
+
+def test_a_warning_from_an_earlier_compile_in_the_same_log_is_not_a_finding(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    earlier = (
+        f"INFO Reading configuration {root}/test/other.yaml...\nWARNING {DEPRECATED}\n"
+        f"INFO Compiling app... Build path: {tmp_path}/build/other\n"
+    )
+    log = warning_log(tmp_path, build, root)
+    log.write_text(earlier + log.read_text())
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0

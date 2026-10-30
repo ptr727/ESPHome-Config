@@ -755,10 +755,12 @@ def esphome_warnings(text: str) -> list[str]:
 
     A warning can repeat, such as where a clean and a compile share one log, so each is kept once, in order.
     The build itself logs toolchain and download retries that depend on the network rather than the config.
-    So the window ends at the build path line, and starts at the config read where the output has one.
+    So the window ends at the build path line, and starts at the last config read where the output has one.
+    A log holding an earlier compile then reports only the compile whose config and build it names.
     """
     lines = [ANSI_ESCAPE.sub("", raw) for raw in text.splitlines()]
-    start = next((i for i, line in enumerate(lines) if CONFIG_PATH.search(line)), 0)
+    reads = [i for i, line in enumerate(lines) if CONFIG_PATH.search(line)]
+    start = reads[-1] if reads else 0
     found: dict[str, None] = {}
     for line in lines[start:]:
         if BUILD_PATH.search(line):
