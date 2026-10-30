@@ -3,16 +3,16 @@
 # The configs are globs relative to the repository root, so the same warning on any other config still fails.
 # Every entry says why the warning cannot be fixed here, and when the entry can go.
 
-- pattern: "Could not (check if .* has changed|download from .*) due to network error \\((?!\\d{3} ).*"
+- pattern: "Could not (check if .* has changed|download from .*) due to network error \\((?!4(?!29)\\d\\d ).*"
   configs:
     - "*"
   reason: >-
     ESPHome falls back to a cached file when a remote file cannot be fetched while it reads the config.
     That depends on the network rather than the config, and only a run with a kept cache, such as the VS Code task, can print it.
-    An HTTP status error, such as a 404 for a file the config names, is refused, since that one does depend on the config.
+    A 4xx status other than 429, such as a 404 for a file the config names, is refused, since that one does depend on the config.
     Drop this entry if ESPHome stops logging the fallback as a warning.
 
-- pattern: "(Git command failed: .*|Could not take the cache entry lock for .*|Timed out waiting for another process updating .*|Could not refresh .*; using the existing clone .*|Removing incomplete clone of .*)"
+- pattern: "(Git command failed: .*|Could not take the cache entry lock for .*|Timed out waiting for another process updating .*|Could not refresh .*|Removing incomplete clone of .*)"
   configs:
     - "*"
   reason: >-
