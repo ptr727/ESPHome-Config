@@ -154,7 +154,7 @@ A lambda is C++ that only compiles inside the `main.cpp` ESPHome generates. Its 
 - **A `text: format:` argument is checked too.** ESPHome emits each `args:` entry as an argument to `str_sprintf`, so a finding there lands on the entry it points inside.
 - **Fixing `-Wdouble-promotion`.** Write a float literal with an `f` suffix, as in `x / 60.0f`, so the arithmetic stays in the single-precision FPU. A float passed to a printf-style call, or listed under `args:`, takes an explicit `static_cast<double>()`, since a variadic call always promotes it.
 - **An incremental compile prints compiler warnings only for objects it rebuilt.** The lint's own recheck is unaffected, but a sweep reading the compile log for third-party warnings needs every object rebuilt. Delete the one build directory, `/cache/build/<name>` in the image, and ccache replays each object's stored warnings in seconds. Avoid `esphome clean` for this. It also deletes the `pio_components` directory and the PlatformIO cache that every build shares. Each other device then fetches its libraries again on its next compile.
-- **Exit status** is `0` when nothing was found, and `1` when a finding landed in this repository's code or ESPHome printed a warning the allow list does not let through. It is `2` when the lint could not run, such as after a failed compile.
+- **Exit status** is `0` when nothing was found, and `1` when a finding landed in this repository's code. It is also `1` when ESPHome printed a warning the allow list does not let through. It is `2` when the lint could not run, such as after a failed compile.
 
 ## Flashing and sdkconfig
 

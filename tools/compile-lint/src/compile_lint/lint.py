@@ -21,7 +21,8 @@ It either compiles a config first or reads a build already compiled:
   PYTHONPATH=/config/tools/compile-lint/src python3 -m compile_lint --config-root /config \\
     /cache/build/<node>
 
-Exit status is 0 when nothing was found, and 1 when a finding landed in owned code or ESPHome warned.
+Exit status is 0 when nothing was found.
+It is 1 when a finding landed in owned code, or ESPHome printed a warning the allow list does not let through.
 It is 2 when the lint could not run, such as after a failed compile or without a compile database.
 """
 
