@@ -3,13 +3,22 @@
 # The configs are globs relative to the repository root, so the same warning on any other config still fails.
 # Every entry says why the warning cannot be fixed here, and when the entry can go.
 
-- pattern: "Could not (check if .* has changed|download from .*) due to network error .*"
+- pattern: "Could not (check if .* has changed|download from .*) due to network error \\((?!\\d{3} ).*"
   configs:
     - "*"
   reason: >-
     ESPHome falls back to a cached file when a remote file cannot be fetched while it reads the config.
     That depends on the network rather than the config, and only a run with a kept cache, such as the VS Code task, can print it.
+    An HTTP status error, such as a 404 for a file the config names, is refused, since that one does depend on the config.
     Drop this entry if ESPHome stops logging the fallback as a warning.
+
+- pattern: "(Git command failed: .*|Could not take the cache entry lock for .*|Timed out waiting for another process updating .*|Could not refresh .*; using the existing clone .*|Removing incomplete clone of .*)"
+  configs:
+    - "*"
+  reason: >-
+    ESPHome retries a remote package fetch, or falls back to its existing clone, when the network or a concurrent compile gets in the way.
+    That depends on the run rather than the config, and a fetch that finally fails is an error rather than a warning.
+    Drop this entry if ESPHome stops logging these as warnings.
 
 - pattern: "The 'esp32_improv:' top-level key is deprecated; rename it to 'improv_ble:'\\. Removed in 2027\\.4\\.0\\."
   configs:
