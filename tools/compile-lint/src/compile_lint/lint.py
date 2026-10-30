@@ -753,7 +753,7 @@ def summary(results: list[BuildResult]) -> str:
 def esphome_warnings(text: str) -> list[str]:
     """Return the first line of each distinct ESPHome warning from reading the config to the build.
 
-    A warning can repeat, such as where a clean and a compile share one log, so each is kept once, in order.
+    Each distinct warning is kept once, in order.
     The build itself logs toolchain and download retries that depend on the network rather than the config.
     So the window ends at the build path line, and starts at the last config read where the output has one.
     A log holding an earlier compile then reports only the compile whose config and build it names.
