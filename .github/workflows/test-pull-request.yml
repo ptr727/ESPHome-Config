@@ -156,7 +156,10 @@ jobs:
           sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" secrets.yaml
 
       # The cache sits at a fixed path, and the log there names the build path, so the lint step finds the build.
+      # The config path is a file name from the pull request, so it reaches the script as a quoted variable rather than as script text.
       - name: Compile config step
+        env:
+          CONFIG: ${{ matrix.config }}
         run: |
           set -Eeuo pipefail
           cache="$RUNNER_TEMP/esphome-cache"
@@ -165,12 +168,13 @@ jobs:
           docker run --rm --user 1000:1000 \
             --volume "$PWD":/config \
             --volume "$cache":/cache \
+            --env CONFIG \
             ptr727/esphome-nonroot:latest \
             bash -c '
               set -Eeuo pipefail
               /entrypoint/cache.sh
-              esphome config /config/${{ matrix.config }} > /dev/null
-              esphome compile /config/${{ matrix.config }} 2>&1 | tee /cache/compile.log
+              esphome config "/config/$CONFIG" > /dev/null
+              esphome compile "/config/$CONFIG" 2>&1 | tee /cache/compile.log
             '
 
       # Recompile the generated main.cpp syntax-only with stricter warnings, keeping what lands in this repository's code.
