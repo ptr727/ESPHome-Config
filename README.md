@@ -24,12 +24,7 @@ ESPHome configuration templates and projects.
 - Added M5Stack CoreS3 support, with an LVGL touch screen example device.
 - Added M5Stack GC0308 camera overlay support.
 - Added M5Stack Dial support, with an LVGL and rotary encoder example device.
-- Changed the example devices to disable the API and WiFi reboot timeouts, so a flashed one runs on a bench without Home Assistant.
-- Added a compile lint for compiler warnings in a lambda or the EasyStart component, so a warning surfaces while developing and at pull request time.
-- Added a VS Code task that compiles the open config and lists each lint finding in the Problems pane on its YAML or source line.
-- Added a pull request check that fails a compile leg on a lint finding, annotating its YAML or source line.
-- Added a pull request check that fails an example device that does not disable both reboot timeouts.
-- Fixed the float math warnings the compile lint finds in the templates and the EasyStart component.
+- Added commit and CI linters to detect YAML and C++ compiler warnings.
 
 See [Release History][history] for complete release notes and older versions.
 
@@ -115,6 +110,7 @@ Every template also opens with an `External usage:` comment block showing how to
 - [Template][konnected-blaq] for the [Konnected blaQ][konnected-products-smart-garage-door-opener-blaq-myq-alternative-link] smart garage door controller.
 - This is a Home Assistant friendly alternative to the Chamberlain myQ that [cut off HA access][home-assistant-blog-2023-link].
 - Imports Konnected's upstream [firmware package][github-konnected-io-konnected-esphome-link] and surgically strips stock provisioning, see the [template][konnected-blaq] for details.
+- Warning: on a Security+ 1.0 opener, set both `api_reboot_timeout` and `wifi_reboot_timeout` to `0s`. The controller's TX line is uncontrolled from reset until the Security+ component starts. A Security+ 1.0 opener can read that as a wall-button press and open the door. A reboot loop while Home Assistant or WiFi is unreachable repeats that window every 15 minutes. Security+ 2.0 openers ignore it.
 
 #### Apollo PLT-1B Plant Sensor
 

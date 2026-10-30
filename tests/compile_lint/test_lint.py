@@ -554,3 +554,143 @@ def test_an_unexpected_failure_keeps_its_traceback(
     (build / "build" / "compile_commands.json").write_text('{"directory": "/x"}')
     assert main(["--config-root", str(root), str(build)]) == 2
     assert "Traceback (most recent call last)" in capsys.readouterr().err
+
+
+DEPRECATED = "The 'old_key:' top-level key is deprecated; rename it to 'new_key:'."
+
+
+def warning_log(tmp_path: Path, build: Path, root: Path, *warnings: str) -> Path:
+    """Write a compile log that reads test/device.yaml, prints the warnings, and names the build."""
+    log = tmp_path / "compile.log"
+    lines = [f"INFO Reading configuration {root}/test/device.yaml...", *warnings]
+    lines += [f"INFO Compiling app... Build path: {build}", "INFO Done"]
+    log.write_text("\n".join(lines) + "\n")
+    return log
+
+
+def allow(root: Path, pattern: str, *configs: str) -> None:
+    entry = {"pattern": pattern, "configs": list(configs), "reason": "A constructed allowance."}
+    path = root / "tools" / "compile-lint" / "allowed-warnings.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps([entry]))
+
+
+def test_an_esphome_warning_is_a_finding_on_the_config(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = warning_log(tmp_path, build, root, f"WARNING {DEPRECATED}")
+    status = main(["--config-root", str(root), "--annotate", "--from-log", str(log)])
+    assert status == 1
+    out = capsys.readouterr().out
+    assert f"device-test: test/device.yaml:1:1: warning: ESPHome: {DEPRECATED}" in out
+    assert "::warning file=test/device.yaml,line=1,col=1," in out
+
+
+def test_a_repeated_colored_esphome_warning_is_one_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    colored = f"\x1b[33mWARNING {DEPRECATED}\x1b[0m"
+    log = warning_log(tmp_path, build, root, colored, f"WARNING {DEPRECATED}")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
+    assert capsys.readouterr().out.count("ESPHome: ") == 1
+
+
+def test_an_allowed_esphome_warning_passes_and_is_listed_when_verbose(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    allow(root, r"The 'old_key:' .*", "test/*.yaml")
+    log = warning_log(tmp_path, build, root, f"WARNING {DEPRECATED}")
+    assert main(["--config-root", str(root), "--verbose", "--from-log", str(log)]) == 0
+    out = capsys.readouterr().out
+    assert f"  allowed: ESPHome: {DEPRECATED}" in out
+    assert "1 ESPHome warnings allowed" in out
+
+
+def test_an_allowance_for_another_config_does_not_apply(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    allow(root, r"The 'old_key:' .*", "other.yaml")
+    log = warning_log(tmp_path, build, root, f"WARNING {DEPRECATED}")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
+
+
+def test_an_allowance_must_match_the_whole_warning(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    allow(root, r"The 'old_key:'", "test/device.yaml")
+    log = warning_log(tmp_path, build, root, f"WARNING {DEPRECATED}")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "{}",
+        '[{"pattern": "x", "configs": ["a.yaml"]}]',
+        '[{"pattern": "(", "configs": ["a.yaml"], "reason": "r"}]',
+    ],
+)
+def test_a_malformed_allow_list_is_a_failure_to_run(tmp_path: Path, content: str) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    path = root / "tools" / "compile-lint" / "allowed-warnings.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text(content)
+    assert main(["--config-root", str(root), str(build)]) == 2
+
+
+def test_an_esphome_warning_without_a_config_to_place_it_is_a_failure_to_run(
+    tmp_path: Path,
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = tmp_path / "compile.log"
+    log.write_text(f"WARNING {DEPRECATED}\nINFO Compiling app... Build path: {build}\n")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 2
+
+
+def test_compile_mode_reports_the_warnings_the_compile_prints(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    output = f"WARNING {DEPRECATED}\nINFO Compiling app... Build path: {build}"
+    fake_esphome(tmp_path, monkeypatch, output, 0)
+    status = main(["--config-root", str(root), "--compile", str(root / "test" / "device.yaml")])
+    assert status == 1
+
+
+def test_a_warning_the_build_logs_after_the_build_path_is_not_a_finding(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = warning_log(tmp_path, build, root)
+    log.write_text(log.read_text() + "WARNING Could not prefetch a tool: connection reset\n")
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0
+
+
+def test_a_warning_before_the_config_is_read_is_not_a_finding(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = warning_log(tmp_path, build, root)
+    log.write_text("WARNING Using a cached copy\n" + log.read_text())
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0
+
+
+def test_a_relative_config_path_in_the_log_resolves_against_the_config_root(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    log = tmp_path / "compile.log"
+    log.write_text(
+        "INFO Reading configuration test/device.yaml...\n"
+        f"WARNING {DEPRECATED}\nINFO Compiling app... Build path: {build}\n"
+    )
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 1
+    assert "device-test: test/device.yaml:1:1: warning: ESPHome: " in capsys.readouterr().out
+
+
+def test_a_warning_from_an_earlier_compile_in_the_same_log_is_not_a_finding(tmp_path: Path) -> None:
+    root, build = write_build(tmp_path, "int main() { return 0; }\n")
+    earlier = (
+        f"INFO Reading configuration {root}/test/other.yaml...\nWARNING {DEPRECATED}\n"
+        f"INFO Compiling app... Build path: {tmp_path}/build/other\n"
+    )
+    log = warning_log(tmp_path, build, root)
+    log.write_text(earlier + log.read_text())
+    assert main(["--config-root", str(root), "--from-log", str(log)]) == 0

@@ -1,9 +1,10 @@
 name: Test pull request action
 
 # Source lint plus a change-gated compile test, run on the ptr727/esphome-nonroot image the repo deploys.
-# - template-compile-test builds the example devices, which between them compose every published template.
+# - template-compile-test builds the example devices, which between them compose every published template, and every deployed device config.
 # - test/easystart.yaml also covers the easystart external component.
 # - Each leg then lints the build it compiled, failing on a compiler warning in this repository's own code.
+# - It also fails on an ESPHome warning that tools/compile-lint/allowed-warnings.yaml does not let through.
 # It costs minutes of esp-idf build, so it runs only when what it covers moves.
 # Operational model.
 # - develop takes direct signed commits, where push runs advisory CI.
@@ -81,14 +82,15 @@ jobs:
           fi
           WORKFLOW='\.github/workflows/test-pull-request\.yml$'
           # The test/ tree hosts the example devices, and test/easystart.yaml compiles easystart/components.
+          # A top-level YAML is a deployed device config, compiled alongside the example devices.
           # The compile lint runs in the same legs, so a change to it reruns them too.
-          if grep -qE "^(templates/|test/|easystart/components/|tools/compile-lint/|$WORKFLOW)" <<<"$DIFF"; then
+          if grep -qE "^(templates/|test/|easystart/components/|tools/compile-lint/|[^/]+\.yaml$|$WORKFLOW)" <<<"$DIFF"; then
             echo "template-test=true" >> "$GITHUB_OUTPUT"
           else
             echo "template-test=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Build the template matrix from test/, so a new example device is picked up without editing the matrix.
+      # Build the compile matrix from test/ and the top-level device configs, so a new config is picked up without editing the matrix.
       # Every device template must be included by an example device, else a new template would go silently untested.
       # Utility includes are pulled in transitively by the device templates and need no example device.
       - name: List template test configs step
@@ -116,16 +118,18 @@ jobs:
             echo "Example devices not setting api_reboot_timeout and wifi_reboot_timeout to 0s: ${rebooting[*]}"
             exit 1
           fi
-          CONFIGS="$(basename -a -s .yaml test/*.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
-          echo "Template matrix: $CONFIGS"
+          # A deployed device config compiles too, since its own lambdas and substitutions reach no example device.
+          # The shell glob skips dot-named YAML, which is not a device config.
+          CONFIGS="$(printf '%s\n' test/*.yaml *.yaml | jq -Rsc 'split("\n") | map(select(length > 0))')"
+          echo "Compile matrix: $CONFIGS"
           echo "template-configs=$CONFIGS" >> "$GITHUB_OUTPUT"
 
-  # Compile every example device, each composing one board template and any overlays it carries.
+  # Compile every example device, each composing one board template and any overlays it carries, and every deployed device config.
   # The test/ tree holds the configs, and the Device Builder scan is non-recursive, so they are not listed as devices.
   # The matrix comes from the changes job, which also enforces that every template is included by an example device.
   # Turning fail-fast off keeps one broken template from masking the others.
   template-compile-test:
-    name: Compile template ${{ matrix.config }} job
+    name: Compile ${{ matrix.config }} job
     runs-on: ubuntu-latest
     needs: [ changes ]
     if: ${{ needs.changes.outputs.template-test == 'true' }}
@@ -152,7 +156,7 @@ jobs:
           sed -i "s|REPLACE_WITH_BASE64_32_BYTE_KEY|$key|" secrets.yaml
 
       # The cache sits at a fixed path, and the log there names the build path, so the lint step finds the build.
-      - name: Compile template test config step
+      - name: Compile config step
         run: |
           set -Eeuo pipefail
           cache="$RUNNER_TEMP/esphome-cache"
@@ -165,11 +169,12 @@ jobs:
             bash -c '
               set -Eeuo pipefail
               /entrypoint/cache.sh
-              esphome config /config/test/${{ matrix.config }}.yaml > /dev/null
-              esphome compile /config/test/${{ matrix.config }}.yaml 2>&1 | tee /cache/compile.log
+              esphome config /config/${{ matrix.config }} > /dev/null
+              esphome compile /config/${{ matrix.config }} 2>&1 | tee /cache/compile.log
             '
 
       # Recompile the generated main.cpp syntax-only with stricter warnings, keeping what lands in this repository's code.
+      # ESPHome's own warnings in the compile log are findings too, unless tools/compile-lint/allowed-warnings.yaml lets them through.
       # A finding annotates its YAML lambda line or component file, and fails the leg, per OPERATIONS.md "Compile Lint".
       # It runs as the runner's own user, so it can append to the step summary file mounted into the container.
       - name: Lint compiled code step
