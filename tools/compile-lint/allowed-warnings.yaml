@@ -1,0 +1,46 @@
+# ESPHome warnings the compile lint lets through, per OPERATIONS.md "Compile Lint".
+# A pattern is a Python regular expression matched against the whole first line of the warning.
+# The configs are globs relative to the repository root, so the same warning on any other config still fails.
+# Every entry says why the warning cannot be fixed here, and when the entry can go.
+
+- pattern: "Could not (check if .* has changed|download from .*) due to network error \\((?!4(?!29)\\d\\d ).*"
+  configs:
+    - "*"
+  reason: >-
+    ESPHome falls back to a cached file when a remote file cannot be fetched while it reads the config.
+    That depends on the network rather than the config, and only a run with a kept cache, such as the VS Code task, can print it.
+    A 4xx status other than 429, such as a 404 for a file the config names, is refused, since that one does depend on the config.
+    Drop this entry if ESPHome stops logging the fallback as a warning.
+
+- pattern: "(Git command failed: .*|Could not take the cache entry lock for .*|Timed out waiting for another process updating .*|Could not refresh .*|Removing incomplete clone of .*)"
+  configs:
+    - "*"
+  reason: >-
+    ESPHome retries a remote package fetch, or falls back to its existing clone, when the network or a concurrent compile gets in the way.
+    That depends on the run rather than the config, and a fetch that finally fails is an error rather than a warning.
+    Drop this entry if ESPHome stops logging these as warnings.
+
+- pattern: "The 'esp32_improv:' top-level key is deprecated; rename it to 'improv_ble:'\\. Removed in 2027\\.4\\.0\\."
+  configs:
+    - garage-door-controller.yaml
+    - test/konnected-blaq.yaml
+    - test/apollo-plt-1b.yaml
+  reason: >-
+    The Konnected and Apollo packages still declare esp32_improv.
+    Renaming the templates' !remove key to improv_ble fails validation while the vendor key remains.
+    Drop this entry once both vendors rename the key, and before 2027.4.0.
+
+- pattern: "GPIO20 is used by the USB-Serial-JTAG interface\\. .*"
+  configs:
+    - garage-presence-sensor.yaml
+    - test/smarthome-ceilsense.yaml
+  reason: >-
+    The CeilSense LED sits on GPIO20, and ESPHome offers no per-pin opt-out for this warning.
+    Drop this entry once ESPHome offers one, or the template stops driving GPIO20.
+
+- pattern: "Using experimental features in ESP-IDF may result in unexpected failures\\."
+  configs:
+    - test/esp32-s3-wroom-2-n32r8v.yaml
+  reason: >-
+    The template opts in deliberately, since ESPHome rejects 32MB flash with OTA otherwise.
+    Drop this entry once ESPHome accepts 32MB flash with OTA without the opt-in.
