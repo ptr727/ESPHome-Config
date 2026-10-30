@@ -15,7 +15,7 @@ Each per-device config lives in the repository root, one per physical device. Ea
 ## Garage Door Controller
 
 - [`garage-door-controller.yaml`][garage-door-controller] uses the [Konnected blaQ template][konnected-blaq].
-- Note: currently powered off pending an upstream investigation into self-opening incidents, see the status block in the config and [issue #29][issue-29-link].
+- It drives a LiftMaster 98022 opener over Security+ 2.0, which replaced a Security+ 1.0 opener the controller could open during a reboot, see [issue #29][issue-29-link].
 
 ## Bluetooth Proxies
 
@@ -55,7 +55,7 @@ Nothing here is urgent. The device works, and the cost is access rather than ris
 |---|---|
 | [`garage-gate-fan-controller.yaml`][garage-gate-fan-controller] | Mounted in an enclosure |
 
-Of the remaining ESP32 devices, the [garage presence sensor][garage-presence-sensor], the [HVAC compressor sensor][hvac-compressor-sensor], and both Bluetooth proxies report a current bootloader. The proxies were flashed over USB. The [garage door controller][garage-door-controller] is powered off and has not been checked. The ESP8266 devices are unaffected.
+Of the remaining ESP32 devices, the [garage presence sensor][garage-presence-sensor], the [HVAC compressor sensor][hvac-compressor-sensor], the [garage door controller][garage-door-controller], and both Bluetooth proxies report a current bootloader. The proxies and the garage door controller were flashed over USB. The ESP8266 devices are unaffected.
 
 <!-- Repo -->
 
