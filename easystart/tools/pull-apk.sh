@@ -20,18 +20,18 @@ refuse() {
     exit 2
 }
 
-case "${1:-}" in
--h | --help)
-    echo "$USAGE"
-    exit 0
-    ;;
-esac
-[ "$#" -le 2 ] || refuse "$3"
+help=false
 for arg in "$@"; do
     case "$arg" in
+    -h | --help) help=true ;;
     -*) refuse "$arg" ;;
     esac
 done
+[ "$#" -le 2 ] || refuse "$3"
+if [ "$help" = true ]; then
+    echo "$USAGE"
+    exit 0
+fi
 
 QUERY="${1:?$USAGE}"
 OUTDIR="${2:-.}"

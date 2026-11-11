@@ -221,8 +221,8 @@
             }
         },
         {
-            // Wider than CI, which enforces README.md and HISTORY.md only through the hub's validate-task.yml.
-            // That task exposes no input to widen its list, so the two can only be matched by narrowing this one.
+            // Wider than CI, which enforces README.md and HISTORY.md through the hub's validate-task.yml.
+            // The repository's validate action adds DEVICES.md and easystart/README.md.
             // Keeping it wide is the deliberate choice: it gates nothing, and it still surfaces a typo in a nested README.
             "label": "Lint: Spelling",
             "type": "process",
