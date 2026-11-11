@@ -117,7 +117,7 @@ Bash, and only where a program cannot be Python: a bootstrap that installs the i
 
 ## C++
 
-The C++ here is a small amount of hand-written code that an ESPHome build compiles. It is the EasyStart external component and the lambda helpers the templates include. It compiles only inside an ESPHome build, which CI runs and lints for compiler warnings. The rules here cover its style, and that lint covers its semantics.
+The C++ here is a small amount of hand-written code that an ESPHome build compiles. It is the EasyStart external component and the inline `lambda:` blocks in the YAML configs. It compiles only inside an ESPHome build, which CI runs and lints for compiler warnings. The rules here cover its style, and that lint covers its semantics.
 
 ### Formatting Toolchain
 
