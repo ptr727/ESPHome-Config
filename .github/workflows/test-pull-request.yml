@@ -37,6 +37,8 @@ jobs:
     uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@245353323c7ee5617edfe82331d0e83b266bebb2 # 2.0.1366
     permissions:
       contents: read
+    with:
+      workflow-model: operational
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -194,8 +196,10 @@ jobs:
   # GitHub Actions does not support required status checks on conditional jobs.
   # A single always-run aggregator gates the merge instead.
   # Its name is the ruleset-bound required status-check context, rename it and the ruleset context together.
+  # Only a pull_request run takes that name.
+  # So a push or dispatch on a pull request's head cannot post the required check without that pull request's gates.
   check-workflow-status:
-    name: Check pull request workflow status job
+    name: ${{ github.event_name == 'pull_request' && 'Check pull request workflow status job' || 'Check workflow status job' }}
     runs-on: ubuntu-latest
     needs: [ validate, changes, template-compile-test ]
     if: always()

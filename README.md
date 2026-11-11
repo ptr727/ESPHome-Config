@@ -324,7 +324,7 @@ Licensed under the MIT License. See [LICENSE][license] for details.
 
 <!-- Shields -->
 
-[github-prerelease-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?include_prereleases&label=pre-release
+[github-prerelease-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?include_prereleases&filter=*-g*&label=pre-release
 [github-release-shield]: https://img.shields.io/github/v/release/ptr727/ESPHome-Config?label=release
 [last-commit-shield]: https://img.shields.io/github/last-commit/ptr727/ESPHome-Config?label=last%20commit
 [license-shield]: https://img.shields.io/github/license/ptr727/ESPHome-Config?label=license

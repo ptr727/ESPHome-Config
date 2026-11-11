@@ -3,10 +3,10 @@ name: Publish project release action
 on:
   workflow_dispatch:
 
-# A publish is a deliberate dispatch, so runs serialize on one group and queue rather than cancel.
+# A publish is a deliberate dispatch, so runs serialize per ref and queue rather than cancel.
 # That leaves no run with a half-created GitHub release.
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions: {}
