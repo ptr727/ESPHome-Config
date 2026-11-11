@@ -19,7 +19,7 @@ An operational discovery is written down as part of the change that surfaced it,
 
 What verifying a change here requires, including the part CI cannot perform. Read the checks a change owes from what it touches, not from what the pipeline happens to run:
 
-- **A device config or a template** owes `esphome config` for every affected device, and a compile wherever generated code can change, per [Config and Compile Validation][config-and-compile-validation]. Every compile also owes the [compile lint][compile-lint-section].
+- **A device config or a template** owes `esphome config` for every affected device. It also owes a compile wherever generated code can change, per [Config and Compile Validation][config-and-compile-validation]. Every compile also owes the [compile lint][compile-lint-section].
 - **A template** also owes a compile of an example device under [`test/`][test] that includes it, which [Compiling the Way CI Does][compiling-the-way-ci-does] reproduces.
 - **Python** owes the uv workspace commands in [Python Workspace][python-workspace], and every change owes the fleet's generic linters named there.
 
@@ -134,7 +134,7 @@ The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell)
 
 - **Top-level `*.yaml`** is one config per deployed device, cataloged in [`DEVICES.md`][devices].
 - **[`templates/`][templates]** holds the device templates and the utility templates, cataloged in [`README.md`][readme]. The utility templates are this repository's consolidated primitives, listed under [Utility Templates][readme-utility-templates]. A new config composes them rather than restating what one already does.
-- **[`test/`][test]** holds one example device per device template, each overlay composed into its board's, which CI compiles.
+- **[`test/`][test]** holds one example device per device template, which CI compiles. An overlay composes into its board's example device rather than getting one of its own.
 - **[`archive/`][archive]** holds retired device and test configs, which CI does not compile.
 - **[`easystart/`][easystart]** is the Micro-Air EasyStart reverse-engineering project and its external component.
 - **[`tools/compile-lint`][compile-lint] and `tests/`** are the compile lint and the Python tests, laid out in [`CODESTYLE.md`][codestyle] "This Repository's Python".
@@ -564,6 +564,8 @@ BLE and device reverse-engineering work, the Micro-Air EasyStart soft-starter fo
 When a CLI tool is needed, look for it first on `PATH`, then in package-manager directories, then for a local copy already in the repository. When it is missing, self-source the official GitHub release or vendor zip locally. Do not auto-run `winget install` or another system package manager: sourcing a portable zip or jar is fine, mutating installed system packages is not. Ask the maintainer when a tool cannot be found or sourced.
 
 ## Backup and Recovery
+
+Where each piece of state lives, and how a lost file or an unreachable device comes back.
 
 - **The repository is the record** for every device config and template, and GitHub holds it. The Device Builder's own version history stays off, per [Device Builder Auto-Commits][device-builder-auto-commits].
 - **`secrets.yaml` is not in git.** It is ignored, so no clone or commit can restore it. It lives only in the deployed tree and in whatever copy a development box keeps. Back it up with the host, not with the repository.
