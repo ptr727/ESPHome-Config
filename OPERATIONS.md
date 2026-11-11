@@ -20,8 +20,8 @@ An operational discovery is written down as part of the change that surfaced it,
 What verifying a change here requires, including the part CI cannot perform. Read the checks a change owes from what it touches, not from what the pipeline happens to run:
 
 - **A device config or a template** owes the config validation, and the compile where one is warranted, that [Config and Compile Validation][config-and-compile-validation] sets out. Every compile also owes the [compile lint][compile-lint-section].
-- **A template** also owes a compile of an example device under [`test/`][test] that includes it, which [Compiling the Way CI Does][compiling-the-way-ci-does] reproduces.
-- **The EasyStart component or the compile lint** owes a compile, since CI compiles on a change to either. `test/easystart.yaml` is the example device that covers the component.
+- **A template change that owes a compile** runs it on an example device under [`test/`][test] that includes the template. [Compiling the Way CI Does][compiling-the-way-ci-does] reproduces that compile.
+- **The EasyStart component or the compile lint** owes a compile, since only a compile exercises that C++ and gives the lint a build to read. `test/easystart.yaml` is the example device that covers the component.
 - **Python** owes the uv workspace commands in [Python Workspace][python-workspace], and every change owes the fleet's generic linters named there.
 
 CI compiles the [`test/`][test] example devices and the top-level device configs, but against placeholder secrets it generates from [`secrets._yaml`][secrets-example]. It never reads the live `secrets.yaml`, never flashes a device, and never sees one run. So a change to a deployed device also owes `esphome config` against the live `secrets.yaml` before the install, on a route per [Running the ESPHome CLI][running-the-esphome-cli]. After the flash, it owes a check of the device's own behavior. CI covers neither step.
@@ -570,7 +570,7 @@ Where each piece of state lives, and how a lost file or an unreachable device co
 
 - **The repository is the record** for every tracked device config and template, and GitHub holds it. The Device Builder's own version history stays off, per [Device Builder Auto-Commits][device-builder-auto-commits].
 - **`secrets.yaml`, a bench `test-<name>.yaml`, and the Device Builder's `.device-builder*` files are not in git.** Each is ignored, so no clone or commit can restore them. The preferences file is what keeps version history off. They live only on the host that holds them. Back them up with the host, not with the repository.
-- **A rebuilt `secrets.yaml` must carry the original API encryption key.** A device accepts the API and OTA only with the key it was flashed with, since OTA derives its key from the API key. A device flashed with a key that is now lost recovers only over USB.
+- **A rebuilt `secrets.yaml` must carry the original API encryption key.** A device accepts the API and OTA only with the key it was flashed with, since OTA derives its key from the API key. Home Assistant's ESPHome integration also keeps each device's key, in that device's config entry. A device whose key is lost from both recovers only over USB.
 - **A device that no longer takes OTA recovers over USB**, using the workstation steps under [Debugging][debugging]. [Bootloader Age and USB Flashing][bootloader-age-and-usb-flashing] covers what a serial flash changes that OTA never does.
 
 ## Logs and Debugging
