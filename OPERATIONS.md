@@ -23,7 +23,7 @@ What verifying a change here requires, including the part CI cannot perform. Rea
 - **A template** also owes a compile of an example device under [`test/`][test] that includes it, which [Compiling the Way CI Does][compiling-the-way-ci-does] reproduces.
 - **Python** owes the uv workspace commands in [Python Workspace][python-workspace], and every change owes the fleet's generic linters named there.
 
-CI compiles the [`test/`][test] example devices and the top-level device configs, but against placeholder secrets it generates from [`secrets._yaml`][secrets-example]. It never reads the live `secrets.yaml`, never flashes a device, and never sees one run. So verify a change to a deployed device before the pull request opens. Run `esphome config` on a route pinned to the dashboard's version, per [Running the ESPHome CLI][running-the-esphome-cli]. After the flash, the device's own behavior verifies it. A green pipeline says nothing about either.
+CI compiles the [`test/`][test] example devices and the top-level device configs, but against placeholder secrets it generates from [`secrets._yaml`][secrets-example]. It never reads the live `secrets.yaml`, never flashes a device, and never sees one run. A checkout route runs on generated secrets too, so only the dashboard's container reads the live file. Before the pull request opens, run `esphome config` on a checkout route pinned to the dashboard's version, per [Running the ESPHome CLI][running-the-esphome-cli]. Run it again in the dashboard's container once the change reaches the live tree, before the install. After the flash, the device's own behavior verifies it. A green pipeline says nothing about either.
 
 ### Config and Compile Validation
 
@@ -132,15 +132,15 @@ The generic linters (editorconfig-checker, actionlint, markdownlint, and cspell)
 
 ## Configuration Layout
 
-- **Top-level `*.yaml`** is one config per deployed device, cataloged in [`DEVICES.md`][devices].
-- **[`templates/`][templates]** holds the device templates and the utility templates, cataloged in [`README.md`][readme]. The utility templates are this repository's consolidated primitives, listed under [Utility Templates][readme-utility-templates]. A new config composes them rather than restating what one already does.
+- **Top-level `*.yaml`** is one config per deployed device, cataloged in [`DEVICES.md`][devices]. A git-ignored `test-<name>.yaml` there is bench hardware instead, per [Documenting a Device][documenting-a-device].
+- **[`templates/`][templates]** holds the device templates and the utility templates, cataloged in [`README.md`][readme]. The utility templates and the board and component helpers are this repository's consolidated primitives, listed under [Utility Templates][readme-utility-templates] and [Board and Component Helpers][readme-board-and-component-helpers]. A new config composes them rather than restating what one already does.
 - **[`test/`][test]** holds one example device per device template, which CI compiles. An overlay composes into its board's example device rather than getting one of its own.
 - **[`archive/`][archive]** holds retired device and test configs, which CI does not compile.
 - **[`easystart/`][easystart]** is the Micro-Air EasyStart reverse-engineering project and its external component.
 - **[`tools/compile-lint`][compile-lint] and `tests/`** are the compile lint and the Python tests, laid out in [`CODESTYLE.md`][codestyle] "This Repository's Python".
 - **`secrets.yaml`** sits at the repository root and is git-ignored. It holds the live secrets on the dashboard's copy, and is generated from [`secrets._yaml`][secrets-example] on a checkout.
 
-The sections below cover how templates compose and the ESPHome config semantics that have caught a change before.
+The sections below cover how templates compose, the ESPHome config semantics that have caught a change before, and notes on specific templates and hardware.
 
 ### External Package Usage
 
@@ -177,7 +177,7 @@ ESPHome runs its substitution pass over every parsed config value. A `$` before 
 
 ### Strapping Pin Warnings
 
-A pin ESPHome considers a strapping pin warns at every validation. Where the wiring is fixed by the board and known good, silence it at the pin. Otherwise the noise trains you to ignore validation output.
+A pin ESPHome considers a strapping pin warns at every validation. Where the wiring is fixed by the board and known good, silence it at the pin. Leaving the noise in place trains you to ignore validation output.
 
 - **`ignore_strapping_warning: true` belongs inside the pin schema**, so the shorthand `pin: GPIO15` has to expand to a `pin:` mapping with `number:` first. Placing the key beside `pin:` is accepted by no schema and silences nothing, which is the usual reason it "does not work".
 - **A component that takes a bare pin number still accepts the pin mapping.** `ethernet` validates `mdc_pin`, `mdio_pin`, `power_pin`, and `clk.pin` with `pins.internal_gpio_pin_number`. `esp32_camera` validates `data_pins` and `external_clock.pin` the same way. That validator rejects only `mode` and `inverted`, then runs the full pin schema and returns just the number. So expanding the pin to a `number:` mapping carrying `ignore_strapping_warning: true` validates and silences the warning.
@@ -437,8 +437,8 @@ A venv holding a pinned `esphome`, per [VSCode Setup][vscode-setup], behaves lik
 
 This is a public repository whose primary audience is people reusing the templates, and it is also the live config directory of one specific home. Two human-facing docs keep those apart, and a change that adds prose picks between them before it picks a section.
 
-- **[`README.md`][readme] documents the reusable surface.** It says what each template in [`templates/`][templates] is for and the hardware it targets. It gives each template's substitutions, flashing route, and the gotchas that follow it to whoever adopts it. It is written for a reader who owns none of these devices.
-- **[`DEVICES.md`][devices] documents the deployed fleet.** It has one section per device or device family, naming the template it composes. Each carries the siting, status, and maintenance state of the physical unit. A reader who is not the maintainer has no use for it.
+- **[`README.md`][readme] documents the reusable surface.** It says what each template in [`templates/`][templates] is for and the hardware it targets. It gives each template's substitutions and flashing route, and the gotchas that follow the template to whoever adopts it. It is written for a reader who owns none of these devices.
+- **[`DEVICES.md`][devices] documents the deployed fleet.** It has one section per device or device family, naming the template that device composes. Each carries the siting, status, and maintenance state of the physical unit. A reader who is not the maintainer has no use for it.
 - **The test is whether a stranger reusing the template needs it.** Knowledge that generalizes to any instance of the hardware belongs in `README.md`. Anything true only of this installation belongs in `DEVICES.md`. That covers where a unit is mounted, what signal it sees there, why one is powered off, or which ones await a reflash. A device-specific fact does not migrate to `README.md` by being interesting.
 - **Agent-facing depth stays here** in [Template Notes][template-notes]. `README.md` and `DEVICES.md` are both written for humans. So a mechanism an agent needs to change a config safely is documented in this file. Those docs link to it rather than expanding it inline.
 - **A root config named `test-<name>.yaml` is bench hardware, not the deployed fleet.** The prefix groups every bench device together when the tree is sorted by name. `.gitignore` excludes `test-*.yaml` at the repository root, so it needs no commit history and never appears in `DEVICES.md`. This is distinct from [`test/`][test], which holds the tracked, CI-compiled example devices that between them compose every template.
@@ -567,8 +567,8 @@ When a CLI tool is needed, look for it first on `PATH`, then in package-manager 
 
 Where each piece of state lives, and how a lost file or an unreachable device comes back.
 
-- **The repository is the record** for every device config and template, and GitHub holds it. The Device Builder's own version history stays off, per [Device Builder Auto-Commits][device-builder-auto-commits].
-- **`secrets.yaml` is not in git.** It is ignored, so no clone or commit can restore it. It lives only in the deployed tree and in whatever copy a development box keeps. Back it up with the host, not with the repository.
+- **The repository is the record** for every tracked device config and template, and GitHub holds it. The Device Builder's own version history stays off, per [Device Builder Auto-Commits][device-builder-auto-commits].
+- **`secrets.yaml` and a bench `test-<name>.yaml` are not in git.** Both are ignored, so no clone or commit can restore them. They live only on the host that holds them. Back them up with the host, not with the repository.
 - **A rebuilt `secrets.yaml` must carry the original API encryption key.** A device accepts the API and OTA only with the key it was flashed with, since OTA derives its key from the API key. A device flashed with a key that is now lost recovers only over USB.
 - **A device that no longer takes OTA recovers over USB**, using the workstation steps under [Debugging][debugging]. [Bootloader Age and USB Flashing][bootloader-age-and-usb-flashing] covers what a serial flash changes that OTA never does.
 
@@ -758,6 +758,7 @@ On the dashboard's copy, this directory is the `/config` mount of the running `e
 [device-builder-auto-commits]: #device-builder-auto-commits
 [devices]: ./DEVICES.md
 [devkitc-template]: ./templates/esp32-s3-devkitc.yaml
+[documenting-a-device]: #documenting-a-device
 [dollar-signs]: #dollar-signs-in-config-values
 [easystart]: ./easystart/
 [easystart-protocol]: ./easystart/PROTOCOL.md
@@ -778,6 +779,7 @@ On the dashboard's copy, this directory is the `/config` mount of the running `e
 [ota-template]: ./templates/ota.yaml
 [python-workspace]: #python-workspace
 [readme]: ./README.md
+[readme-board-and-component-helpers]: ./README.md#board-and-component-helpers
 [readme-utility-templates]: ./README.md#utility-templates
 [repository-tooling-hazards]: #repository-tooling-hazards
 [rgb-led-status]: #rgb-led-status
