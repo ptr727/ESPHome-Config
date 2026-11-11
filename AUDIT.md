@@ -36,7 +36,7 @@ nothing is asserted there and the live list is only read. A missing ruleset or a
 payload is a **defect**. The result must also be exactly two rulesets named `develop` and
 `main`, but `configure.sh check` only warns on a duplicate expected name and does not enumerate
 a stray one, so a duplicate or stray ruleset is confirmed instead by running
-`python3 spec/audit.py ESPHome-Config` from the same hub checkout, which does report both as a
+`uv run --no-project --script spec/audit.py ESPHome-Config` from the same hub checkout, which does report both as a
 **drift finding**.
 
 ## Secrets
@@ -44,13 +44,14 @@ a stray one, so a duplicate or stray ruleset is confirmed instead by running
 This repo carries no local `spec/secrets.json` either, for the same reason: the required and
 forbidden name lists resolve centrally from the registry entry (`publish[]`, `types[]`, and its
 own `requiredSecrets[]`) rather than from anything repo-specific, so a per-repo copy could only
-restate the hub's own computation or drift from it. This repo declares `requiredSecrets: []` and
+restate the hub's own computation or drift from it. This repo declares
+`requiredSecrets: ["CODECOV_TOKEN"]` and
 `publish: [{ "target": "github-release", "mechanism": "none" }]` in the hub's registry, which
-resolves to no required secret beyond the fleet baseline. Confirm it from a hub checkout at
+resolves to `CODECOV_TOKEN` on top of the fleet baseline. Confirm it from a hub checkout at
 `main`:
 
 ```sh
-python3 spec/audit.py ESPHome-Config
+uv run --no-project --script spec/audit.py ESPHome-Config
 ```
 
 ## Verdict and Follow-Up
