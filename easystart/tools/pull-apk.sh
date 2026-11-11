@@ -21,13 +21,17 @@ refuse() {
 }
 
 help=false
+positional=0
 for arg in "$@"; do
     case "$arg" in
     -h | --help) help=true ;;
     -*) refuse "$arg" ;;
+    *)
+        positional=$((positional + 1))
+        [ "$positional" -le 2 ] || refuse "$arg"
+        ;;
     esac
 done
-[ "$#" -le 2 ] || refuse "$3"
 if [ "$help" = true ]; then
     echo "$USAGE"
     exit 0
