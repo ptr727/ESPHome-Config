@@ -9,6 +9,7 @@ __pycache__/
 .venv/
 .coverage
 coverage.xml
+.vscode/settings.json
 
 # ESPHome
 logs/
