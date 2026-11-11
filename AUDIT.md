@@ -14,9 +14,10 @@ and it never applies changes. The verdict vocabulary is [`WORKFLOW.md`][workflow
 ## Scope
 
 This is an operational (live-config) repo: `main` and `develop` rulesets, general repository
-settings, and secret names. Code-project dimensions (analyzers, publish mechanisms, coverage) are
-N/A, see [GOVERNANCE.md "Branching Model"][governance-branching-model] for the model this baseline
-encodes.
+settings, and secret names. Publish mechanisms are N/A, see
+[GOVERNANCE.md "Branching Model"][governance-branching-model] for the model this baseline encodes.
+This repo's Python analyzers and coverage still apply, through its validation workflow and the
+hub's audit.
 
 ## General Settings and Rulesets
 
