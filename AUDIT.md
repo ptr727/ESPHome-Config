@@ -14,9 +14,10 @@ and it never applies changes. The verdict vocabulary is [`WORKFLOW.md`][workflow
 ## Scope
 
 This is an operational (live-config) repo: `main` and `develop` rulesets, general repository
-settings, and secret names. Code-project dimensions (analyzers, publish mechanisms, coverage) are
-N/A, see [GOVERNANCE.md "Branching Model"][governance-branching-model] for the model this baseline
-encodes.
+settings, and secret names. Publish mechanisms are N/A, see
+[GOVERNANCE.md "Branching Model"][governance-branching-model] for the model this baseline encodes.
+This repo's Python analyzers and coverage still apply, through its validation workflow and the
+hub's audit.
 
 ## General Settings and Rulesets
 
@@ -34,23 +35,24 @@ hub's `main.json` and `operational/develop.json`, exiting non-zero on drift. It 
 the deployment environments the registry entry declares, and this repo declares none, so
 nothing is asserted there and the live list is only read. A missing ruleset or a divergent
 payload is a **defect**. The result must also be exactly two rulesets named `develop` and
-`main`, but `configure.sh check` only warns on a duplicate expected name and does not enumerate
-a stray one, so a duplicate or stray ruleset is confirmed instead by running
-`python3 spec/audit.py ESPHome-Config` from the same hub checkout, which does report both as a
-**drift finding**.
+`main`. `configure.sh check` only warns on a duplicate expected name and does not enumerate a
+stray one. So confirm a duplicate or stray ruleset by running
+`uv run --no-project --script spec/audit.py ESPHome-Config` from the same hub checkout. That run
+reports both as a **drift finding**.
 
 ## Secrets
 
-This repo carries no local `spec/secrets.json` either, for the same reason: the required and
+This repo carries no local `spec/secrets.json` either, for the same reason. The required and
 forbidden name lists resolve centrally from the registry entry (`publish[]`, `types[]`, and its
-own `requiredSecrets[]`) rather than from anything repo-specific, so a per-repo copy could only
-restate the hub's own computation or drift from it. This repo declares `requiredSecrets: []` and
+own `requiredSecrets[]`). A per-repo copy could only restate the hub's own computation or drift
+from it. This repo declares
+`requiredSecrets: ["CODECOV_TOKEN"]` and
 `publish: [{ "target": "github-release", "mechanism": "none" }]` in the hub's registry, which
-resolves to no required secret beyond the fleet baseline. Confirm it from a hub checkout at
+resolves to `CODECOV_TOKEN` on top of the fleet baseline. Confirm it from a hub checkout at
 `main`:
 
 ```sh
-python3 spec/audit.py ESPHome-Config
+uv run --no-project --script spec/audit.py ESPHome-Config
 ```
 
 ## Verdict and Follow-Up

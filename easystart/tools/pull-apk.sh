@@ -12,7 +12,32 @@
 
 set -Eeuo pipefail
 
-QUERY="${1:?usage: pull-apk.sh <package-or-keyword> [output-dir]}"
+USAGE="usage: pull-apk.sh <package-or-keyword> [output-dir]"
+
+refuse() {
+    echo "unknown option or argument: $1" >&2
+    echo "$USAGE" >&2
+    exit 2
+}
+
+help=false
+positional=0
+for arg in "$@"; do
+    case "$arg" in
+    -h | --help) help=true ;;
+    -*) refuse "$arg" ;;
+    *)
+        positional=$((positional + 1))
+        [ "$positional" -le 2 ] || refuse "$arg"
+        ;;
+    esac
+done
+if [ "$help" = true ]; then
+    echo "$USAGE"
+    exit 0
+fi
+
+QUERY="${1:?$USAGE}"
 OUTDIR="${2:-.}"
 
 # Strip the "package:" prefix and Windows CR that adb shell emits.
