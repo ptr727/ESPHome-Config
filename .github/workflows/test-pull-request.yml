@@ -10,8 +10,8 @@ name: Test pull request action
 # - develop takes direct signed commits, where push runs advisory CI.
 # - main is the promoted snapshot, where the develop -> main promotion PR runs the enforced gate.
 # - check-workflow-status is the ruleset-bound required check, rename it and the ruleset context together.
-# The pull_request branch set names both, since naming main alone matches nothing on a PR into develop.
-# That leaves the validation job unstarted and the aggregator unreported.
+# The pull_request trigger filters no base branch, per WORKFLOW.md section 6.
+# A filter would leave a PR into an unnamed base with the validation job unstarted and the aggregator unreported.
 # The PR then reads mergeable with an empty check list, the false clean WORKFLOW.md D1.2 forbids.
 # The duplicate run it costs, once on the PR and again on the push when the merge lands, is accepted.
 # The concurrency group keys on github.ref, and the two runs sit in different groups.
@@ -21,7 +21,6 @@ on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ main, develop ]
   workflow_dispatch:
 
 concurrency:
@@ -34,9 +33,11 @@ jobs:
 
   validate:
     name: Validate sources job
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@245353323c7ee5617edfe82331d0e83b266bebb2 # 2.0.1366
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@1397e30a2465a0a9b6ded24db9e4fc11a8b83f42 # 2.0.1388
     permissions:
       contents: read
+    with:
+      workflow-model: operational
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -194,8 +195,10 @@ jobs:
   # GitHub Actions does not support required status checks on conditional jobs.
   # A single always-run aggregator gates the merge instead.
   # Its name is the ruleset-bound required status-check context, rename it and the ruleset context together.
+  # Only a pull_request run takes that name.
+  # So a push or dispatch on a pull request's head cannot post the required check without that pull request's gates.
   check-workflow-status:
-    name: Check pull request workflow status job
+    name: ${{ github.event_name == 'pull_request' && 'Check pull request workflow status job' || 'Check workflow status job' }}
     runs-on: ubuntu-latest
     needs: [ validate, changes, template-compile-test ]
     if: always()
