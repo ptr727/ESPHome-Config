@@ -141,7 +141,7 @@ Every template also opens with an `External usage:` comment block showing how to
 Shared building-block includes, composed via `packages:` by the device templates and per-device configs:
 
 - [`api.yaml`][api] configures the API with encryption and a configurable `api_reboot_timeout`.
-- [`ota.yaml`][ota] configures ESPHome OTA with encryption, inheriting the API encryption key, and no password. A device on a password build from before ESPHome 2026.9.1 first takes a build from release `2.2.16`, made on 2026.9.1 or later. Keep `ota_password` until every device has taken it.
+- [`ota.yaml`][ota] configures ESPHome OTA with encryption, inheriting the API encryption key, and no password. A device on a password build from before ESPHome 2026.9.1 first takes a build from release `2.2.16`, made on 2026.9.1 or later. Building and uploading that bridge needs an `ota_password` secret, set to the device's existing OTA password.
 - [`logger.yaml`][logger] configures the logger.
 - [`time.yaml`][time] configures the Home Assistant time source.
 - [`wifi.yaml`][wifi] configures managed WiFi credentials from secrets, with a configurable `wifi_reboot_timeout`.
